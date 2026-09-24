@@ -1,4 +1,5 @@
 import { useQueryClient } from '@tanstack/react-query';
+import { router } from 'expo-router';
 import { useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
@@ -92,7 +93,7 @@ export default function ExerciseCatalog() {
         </Pressable>
       )}
 
-      <ExerciseList />
+      <ExerciseList onSelect={(e) => router.push(`/(tabs)/workouts/exercises/${e.id}`)} />
     </View>
   );
 }

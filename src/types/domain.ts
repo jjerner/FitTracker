@@ -94,6 +94,12 @@ export type WorkoutLogSummary = {
   completedAt: string | null;
 };
 
+export type ExerciseSession = {
+  logId: string;
+  startedAt: string;
+  sets: WorkoutSet[];
+};
+
 export type BodyWeight = {
   date: string;
   weightKg: number;

@@ -8,6 +8,7 @@ export default function WorkoutsLayout() {
       <Stack.Screen name="active" options={{ title: 'Workout' }} />
       <Stack.Screen name="log/[logId]" options={{ title: 'Workout Summary' }} />
       <Stack.Screen name="exercises/index" options={{ title: 'Exercises' }} />
+      <Stack.Screen name="exercises/[exerciseId]" options={{ title: 'Exercise' }} />
     </Stack>
   );
 }

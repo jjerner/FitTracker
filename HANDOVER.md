@@ -8,7 +8,7 @@ Full plan: `C:\Users\jerne\.claude\plans\help-me-plan-what-mellow-sketch.md`
 **Phase 1 (Foundation) — done.** Expo Router, Supabase email/password auth, tab shell.
 **Phase 2 (Food logging) — done.** Manual search, barcode scanning, diary, custom foods, nutrition goals.
 **Phase 3 (Workout logging) — done.** Exercise catalog (seeded + custom), template CRUD, active workout logging, session summary + history. Tested on-device by user.
-**Phase 4 (Progress & polish) — in progress.** Done: Progress tab (body weight log + chart, daily calories vs goal, workout volume per session; last 30 days). Charts use `react-native-gifted-charts` (+ `react-native-svg`, `expo-linear-gradient`, all Expo Go-compatible). Tested on-device by user.
+**Phase 4 (Progress & polish) — in progress.** Done: Progress tab (body weight log + chart, daily calories vs goal, workout volume per session; last 30 days) and exercise detail screen (`workouts/exercises/[exerciseId].tsx`: strength/cardio trend chart + per-workout set history, tap an exercise in the catalog). Charts use `react-native-gifted-charts` (+ `react-native-svg`, `expo-linear-gradient`, all Expo Go-compatible). Tested on-device by user.
 
 ## Environment
 
@@ -58,10 +58,10 @@ For any new tables, write new numbered migration files and ask the user to run t
 - An **in-progress workout** is a `workout_logs` row with `completed_at = null`. Sets are inserted as soon as they're added (not batched on finish), so a killed app loses nothing; the Workouts home shows a "Resume" button for it. Starting a new workout is hidden while one is in progress.
 - Templates are saved by deleting and re-inserting all `workout_template_exercises` rows (simpler than diffing).
 - Cardio sets store `duration_s` / `distance_m`; the UI shows minutes / km.
-- Query keys: `['exercises', userId]`, `['workoutTemplates', userId]`, `['workoutTemplate', id]`, `['workoutHistory', userId]`, `['workoutLog', id]`.
+- Query keys: `['exercises', userId]`, `['workoutTemplates', userId]`, `['workoutTemplate', id]`, `['workoutHistory', userId]`, `['workoutLog', id]`, `['exerciseHistory', userId, exerciseId]`.
 
 ## Next session should
 
 1. Read the plan doc's Phase 4 section.
-2. Build: exercise detail screen with per-exercise history (`src/app/(tabs)/workouts/exercises/[exerciseId].tsx`), template duplicate/reorder/archive.
+2. Remaining, in order: template duplicate/reorder/archive; macro (protein/carbs/fat) trends on Progress; forgot-password screen; food diary for past days (`food/day/[date].tsx`); profile settings screen.
 3. Deferred polish items: Supabase Site URL deep link for email verification (see gotchas).

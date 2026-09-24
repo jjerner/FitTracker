@@ -2,6 +2,7 @@ import { supabase } from './supabase';
 import type {
   Exercise,
   ExerciseCategory,
+  ExerciseSession,
   WorkoutLog,
   WorkoutLogSummary,
   WorkoutSet,
@@ -233,6 +234,32 @@ export async function getWorkoutHistory(userId: string): Promise<WorkoutLogSumma
     startedAt: row.started_at,
     completedAt: row.completed_at,
   }));
+}
+
+// Every completed workout where this exercise was done, newest first.
+export async function getExerciseHistory(
+  userId: string,
+  exerciseId: string
+): Promise<ExerciseSession[]> {
+  const { data, error } = await supabase
+    .from('workout_log_exercises')
+    .select('id, workout_logs!inner(id, started_at, completed_at, user_id), workout_log_sets(*)')
+    .eq('exercise_id', exerciseId)
+    .eq('workout_logs.user_id', userId)
+    .not('workout_logs.completed_at', 'is', null);
+
+  if (error) throw error;
+
+  return (data ?? [])
+    .map((le: any) => ({
+      logId: le.workout_logs.id,
+      startedAt: le.workout_logs.started_at,
+      sets: [...(le.workout_log_sets ?? [])]
+        .sort((a: any, b: any) => a.set_number - b.set_number)
+        .map(mapSetRow),
+    }))
+    .filter((session) => session.sets.length > 0)
+    .sort((a, b) => b.startedAt.localeCompare(a.startedAt));
 }
 
 export async function addExerciseToLog(input: {
