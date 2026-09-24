@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useMemo, useState } from 'react';
 import {
@@ -26,6 +26,7 @@ const MEAL_LABELS: Record<MealType, string> = {
 export default function FoodDetail() {
   const { foodId } = useLocalSearchParams<{ foodId: string }>();
   const { session } = useSession();
+  const queryClient = useQueryClient();
   const [grams, setGrams] = useState('100');
   const [mealType, setMealType] = useState<MealType>('snack');
   const [isSaving, setIsSaving] = useState(false);
@@ -52,14 +53,16 @@ export default function FoodDetail() {
     if (!food || !session) return;
     setIsSaving(true);
     try {
+      const loggedDate = todayLocalDate();
       await logFoodEntry({
         userId: session.user.id,
         food,
-        loggedDate: todayLocalDate(),
+        loggedDate,
         mealType,
         quantity: gramsNumber,
         quantityUnit: 'g',
       });
+      await queryClient.invalidateQueries({ queryKey: ['foodDiary', session.user.id, loggedDate] });
       router.dismissTo('/(tabs)/food');
     } finally {
       setIsSaving(false);
