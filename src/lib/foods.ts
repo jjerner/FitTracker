@@ -83,11 +83,13 @@ export async function createCustomFood(input: {
   fatG: number;
   fiberG: number | null;
   userId: string;
+  barcode?: string;
 }): Promise<Food> {
   const { data, error } = await supabase
     .from('foods')
     .insert({
       source: 'custom',
+      barcode: input.barcode ?? null,
       name: input.name,
       calories_kcal: input.caloriesKcal,
       protein_g: input.proteinG,

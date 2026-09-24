@@ -1,4 +1,4 @@
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import {
   ActivityIndicator,
@@ -16,6 +16,7 @@ import { createCustomFood } from '../../../../lib/foods';
 
 export default function NewCustomFood() {
   const { session } = useSession();
+  const { barcode } = useLocalSearchParams<{ barcode?: string }>();
   const [name, setName] = useState('');
   const [calories, setCalories] = useState('');
   const [protein, setProtein] = useState('');
@@ -40,6 +41,7 @@ export default function NewCustomFood() {
         fatG: Number(fat),
         fiberG: fiber !== '' ? Number(fiber) : null,
         userId: session.user.id,
+        barcode,
       });
       router.replace(`/(tabs)/food/food/${food.id}`);
     } catch {
@@ -54,7 +56,9 @@ export default function NewCustomFood() {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <ScrollView contentContainerStyle={styles.container}>
-        <Text style={styles.hint}>Enter nutrition per 100g.</Text>
+        <Text style={styles.hint}>
+          {barcode ? `Barcode ${barcode} wasn't found. ` : ''}Enter nutrition per 100g.
+        </Text>
 
         <TextInput style={styles.input} placeholder="Name" value={name} onChangeText={setName} />
         <TextInput

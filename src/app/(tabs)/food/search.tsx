@@ -61,6 +61,10 @@ export default function FoodSearch() {
         autoFocus
       />
 
+      <Pressable style={styles.scanButton} onPress={() => router.push('/(tabs)/food/scan')}>
+        <Text style={styles.scanButtonText}>Scan Barcode</Text>
+      </Pressable>
+
       {error ? <Text style={styles.error}>{error}</Text> : null}
       {isSearching ? <ActivityIndicator style={styles.loader} /> : null}
 
@@ -103,6 +107,14 @@ const styles = StyleSheet.create({
     fontSize: 16,
     marginBottom: 12,
   },
+  scanButton: {
+    backgroundColor: '#111827',
+    borderRadius: 8,
+    padding: 12,
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  scanButtonText: { color: '#fff', fontSize: 15, fontWeight: '600' },
   loader: { marginBottom: 12 },
   error: { color: '#dc2626', marginBottom: 12 },
   resultRow: {
