@@ -14,7 +14,7 @@ Full plan: `C:\Users\jerne\.claude\plans\help-me-plan-what-mellow-sketch.md`
 
 User asked to remove the calorie + macro charts from Progress and replace them with averages. Current version (`NutritionAveragesCard` in `src/app/(tabs)/progress.tsx`): a table of kcal/protein/carbs/fat averaged over the **last 7 / 30 / 90 logged days** (days with nothing logged skipped, today excluded, uses all logged days if fewer than N; data fetched for the last 365 days). User wants to look at this more next session — **not yet confirmed**. Iterations so far: (1) calendar windows with "–" for empty windows → rejected ("always a number"); (2) calendar windows with headers shrinking to history length → rejected, misunderstood; (3) current: last N logged days.
 
-Also this session (tested on-device by user):
+Also this session (not explicitly confirmed by user yet — re-check):
 - Nutrition Goals: calorie goal is no longer typed in — calculated as protein×4 + carbs×4 + fat×9 (`profile/goals.tsx`). Old saved calorie goals only update once the user re-saves.
 - Food tab totals show macro goals (`P 80/150g · …`); Progress does not show goals.
 - UX note: user found the Profile → "Nutrition Goals" button hard to see.
