@@ -4,12 +4,12 @@ import { useSession } from '../context/AuthProvider';
 import { localDateDaysAgo } from '../lib/dateUtils';
 import {
   getBodyWeights,
-  getDailyCalories,
+  getDailyNutrition,
   getWorkoutVolumes,
   upsertBodyWeight,
 } from '../lib/progress';
 
-// All progress charts cover the same window.
+// Window for the weight and volume charts.
 const RANGE_DAYS = 30;
 
 export function useBodyWeights() {
@@ -34,13 +34,15 @@ export function useBodyWeights() {
   return { ...query, saveWeight: saveMutation.mutate, isSaving: saveMutation.isPending };
 }
 
-export function useDailyCalories() {
+export function useDailyNutrition() {
   const { session } = useSession();
   const userId = session?.user.id;
 
   return useQuery({
-    queryKey: ['dailyCalories', userId],
-    queryFn: () => getDailyCalories(userId as string, localDateDaysAgo(RANGE_DAYS)),
+    queryKey: ['dailyNutrition', userId],
+    // Averages use the last 90 *logged* days, which can stretch further back
+    // than 90 calendar days; a year is plenty.
+    queryFn: () => getDailyNutrition(userId as string, localDateDaysAgo(365)),
     enabled: !!userId,
   });
 }

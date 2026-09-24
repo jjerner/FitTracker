@@ -106,9 +106,12 @@ export type BodyWeight = {
   weightKg: number;
 };
 
-export type DailyCalories = {
+export type DailyNutrition = {
   date: string;
   caloriesKcal: number;
+  proteinG: number;
+  carbsG: number;
+  fatG: number;
 };
 
 export type WorkoutVolume = {

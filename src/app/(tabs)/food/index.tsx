@@ -55,8 +55,10 @@ export default function FoodDiary() {
           {goals ? ` / ${goals.caloriesKcal}` : ''} kcal
         </Text>
         <Text style={styles.totalsMacros}>
-          P {Math.round(totals.protein)}g · C {Math.round(totals.carbs)}g · F{' '}
-          {Math.round(totals.fat)}g
+          P {Math.round(totals.protein)}
+          {goals ? `/${goals.proteinG}` : ''}g · C {Math.round(totals.carbs)}
+          {goals ? `/${goals.carbsG}` : ''}g · F {Math.round(totals.fat)}
+          {goals ? `/${goals.fatG}` : ''}g
         </Text>
       </View>
 

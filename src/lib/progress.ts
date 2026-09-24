@@ -1,5 +1,5 @@
 import { supabase } from './supabase';
-import type { BodyWeight, DailyCalories, WorkoutVolume } from '../types/domain';
+import type { BodyWeight, DailyNutrition, WorkoutVolume } from '../types/domain';
 
 export async function getBodyWeights(userId: string, sinceDate: string): Promise<BodyWeight[]> {
   const { data, error } = await supabase
@@ -28,25 +28,34 @@ export async function upsertBodyWeight(input: {
 }
 
 // Sums diary entries per day. Days with nothing logged are left out.
-export async function getDailyCalories(
+export async function getDailyNutrition(
   userId: string,
   sinceDate: string
-): Promise<DailyCalories[]> {
+): Promise<DailyNutrition[]> {
   const { data, error } = await supabase
     .from('food_log_entries')
-    .select('logged_date, calories_kcal')
+    .select('logged_date, calories_kcal, protein_g, carbs_g, fat_g')
     .eq('user_id', userId)
     .gte('logged_date', sinceDate);
 
   if (error) throw error;
 
-  const totals = new Map<string, number>();
+  const totals = new Map<string, DailyNutrition>();
   for (const row of data ?? []) {
-    totals.set(row.logged_date, (totals.get(row.logged_date) ?? 0) + Number(row.calories_kcal));
+    const day = totals.get(row.logged_date) ?? {
+      date: row.logged_date,
+      caloriesKcal: 0,
+      proteinG: 0,
+      carbsG: 0,
+      fatG: 0,
+    };
+    day.caloriesKcal += Number(row.calories_kcal);
+    day.proteinG += Number(row.protein_g);
+    day.carbsG += Number(row.carbs_g);
+    day.fatG += Number(row.fat_g);
+    totals.set(row.logged_date, day);
   }
-  return [...totals.entries()]
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([date, caloriesKcal]) => ({ date, caloriesKcal }));
+  return [...totals.values()].sort((a, b) => a.date.localeCompare(b.date));
 }
 
 // Volume = sum of weight × reps over all strength sets in a completed workout.

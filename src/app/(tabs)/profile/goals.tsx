@@ -46,20 +46,23 @@ function GoalsForm({
   initialGoals: NutritionGoals;
   onSave: (goals: NutritionGoals, options: { onSuccess: () => void; onSettled: () => void }) => void;
 }) {
-  const [calories, setCalories] = useState(String(initialGoals.caloriesKcal));
   const [protein, setProtein] = useState(String(initialGoals.proteinG));
   const [carbs, setCarbs] = useState(String(initialGoals.carbsG));
   const [fat, setFat] = useState(String(initialGoals.fatG));
   const [isSaving, setIsSaving] = useState(false);
 
-  const isValid = calories !== '' && protein !== '' && carbs !== '' && fat !== '';
+  const isValid = protein !== '' && carbs !== '' && fat !== '';
+  // Calories follow from the macros: 4 kcal/g protein and carbs, 9 kcal/g fat.
+  const calories = Math.round(
+    (Number(protein) || 0) * 4 + (Number(carbs) || 0) * 4 + (Number(fat) || 0) * 9
+  );
 
   function handleSave() {
     if (!isValid) return;
     setIsSaving(true);
     onSave(
       {
-        caloriesKcal: Number(calories),
+        caloriesKcal: calories,
         proteinG: Number(protein),
         carbsG: Number(carbs),
         fatG: Number(fat),
@@ -74,14 +77,6 @@ function GoalsForm({
 
   return (
     <View style={styles.container}>
-      <Text style={styles.label}>Daily Calories (kcal)</Text>
-      <TextInput
-        style={styles.input}
-        keyboardType="numeric"
-        value={calories}
-        onChangeText={setCalories}
-      />
-
       <Text style={styles.label}>Protein (g)</Text>
       <TextInput
         style={styles.input}
@@ -95,6 +90,10 @@ function GoalsForm({
 
       <Text style={styles.label}>Fat (g)</Text>
       <TextInput style={styles.input} keyboardType="numeric" value={fat} onChangeText={setFat} />
+
+      <Text style={styles.label}>Daily Calories</Text>
+      <Text style={styles.calories}>{calories} kcal</Text>
+      <Text style={styles.hint}>Calculated: protein × 4 + carbs × 4 + fat × 9</Text>
 
       <Pressable
         style={[styles.saveButton, !isValid && styles.saveButtonDisabled]}
@@ -122,6 +121,8 @@ const styles = StyleSheet.create({
     padding: 14,
     fontSize: 16,
   },
+  calories: { fontSize: 20, fontWeight: '700' },
+  hint: { fontSize: 13, color: '#6b7280', marginTop: 4 },
   saveButton: {
     backgroundColor: '#2563eb',
     borderRadius: 8,

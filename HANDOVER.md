@@ -8,7 +8,16 @@ Full plan: `C:\Users\jerne\.claude\plans\help-me-plan-what-mellow-sketch.md`
 **Phase 1 (Foundation) — done.** Expo Router, Supabase email/password auth, tab shell.
 **Phase 2 (Food logging) — done.** Manual search, barcode scanning, diary, custom foods, nutrition goals.
 **Phase 3 (Workout logging) — done.** Exercise catalog (seeded + custom), template CRUD, active workout logging, session summary + history. Tested on-device by user.
-**Phase 4 (Progress & polish) — in progress.** Done: Progress tab (body weight log + chart, daily calories vs goal, workout volume per session; last 30 days) and exercise detail screen (`workouts/exercises/[exerciseId].tsx`: strength/cardio trend chart + per-workout set history, tap an exercise in the catalog). Charts use `react-native-gifted-charts` (+ `react-native-svg`, `expo-linear-gradient`, all Expo Go-compatible). Template tools: reorder exercises (↑/↓), duplicate (copies unsaved form state), archive/unarchive (hidden behind "Show archived"). All tested on-device by user.
+**Phase 4 (Progress & polish) — in progress.** Done: Progress tab (body weight log + chart, workout volume per session; last 30 days — plus a nutrition averages table, see below) and exercise detail screen (`workouts/exercises/[exerciseId].tsx`: strength/cardio trend chart + per-workout set history, tap an exercise in the catalog). Charts use `react-native-gifted-charts` (+ `react-native-svg`, `expo-linear-gradient`, all Expo Go-compatible). Template tools: reorder exercises (↑/↓), duplicate (copies unsaved form state), archive/unarchive (hidden behind "Show archived"). All tested on-device by user.
+
+### Open: nutrition averages (revisit next session)
+
+User asked to remove the calorie + macro charts from Progress and replace them with averages. Current version (`NutritionAveragesCard` in `src/app/(tabs)/progress.tsx`): a table of kcal/protein/carbs/fat averaged over the **last 7 / 30 / 90 logged days** (days with nothing logged skipped, today excluded, uses all logged days if fewer than N; data fetched for the last 365 days). User wants to look at this more next session — **not yet confirmed**. Iterations so far: (1) calendar windows with "–" for empty windows → rejected ("always a number"); (2) calendar windows with headers shrinking to history length → rejected, misunderstood; (3) current: last N logged days.
+
+Also this session (tested on-device by user):
+- Nutrition Goals: calorie goal is no longer typed in — calculated as protein×4 + carbs×4 + fat×9 (`profile/goals.tsx`). Old saved calorie goals only update once the user re-saves.
+- Food tab totals show macro goals (`P 80/150g · …`); Progress does not show goals.
+- UX note: user found the Profile → "Nutrition Goals" button hard to see.
 
 ## Environment
 
@@ -59,10 +68,11 @@ For any new tables, write new numbered migration files and ask the user to run t
 - An **in-progress workout** is a `workout_logs` row with `completed_at = null`. Sets are inserted as soon as they're added (not batched on finish), so a killed app loses nothing; the Workouts home shows a "Resume" button for it. Starting a new workout is hidden while one is in progress.
 - Templates are saved by deleting and re-inserting all `workout_template_exercises` rows (simpler than diffing).
 - Cardio sets store `duration_s` / `distance_m`; the UI shows minutes / km.
-- Query keys: `['exercises', userId]`, `['workoutTemplates', userId]`, `['workoutTemplate', id]`, `['workoutHistory', userId]`, `['workoutLog', id]`, `['exerciseHistory', userId, exerciseId]`.
+- Query keys: `['exercises', userId]`, `['workoutTemplates', userId]`, `['workoutTemplate', id]`, `['workoutHistory', userId]`, `['workoutLog', id]`, `['exerciseHistory', userId, exerciseId]`. Progress: `['bodyWeights', userId]`, `['dailyNutrition', userId]`, `['workoutVolumes', userId]` (the latter two are invalidated whenever the Progress tab gains focus).
 
 ## Next session should
 
 1. Read the plan doc's Phase 4 section.
-2. Remaining, in order: macro (protein/carbs/fat) trends on Progress; forgot-password screen; food diary for past days (`food/day/[date].tsx`); profile settings screen.
-3. Deferred polish items: Supabase Site URL deep link for email verification (see gotchas).
+2. Revisit the nutrition averages table with the user (see "Open" above).
+3. Remaining, in order: past-days food diary (`food/day/[date].tsx`) — moved up, the user needs it to verify averages; forgot-password screen; profile settings screen.
+4. Deferred polish items: Supabase Site URL deep link for email verification (see gotchas).

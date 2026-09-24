@@ -13,8 +13,7 @@ import {
 } from 'react-native';
 import { BarChart, LineChart } from 'react-native-gifted-charts';
 
-import { useNutritionGoals } from '../../hooks/useNutritionGoals';
-import { useBodyWeights, useDailyCalories, useWorkoutVolumes } from '../../hooks/useProgress';
+import { useBodyWeights, useDailyNutrition, useWorkoutVolumes } from '../../hooks/useProgress';
 import { todayLocalDate } from '../../lib/dateUtils';
 
 // "2026-09-24" -> "24/9"
@@ -38,7 +37,7 @@ export default function Progress() {
   // Food and workouts are logged on other tabs, so refresh when coming back here.
   useFocusEffect(
     useCallback(() => {
-      queryClient.invalidateQueries({ queryKey: ['dailyCalories'] });
+      queryClient.invalidateQueries({ queryKey: ['dailyNutrition'] });
       queryClient.invalidateQueries({ queryKey: ['workoutVolumes'] });
     }, [queryClient])
   );
@@ -46,7 +45,7 @@ export default function Progress() {
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <WeightCard chartWidth={chartWidth} />
-      <CaloriesCard chartWidth={chartWidth} />
+      <NutritionAveragesCard />
       <VolumeCard chartWidth={chartWidth} />
     </ScrollView>
   );
@@ -127,46 +126,63 @@ function WeightCard({ chartWidth }: { chartWidth: number }) {
   );
 }
 
-function CaloriesCard({ chartWidth }: { chartWidth: number }) {
-  const { data: days, isLoading } = useDailyCalories();
-  const { data: goals } = useNutritionGoals();
+const NUTRIENTS = [
+  { key: 'caloriesKcal', label: 'Calories', unit: 'kcal' },
+  { key: 'proteinG', label: 'Protein', unit: 'g' },
+  { key: 'carbsG', label: 'Carbs', unit: 'g' },
+  { key: 'fatG', label: 'Fat', unit: 'g' },
+] as const;
 
-  const points = days ?? [];
-  const goal = goals?.caloriesKcal;
-  const maxValue =
-    Math.ceil((Math.max(goal ?? 0, ...points.map((d) => d.caloriesKcal)) * 1.1) / 100) * 100;
-  const barSpacing = 4;
-  const barWidth = Math.max(4, chartWidth / Math.max(points.length, 1) - barSpacing);
+const WINDOWS = [7, 30, 90];
+
+function NutritionAveragesCard() {
+  const { data: days, isLoading } = useDailyNutrition();
+
+  // Averages over the last N *logged* days (today excluded, it's still being
+  // logged). With fewer logged days than N, all of them are used.
+  const today = todayLocalDate();
+  const pastDays = (days ?? []).filter((d) => d.date < today);
+  const windows = WINDOWS.map((n) => pastDays.slice(-n));
 
   return (
     <View style={styles.card}>
-      <Text style={styles.cardTitle}>Calories (last 30 days)</Text>
-      {goal != null && <Text style={styles.cardSubtitle}>Dashed line = goal ({goal} kcal)</Text>}
+      <Text style={styles.cardTitle}>Nutrition averages (per day)</Text>
+      <Text style={styles.cardSubtitle}>Over your last 7 / 30 / 90 logged days, excluding today</Text>
 
       {isLoading ? (
         <ActivityIndicator />
-      ) : points.length === 0 ? (
-        <Text style={styles.empty}>No food logged in the last 30 days.</Text>
+      ) : pastDays.length === 0 ? (
+        <Text style={styles.empty}>No food logged before today yet.</Text>
       ) : (
-        <BarChart
-          data={points.map((d, i) => ({
-            value: Math.round(d.caloriesKcal),
-            label: sparseLabel(i, points.length, d.date),
-            frontColor: goal != null && d.caloriesKcal > goal ? '#f97316' : '#22c55e',
-          }))}
-          width={chartWidth}
-          height={160}
-          barWidth={barWidth}
-          spacing={barSpacing}
-          initialSpacing={barSpacing}
-          maxValue={maxValue}
-          noOfSections={4}
-          showReferenceLine1={goal != null}
-          referenceLine1Position={goal ?? 0}
-          referenceLine1Config={{ color: '#6b7280', dashWidth: 4, dashGap: 4 }}
-          xAxisLabelTextStyle={styles.axisLabel}
-          yAxisTextStyle={styles.axisLabel}
-        />
+        <View>
+          <View style={styles.tableRow}>
+            <Text style={styles.tableLabel} />
+            {WINDOWS.map((n) => (
+              <Text key={n} style={styles.tableHeader}>
+                {n} days
+              </Text>
+            ))}
+          </View>
+          {NUTRIENTS.map((nutrient) => (
+            <View key={nutrient.key} style={styles.tableRow}>
+              <Text style={styles.tableLabel}>{nutrient.label}</Text>
+              {windows.map((w, i) => (
+                <Text key={WINDOWS[i]} style={styles.tableCell}>
+                  {Math.round(w.reduce((sum, d) => sum + d[nutrient.key], 0) / w.length)}{' '}
+                  {nutrient.unit}
+                </Text>
+              ))}
+            </View>
+          ))}
+          <View style={styles.tableRow}>
+            <Text style={styles.tableLabel} />
+            {windows.map((w, i) => (
+              <Text key={WINDOWS[i]} style={styles.tableFootnote}>
+                {w.length} logged
+              </Text>
+            ))}
+          </View>
+        </View>
       )}
     </View>
   );
@@ -220,6 +236,11 @@ const styles = StyleSheet.create({
   cardSubtitle: { fontSize: 13, color: '#6b7280' },
   empty: { fontSize: 14, color: '#6b7280', paddingVertical: 16 },
   axisLabel: { fontSize: 10, color: '#6b7280' },
+  tableRow: { flexDirection: 'row', paddingVertical: 6 },
+  tableLabel: { flex: 1.2, fontSize: 14, color: '#374151' },
+  tableHeader: { flex: 1, fontSize: 13, color: '#6b7280', textAlign: 'right' },
+  tableCell: { flex: 1, fontSize: 14, fontWeight: '600', textAlign: 'right' },
+  tableFootnote: { flex: 1, fontSize: 11, color: '#9ca3af', textAlign: 'right' },
   inputRow: { flexDirection: 'row', gap: 8, marginBottom: 8 },
   input: {
     flex: 1,
