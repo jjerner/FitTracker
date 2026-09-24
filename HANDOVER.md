@@ -7,7 +7,7 @@ Full plan: `C:\Users\jerne\.claude\plans\help-me-plan-what-mellow-sketch.md`
 
 **Phase 1 (Foundation) — done.** Expo Router, Supabase email/password auth, tab shell.
 **Phase 2 (Food logging) — done.** Manual search, barcode scanning, diary, custom foods, nutrition goals.
-**Phase 3 (Workout logging) — done.** Exercise catalog (seeded + custom), template CRUD, active workout logging, session summary + history. Tested on-device by user.
+**Phase 3 (Workout logging) — done.** Exercise catalog (seeded + custom), template CRUD, active workout logging, session summary + history. Template tools: reorder exercises (↑/↓), duplicate (copies unsaved form state), archive/unarchive (hidden behind "Show archived"). All tested on-device by user.
 **Phase 4 (Progress & polish) — in progress.** Done: Progress tab (body weight log + chart, daily calories vs goal, workout volume per session; last 30 days) and exercise detail screen (`workouts/exercises/[exerciseId].tsx`: strength/cardio trend chart + per-workout set history, tap an exercise in the catalog). Charts use `react-native-gifted-charts` (+ `react-native-svg`, `expo-linear-gradient`, all Expo Go-compatible). Tested on-device by user.
 
 ## Environment
@@ -30,6 +30,7 @@ Migrations live in `supabase/migrations/*.sql`, applied manually by pasting into
 - `0003_fix_foods_barcode_unique.sql`
 - `0004_workouts.sql` (exercises + 34 seeded rows, workout_templates/_exercises, workout_logs/_exercises/_sets)
 - `0005_body_weights.sql` (body_weights, one row per user per day)
+- `0006_archive_templates.sql` (workout_templates.archived_at)
 
 For any new tables, write new numbered migration files and ask the user to run them the same way.
 
@@ -63,5 +64,5 @@ For any new tables, write new numbered migration files and ask the user to run t
 ## Next session should
 
 1. Read the plan doc's Phase 4 section.
-2. Remaining, in order: template duplicate/reorder/archive; macro (protein/carbs/fat) trends on Progress; forgot-password screen; food diary for past days (`food/day/[date].tsx`); profile settings screen.
+2. Remaining, in order: macro (protein/carbs/fat) trends on Progress; forgot-password screen; food diary for past days (`food/day/[date].tsx`); profile settings screen.
 3. Deferred polish items: Supabase Site URL deep link for email verification (see gotchas).

@@ -97,7 +97,7 @@ function mapTemplateRow(row: any): WorkoutTemplate {
       })
     );
 
-  return { id: row.id, name: row.name, exercises };
+  return { id: row.id, name: row.name, isArchived: row.archived_at != null, exercises };
 }
 
 // Creates the template if `id` is null, otherwise updates it. Exercises are
@@ -151,6 +151,14 @@ export async function saveTemplate(input: {
 
 export async function deleteTemplate(id: string): Promise<void> {
   const { error } = await supabase.from('workout_templates').delete().eq('id', id);
+  if (error) throw error;
+}
+
+export async function setTemplateArchived(id: string, archived: boolean): Promise<void> {
+  const { error } = await supabase
+    .from('workout_templates')
+    .update({ archived_at: archived ? new Date().toISOString() : null })
+    .eq('id', id);
   if (error) throw error;
 }
 

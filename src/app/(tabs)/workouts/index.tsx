@@ -21,9 +21,12 @@ export default function WorkoutsHome() {
   const { data: templates, isLoading: templatesLoading } = useWorkoutTemplates();
   const { data: history, isLoading: historyLoading } = useWorkoutHistory();
   const [isStarting, setIsStarting] = useState(false);
+  const [showArchived, setShowArchived] = useState(false);
 
   const activeWorkout = history?.find((log) => log.completedAt == null);
   const completed = (history ?? []).filter((log) => log.completedAt != null);
+  const activeTemplates = (templates ?? []).filter((t) => !t.isArchived);
+  const archivedTemplates = (templates ?? []).filter((t) => t.isArchived);
 
   async function handleStart(template: WorkoutTemplate | null) {
     if (!session) return;
@@ -71,10 +74,10 @@ export default function WorkoutsHome() {
       )}
 
       <Text style={styles.sectionTitle}>Templates</Text>
-      {(templates ?? []).length === 0 ? (
+      {activeTemplates.length === 0 ? (
         <Text style={styles.emptyText}>No templates yet</Text>
       ) : (
-        (templates ?? []).map((template) => (
+        activeTemplates.map((template) => (
           <Pressable
             key={template.id}
             style={styles.row}
@@ -96,6 +99,27 @@ export default function WorkoutsHome() {
           </Pressable>
         ))
       )}
+      {archivedTemplates.length > 0 ? (
+        <Pressable style={styles.archivedToggle} onPress={() => setShowArchived((v) => !v)}>
+          <Text style={styles.archivedToggleText}>
+            {showArchived ? 'Hide' : 'Show'} archived ({archivedTemplates.length})
+          </Text>
+        </Pressable>
+      ) : null}
+      {showArchived
+        ? archivedTemplates.map((template) => (
+            <Pressable
+              key={template.id}
+              style={styles.row}
+              onPress={() => router.push(`/(tabs)/workouts/${template.id}`)}
+            >
+              <View style={styles.rowInfo}>
+                <Text style={[styles.rowTitle, styles.archivedTitle]}>{template.name}</Text>
+                <Text style={styles.rowMeta}>Archived · {template.exercises.length} exercises</Text>
+              </View>
+            </Pressable>
+          ))
+        : null}
       <Pressable
         style={styles.secondaryButton}
         onPress={() => router.push('/(tabs)/workouts/new')}
@@ -161,6 +185,9 @@ const styles = StyleSheet.create({
   rowInfo: { flex: 1 },
   rowTitle: { fontSize: 15, fontWeight: '500' },
   rowMeta: { fontSize: 13, color: '#888' },
+  archivedTitle: { color: '#888' },
+  archivedToggle: { paddingVertical: 10 },
+  archivedToggleText: { color: '#2563eb', fontSize: 14 },
   startChip: {
     backgroundColor: '#2563eb',
     borderRadius: 16,

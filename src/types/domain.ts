@@ -59,6 +59,7 @@ export type WorkoutTemplateExercise = {
 export type WorkoutTemplate = {
   id: string;
   name: string;
+  isArchived: boolean;
   exercises: WorkoutTemplateExercise[];
 };
 

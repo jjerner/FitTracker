@@ -15,7 +15,7 @@ import {
 import { ExercisePicker } from '../../../components/workouts/ExercisePicker';
 import { useSession } from '../../../context/AuthProvider';
 import { useWorkoutTemplate } from '../../../hooks/useWorkouts';
-import { deleteTemplate, saveTemplate } from '../../../lib/workouts';
+import { deleteTemplate, saveTemplate, setTemplateArchived } from '../../../lib/workouts';
 import type { WorkoutTemplate, WorkoutTemplateExercise } from '../../../types/domain';
 
 export default function TemplateScreen() {
@@ -68,6 +68,23 @@ function TemplateForm({ template }: { template: WorkoutTemplate | null }) {
     setExercises((prev) => prev.map((e, i) => (i === index ? { ...e, ...patch } : e)));
   }
 
+  function moveExercise(index: number, direction: -1 | 1) {
+    setExercises((prev) => {
+      const next = [...prev];
+      [next[index], next[index + direction]] = [next[index + direction], next[index]];
+      return next;
+    });
+  }
+
+  function draftToTemplateExercises(): WorkoutTemplateExercise[] {
+    return exercises.map((e) => ({
+      exercise: e.exercise,
+      targetSets: toNumberOrNull(e.sets),
+      targetReps: toNumberOrNull(e.reps),
+      targetWeightKg: toNumberOrNull(e.weight),
+    }));
+  }
+
   async function invalidate() {
     await queryClient.invalidateQueries({ queryKey: ['workoutTemplates', session?.user.id] });
     if (template) {
@@ -88,17 +105,48 @@ function TemplateForm({ template }: { template: WorkoutTemplate | null }) {
         id: template?.id ?? null,
         userId: session.user.id,
         name: name.trim(),
-        exercises: exercises.map((e) => ({
-          exercise: e.exercise,
-          targetSets: toNumberOrNull(e.sets),
-          targetReps: toNumberOrNull(e.reps),
-          targetWeightKg: toNumberOrNull(e.weight),
-        })),
+        exercises: draftToTemplateExercises(),
       });
       await invalidate();
       router.back();
     } catch {
       setError('Could not save. Try again.');
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
+  // Copies what's currently in the form, including unsaved edits.
+  async function handleDuplicate() {
+    if (!session) return;
+    setIsSaving(true);
+    setError(null);
+    try {
+      const newId = await saveTemplate({
+        id: null,
+        userId: session.user.id,
+        name: `${name.trim() || 'Template'} (copy)`,
+        exercises: draftToTemplateExercises(),
+      });
+      await invalidate();
+      router.replace(`/(tabs)/workouts/${newId}`);
+    } catch {
+      setError('Could not duplicate. Try again.');
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
+  async function handleToggleArchived() {
+    if (!template) return;
+    setIsSaving(true);
+    setError(null);
+    try {
+      await setTemplateArchived(template.id, !template.isArchived);
+      await invalidate();
+      router.back();
+    } catch {
+      setError('Could not update. Try again.');
     } finally {
       setIsSaving(false);
     }
@@ -141,6 +189,24 @@ function TemplateForm({ template }: { template: WorkoutTemplate | null }) {
           <View style={styles.exerciseHeader}>
             <Text style={styles.exerciseName}>{e.exercise.name}</Text>
             <Pressable
+              style={styles.moveButton}
+              onPress={() => moveExercise(index, -1)}
+              disabled={index === 0}
+            >
+              <Text style={index === 0 ? styles.moveTextDisabled : styles.moveText}>↑</Text>
+            </Pressable>
+            <Pressable
+              style={styles.moveButton}
+              onPress={() => moveExercise(index, 1)}
+              disabled={index === exercises.length - 1}
+            >
+              <Text
+                style={index === exercises.length - 1 ? styles.moveTextDisabled : styles.moveText}
+              >
+                ↓
+              </Text>
+            </Pressable>
+            <Pressable
               onPress={() => setExercises((prev) => prev.filter((_, i) => i !== index))}
             >
               <Text style={styles.removeText}>Remove</Text>
@@ -169,6 +235,23 @@ function TemplateForm({ template }: { template: WorkoutTemplate | null }) {
           <Text style={styles.saveButtonText}>Save Template</Text>
         )}
       </Pressable>
+
+      {template ? (
+        <>
+          <Pressable style={styles.secondaryButton} onPress={handleDuplicate} disabled={isSaving}>
+            <Text style={styles.secondaryButtonText}>Duplicate</Text>
+          </Pressable>
+          <Pressable
+            style={styles.secondaryButton}
+            onPress={handleToggleArchived}
+            disabled={isSaving}
+          >
+            <Text style={styles.secondaryButtonText}>
+              {template.isArchived ? 'Unarchive' : 'Archive'}
+            </Text>
+          </Pressable>
+        </>
+      ) : null}
 
       {template ? (
         <Pressable style={styles.deleteButton} onPress={handleDelete}>
@@ -230,7 +313,10 @@ const styles = StyleSheet.create({
   },
   exerciseHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   exerciseName: { fontSize: 15, fontWeight: '600', flex: 1 },
-  removeText: { color: '#dc2626' },
+  removeText: { color: '#dc2626', marginLeft: 8 },
+  moveButton: { paddingHorizontal: 8, paddingVertical: 2 },
+  moveText: { fontSize: 18, color: '#2563eb' },
+  moveTextDisabled: { fontSize: 18, color: '#ccc' },
   targetsRow: { flexDirection: 'row', gap: 8, marginTop: 8 },
   targetField: { flex: 1 },
   targetLabel: { fontSize: 12, color: '#555', marginBottom: 4 },
