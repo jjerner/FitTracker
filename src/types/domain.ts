@@ -37,3 +37,59 @@ export type NutritionGoals = {
   fatG: number;
   fiberG: number | null;
 };
+
+export type ExerciseCategory = 'strength' | 'cardio';
+
+export type Exercise = {
+  id: string;
+  name: string;
+  category: ExerciseCategory;
+  muscleGroup: string | null;
+  equipment: string | null;
+  isCustom: boolean;
+};
+
+export type WorkoutTemplateExercise = {
+  exercise: Exercise;
+  targetSets: number | null;
+  targetReps: number | null;
+  targetWeightKg: number | null;
+};
+
+export type WorkoutTemplate = {
+  id: string;
+  name: string;
+  exercises: WorkoutTemplateExercise[];
+};
+
+export type WorkoutSet = {
+  id: string;
+  setNumber: number;
+  weightKg: number | null;
+  reps: number | null;
+  durationS: number | null;
+  distanceM: number | null;
+};
+
+export type WorkoutLogExercise = {
+  id: string;
+  exercise: Exercise;
+  position: number;
+  sets: WorkoutSet[];
+};
+
+export type WorkoutLog = {
+  id: string;
+  templateId: string | null;
+  name: string;
+  startedAt: string;
+  completedAt: string | null;
+  exercises: WorkoutLogExercise[];
+};
+
+export type WorkoutLogSummary = {
+  id: string;
+  name: string;
+  startedAt: string;
+  completedAt: string | null;
+};

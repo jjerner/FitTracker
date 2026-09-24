@@ -7,8 +7,8 @@ Full plan: `C:\Users\jerne\.claude\plans\help-me-plan-what-mellow-sketch.md`
 
 **Phase 1 (Foundation) — done.** Expo Router, Supabase email/password auth, tab shell.
 **Phase 2 (Food logging) — done.** Manual search, barcode scanning, diary, custom foods, nutrition goals.
-**Phase 3 (Workout logging) — not started.** Next up: exercise catalog, templates, active workout sessions, session history. See plan doc for schema/screens.
-**Phase 4 (Progress & polish) — not started.**
+**Phase 3 (Workout logging) — done.** Exercise catalog (seeded + custom), template CRUD, active workout logging, session summary + history. Tested on-device by user.
+**Phase 4 (Progress & polish) — not started.** Next up.
 
 ## Environment
 
@@ -28,8 +28,9 @@ Migrations live in `supabase/migrations/*.sql`, applied manually by pasting into
 - `0001_profiles.sql`
 - `0002_food.sql`
 - `0003_fix_foods_barcode_unique.sql`
+- `0004_workouts.sql` (exercises + 34 seeded rows, workout_templates/_exercises, workout_logs/_exercises/_sets)
 
-**When adding Phase 3 tables**, write new numbered migration files and ask the user to run them the same way.
+For any new tables, write new numbered migration files and ask the user to run them the same way.
 
 ## Known gotchas hit this session
 
@@ -43,12 +44,22 @@ Migrations live in `supabase/migrations/*.sql`, applied manually by pasting into
 - `src/lib/supabase.ts` — Supabase client
 - `src/lib/foods.ts` — data access for foods/food_log_entries/nutrition_goals
 - `src/lib/openFoodFacts.ts` — Open Food Facts API client
+- `src/lib/workouts.ts` — data access for exercises/templates/workout logs (+ `formatSet` helper)
+- `src/components/workouts/` — `ExerciseList` (search list) and `ExercisePicker` (modal wrapper)
 - `src/hooks/` — React Query hooks per feature
 - `src/context/AuthProvider.tsx` — session state
 - No Redux/Zustand — React Query + Context only, per plan.
 
+## Workout design notes
+
+- An **in-progress workout** is a `workout_logs` row with `completed_at = null`. Sets are inserted as soon as they're added (not batched on finish), so a killed app loses nothing; the Workouts home shows a "Resume" button for it. Starting a new workout is hidden while one is in progress.
+- Templates are saved by deleting and re-inserting all `workout_template_exercises` rows (simpler than diffing).
+- Cardio sets store `duration_s` / `distance_m`; the UI shows minutes / km.
+- Query keys: `['exercises', userId]`, `['workoutTemplates', userId]`, `['workoutTemplate', id]`, `['workoutHistory', userId]`, `['workoutLog', id]`.
+
 ## Next session should
 
-1. Read the plan doc's Phase 3 section (exercise catalog, templates, active workout logging, schema for `exercises`/`workout_templates`/`workout_logs`/`workout_log_sets`).
-2. Write `0004_workouts.sql` migration, have user run it.
-3. Build exercise catalog + template CRUD + active workout screen, following the same pattern as food logging (lib data-access file, hooks, screens under `src/app/(tabs)/workouts/`).
+1. Read the plan doc's Phase 4 section.
+2. Pick a charting library — verify the current best option against SDK 57 docs (candidates in plan: `victory-native`, `react-native-gifted-charts`); install with `npx expo install`, run `npx expo-doctor`.
+3. Build: Progress tab charts (body weight — needs a weight table/migration, macro trends, workout volume), exercise detail screen with per-exercise history (`src/app/(tabs)/workouts/exercises/[exerciseId].tsx`), template duplicate/reorder/archive.
+4. Deferred polish items: Supabase Site URL deep link for email verification (see gotchas).
