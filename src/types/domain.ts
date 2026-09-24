@@ -93,3 +93,19 @@ export type WorkoutLogSummary = {
   startedAt: string;
   completedAt: string | null;
 };
+
+export type BodyWeight = {
+  date: string;
+  weightKg: number;
+};
+
+export type DailyCalories = {
+  date: string;
+  caloriesKcal: number;
+};
+
+export type WorkoutVolume = {
+  id: string;
+  startedAt: string;
+  volumeKg: number;
+};

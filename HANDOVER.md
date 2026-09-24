@@ -8,7 +8,7 @@ Full plan: `C:\Users\jerne\.claude\plans\help-me-plan-what-mellow-sketch.md`
 **Phase 1 (Foundation) — done.** Expo Router, Supabase email/password auth, tab shell.
 **Phase 2 (Food logging) — done.** Manual search, barcode scanning, diary, custom foods, nutrition goals.
 **Phase 3 (Workout logging) — done.** Exercise catalog (seeded + custom), template CRUD, active workout logging, session summary + history. Tested on-device by user.
-**Phase 4 (Progress & polish) — not started.** Next up.
+**Phase 4 (Progress & polish) — in progress.** Done: Progress tab (body weight log + chart, daily calories vs goal, workout volume per session; last 30 days). Charts use `react-native-gifted-charts` (+ `react-native-svg`, `expo-linear-gradient`, all Expo Go-compatible). Tested on-device by user.
 
 ## Environment
 
@@ -29,6 +29,7 @@ Migrations live in `supabase/migrations/*.sql`, applied manually by pasting into
 - `0002_food.sql`
 - `0003_fix_foods_barcode_unique.sql`
 - `0004_workouts.sql` (exercises + 34 seeded rows, workout_templates/_exercises, workout_logs/_exercises/_sets)
+- `0005_body_weights.sql` (body_weights, one row per user per day)
 
 For any new tables, write new numbered migration files and ask the user to run them the same way.
 
@@ -36,6 +37,7 @@ For any new tables, write new numbered migration files and ask the user to run t
 
 - Supabase's default "Site URL" is `localhost:3000`, so the email-verification link redirects to a dead localhost page after confirming. Cosmetic only — verification succeeds before the redirect. Planned fix: point it at a proper deep link in Phase 4 polish.
 - A `.upsert(..., { onConflict: 'barcode' })` needs a **non-partial** unique constraint on that column — a partial index (`WHERE barcode IS NOT NULL`) doesn't work as an ON CONFLICT target. Fixed in `0003`. Keep this in mind for any future upsert-by-nullable-column tables.
+- `npm install` currently fails with ERESOLVE: the lockfile has optional `react-dom@19.3.0` (web-only) vs `react@19.2.3`. Workaround: `npx expo install <pkg> -- --legacy-peer-deps`.
 - After any direct Supabase write that isn't done through a React Query mutation hook, remember to `queryClient.invalidateQueries(...)` the relevant key or the UI won't reflect it (hit this with the food diary).
 
 ## Architecture quick reference
@@ -44,6 +46,7 @@ For any new tables, write new numbered migration files and ask the user to run t
 - `src/lib/supabase.ts` — Supabase client
 - `src/lib/foods.ts` — data access for foods/food_log_entries/nutrition_goals
 - `src/lib/openFoodFacts.ts` — Open Food Facts API client
+- `src/lib/progress.ts` — body weights + chart data (daily calories, workout volume); hooks in `src/hooks/useProgress.ts`
 - `src/lib/workouts.ts` — data access for exercises/templates/workout logs (+ `formatSet` helper)
 - `src/components/workouts/` — `ExerciseList` (search list) and `ExercisePicker` (modal wrapper)
 - `src/hooks/` — React Query hooks per feature
@@ -60,6 +63,5 @@ For any new tables, write new numbered migration files and ask the user to run t
 ## Next session should
 
 1. Read the plan doc's Phase 4 section.
-2. Pick a charting library — verify the current best option against SDK 57 docs (candidates in plan: `victory-native`, `react-native-gifted-charts`); install with `npx expo install`, run `npx expo-doctor`.
-3. Build: Progress tab charts (body weight — needs a weight table/migration, macro trends, workout volume), exercise detail screen with per-exercise history (`src/app/(tabs)/workouts/exercises/[exerciseId].tsx`), template duplicate/reorder/archive.
-4. Deferred polish items: Supabase Site URL deep link for email verification (see gotchas).
+2. Build: exercise detail screen with per-exercise history (`src/app/(tabs)/workouts/exercises/[exerciseId].tsx`), template duplicate/reorder/archive.
+3. Deferred polish items: Supabase Site URL deep link for email verification (see gotchas).
