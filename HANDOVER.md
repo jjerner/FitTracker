@@ -7,8 +7,8 @@ Full plan: `C:\Users\jerne\.claude\plans\help-me-plan-what-mellow-sketch.md`
 
 **Phase 1 (Foundation) — done.** Expo Router, Supabase email/password auth, tab shell.
 **Phase 2 (Food logging) — done.** Manual search, barcode scanning, diary, custom foods, nutrition goals.
-**Phase 3 (Workout logging) — done.** Exercise catalog (seeded + custom), template CRUD, active workout logging, session summary + history. Template tools: reorder exercises (↑/↓), duplicate (copies unsaved form state), archive/unarchive (hidden behind "Show archived"). All tested on-device by user.
-**Phase 4 (Progress & polish) — in progress.** Done: Progress tab (body weight log + chart, daily calories vs goal, workout volume per session; last 30 days) and exercise detail screen (`workouts/exercises/[exerciseId].tsx`: strength/cardio trend chart + per-workout set history, tap an exercise in the catalog). Charts use `react-native-gifted-charts` (+ `react-native-svg`, `expo-linear-gradient`, all Expo Go-compatible). Tested on-device by user.
+**Phase 3 (Workout logging) — done.** Exercise catalog (seeded + custom), template CRUD, active workout logging, session summary + history. Tested on-device by user.
+**Phase 4 (Progress & polish) — in progress.** Done: Progress tab (body weight log + chart, daily calories vs goal, workout volume per session; last 30 days) and exercise detail screen (`workouts/exercises/[exerciseId].tsx`: strength/cardio trend chart + per-workout set history, tap an exercise in the catalog). Charts use `react-native-gifted-charts` (+ `react-native-svg`, `expo-linear-gradient`, all Expo Go-compatible). Template tools: reorder exercises (↑/↓), duplicate (copies unsaved form state), archive/unarchive (hidden behind "Show archived"). All tested on-device by user.
 
 ## Environment
 
