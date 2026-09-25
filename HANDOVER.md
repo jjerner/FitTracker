@@ -15,6 +15,7 @@ Full plan: `C:\Users\jerne\.claude\plans\help-me-plan-what-mellow-sketch.md`
 - **Nutrition averages** (`NutritionAveragesCard`): kcal/protein/carbs/fat averaged over the last 7 / 30 / 90 *logged* days (empty days skipped, today excluded). Confirmed by user.
 - **Nutrition goals**: calorie goal is calculated as protein×4 + carbs×4 + fat×9 (`profile/goals.tsx`); Food tab totals show macro goals. Confirmed by user.
 - **Workouts card** (`WorkoutsCard`, replaced the workout volume chart at user's request): count of completed workouts with a dropdown (last 30 days / 90 days / year, including today) + month calendar (Monday-first, ‹ › up to 12 months back) with a green dot on days with a workout, grey on days without, no dot on future days. Tested on-device by user.
+- **Past-days food diary**: instead of a separate `food/day/[date].tsx` route, the Food tab's stack header shows a centered `‹ Today ›` (set via `<Stack.Screen options={{ headerTitle }}>` in `food/index.tsx`); tapping the date opens a modal `MonthCalendar` to jump to any past day. View, delete (✕ per entry + confirm dialog; replaced the old hidden long-press) and "+ Log Food" work on any day: the selected day lives in `DiaryDateProvider` (`src/context/`, wraps the food stack in `food/_layout.tsx`) and `food/[foodId].tsx` logs to it. `src/components/MonthCalendar.tsx` is shared with the Progress Workouts card. Tested on-device by user.
 - UX note: user found the Profile → "Nutrition Goals" button hard to see.
 
 ## Environment
@@ -72,5 +73,5 @@ For any new tables, write new numbered migration files and ask the user to run t
 
 1. Read the plan doc's Phase 4 section.
 2. (done) Workouts card confirmed.
-3. Remaining, in order: past-days food diary (`food/day/[date].tsx`) — moved up, the user needs it to verify averages; forgot-password screen; profile settings screen.
+3. Remaining, in order: forgot-password screen; profile settings screen.
 4. Deferred polish items: Supabase Site URL deep link for email verification (see gotchas).

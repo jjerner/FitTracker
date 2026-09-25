@@ -11,8 +11,8 @@ import {
 } from 'react-native';
 
 import { useSession } from '../../../../context/AuthProvider';
+import { useDiaryDate } from '../../../../context/DiaryDateProvider';
 import { getFoodById, logFoodEntry } from '../../../../lib/foods';
-import { todayLocalDate } from '../../../../lib/dateUtils';
 import type { MealType } from '../../../../types/domain';
 
 const MEAL_TYPES: MealType[] = ['breakfast', 'lunch', 'dinner', 'snack'];
@@ -27,6 +27,7 @@ export default function FoodDetail() {
   const { foodId } = useLocalSearchParams<{ foodId: string }>();
   const { session } = useSession();
   const queryClient = useQueryClient();
+  const { date: loggedDate } = useDiaryDate();
   const [grams, setGrams] = useState('100');
   const [mealType, setMealType] = useState<MealType>('snack');
   const [isSaving, setIsSaving] = useState(false);
@@ -53,7 +54,6 @@ export default function FoodDetail() {
     if (!food || !session) return;
     setIsSaving(true);
     try {
-      const loggedDate = todayLocalDate();
       await logFoodEntry({
         userId: session.user.id,
         food,

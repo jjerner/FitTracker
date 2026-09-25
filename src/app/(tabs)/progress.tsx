@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { LineChart } from 'react-native-gifted-charts';
 
+import { MonthCalendar } from '../../components/MonthCalendar';
 import { useBodyWeights, useDailyNutrition, useWorkoutDates } from '../../hooks/useProgress';
 import { localDateDaysAgo, todayLocalDate } from '../../lib/dateUtils';
 
@@ -194,42 +195,21 @@ const COUNT_RANGES = [
   { days: 365, label: 'Last year' },
 ];
 
-const MONTH_NAMES = [
-  'January', 'February', 'March', 'April', 'May', 'June',
-  'July', 'August', 'September', 'October', 'November', 'December',
-];
-const WEEKDAYS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 // Workout data goes back a year, so the calendar does too.
 const MAX_MONTHS_BACK = 12;
-
-const pad = (n: number) => String(n).padStart(2, '0');
 
 function WorkoutsCard() {
   const { data, isLoading } = useWorkoutDates();
   const [rangeDays, setRangeDays] = useState(30);
   const [pickerOpen, setPickerOpen] = useState(false);
-  // 0 = current month, 1 = last month, ...
-  const [monthsBack, setMonthsBack] = useState(0);
 
   const dates = data ?? [];
   const workoutDays = new Set(dates);
-  const today = todayLocalDate();
 
   // Last N days including today.
   const rangeStart = localDateDaysAgo(rangeDays - 1);
   const count = dates.filter((d) => d >= rangeStart).length;
   const rangeLabel = COUNT_RANGES.find((r) => r.days === rangeDays)?.label;
-
-  const now = new Date();
-  const first = new Date(now.getFullYear(), now.getMonth() - monthsBack, 1);
-  const year = first.getFullYear();
-  const month = first.getMonth();
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
-  const leadingBlanks = (first.getDay() + 6) % 7; // Monday-first week
-  const cells: (number | null)[] = [
-    ...Array<null>(leadingBlanks).fill(null),
-    ...Array.from({ length: daysInMonth }, (_, i) => i + 1),
-  ];
 
   return (
     <View style={styles.card}>
@@ -265,44 +245,7 @@ function WorkoutsCard() {
             </View>
           )}
 
-          <View style={styles.monthRow}>
-            <Pressable
-              onPress={() => setMonthsBack(monthsBack + 1)}
-              disabled={monthsBack >= MAX_MONTHS_BACK}
-              hitSlop={12}
-            >
-              <Text style={[styles.monthArrow, monthsBack >= MAX_MONTHS_BACK && styles.monthArrowDisabled]}>‹</Text>
-            </Pressable>
-            <Text style={styles.monthTitle}>
-              {MONTH_NAMES[month]} {year}
-            </Text>
-            <Pressable onPress={() => setMonthsBack(monthsBack - 1)} disabled={monthsBack === 0} hitSlop={12}>
-              <Text style={[styles.monthArrow, monthsBack === 0 && styles.monthArrowDisabled]}>›</Text>
-            </Pressable>
-          </View>
-
-          <View style={styles.calendarGrid}>
-            {WEEKDAYS.map((w, i) => (
-              <Text key={i} style={[styles.calendarCell, styles.weekday]}>
-                {w}
-              </Text>
-            ))}
-            {cells.map((day, i) => {
-              if (day === null) return <View key={`blank-${i}`} style={styles.calendarCell} />;
-              const date = `${year}-${pad(month + 1)}-${pad(day)}`;
-              const isFuture = date > today;
-              return (
-                <View key={date} style={styles.calendarCell}>
-                  <Text style={[styles.dayNumber, date === today && styles.dayToday, isFuture && styles.dayFuture]}>
-                    {day}
-                  </Text>
-                  {!isFuture && (
-                    <View style={[styles.dot, workoutDays.has(date) ? styles.dotDone : styles.dotMissed]} />
-                  )}
-                </View>
-              );
-            })}
-          </View>
+          <MonthCalendar dotDays={workoutDays} maxMonthsBack={MAX_MONTHS_BACK} />
         </>
       )}
     </View>
@@ -337,24 +280,6 @@ const styles = StyleSheet.create({
   rangeOption: { paddingHorizontal: 14, paddingVertical: 10 },
   rangeOptionText: { fontSize: 14, color: '#374151' },
   rangeOptionActive: { color: '#2563eb', fontWeight: '600' },
-  monthRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginTop: 8,
-  },
-  monthTitle: { fontSize: 15, fontWeight: '600' },
-  monthArrow: { fontSize: 24, color: '#2563eb', paddingHorizontal: 8 },
-  monthArrowDisabled: { color: '#d1d5db' },
-  calendarGrid: { flexDirection: 'row', flexWrap: 'wrap' },
-  calendarCell: { width: `${100 / 7}%`, alignItems: 'center', paddingVertical: 4, gap: 3 },
-  weekday: { fontSize: 12, color: '#9ca3af', textAlign: 'center' },
-  dayNumber: { fontSize: 13, color: '#374151' },
-  dayToday: { color: '#2563eb', fontWeight: '700' },
-  dayFuture: { color: '#d1d5db' },
-  dot: { width: 8, height: 8, borderRadius: 4 },
-  dotDone: { backgroundColor: '#16a34a' },
-  dotMissed: { backgroundColor: '#d1d5db' },
   inputRow: { flexDirection: 'row', gap: 8, marginBottom: 8 },
   input: {
     flex: 1,
