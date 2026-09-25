@@ -73,5 +73,6 @@ For any new tables, write new numbered migration files and ask the user to run t
 
 1. Read the plan doc's Phase 4 section.
 2. (done) Workouts card confirmed.
-3. Remaining, in order: forgot-password screen; profile settings screen.
-4. Deferred polish items: Supabase Site URL deep link for email verification (see gotchas).
+3. Remaining, in order: profile settings screen.
+4. **Forgot password — parked, user is deciding.** Code-based version is built on branch `forgot-password` (not merged). Blocker: Supabase only allows editing email templates (needed to put `{{ .Token }}` in the Reset Password email) with custom SMTP. Options discussed: a dedicated Gmail (e.g. a new app-only account) + app password as SMTP (recommended), Resend, or the default link email + deep linking (flaky in Expo Go). Custom SMTP would also lift the built-in sender's low hourly email limit.
+5. Deferred polish items: Supabase Site URL deep link for email verification (see gotchas).
