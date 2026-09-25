@@ -47,6 +47,7 @@ For any new tables, write new numbered migration files and ask the user to run t
 - Supabase's default "Site URL" is `localhost:3000`, so the email-verification link redirects to a dead localhost page after confirming. Cosmetic only — verification succeeds before the redirect. Planned fix: point it at a proper deep link in Phase 4 polish.
 - A `.upsert(..., { onConflict: 'barcode' })` needs a **non-partial** unique constraint on that column — a partial index (`WHERE barcode IS NOT NULL`) doesn't work as an ON CONFLICT target. Fixed in `0003`. Keep this in mind for any future upsert-by-nullable-column tables.
 - `npm install` currently fails with ERESOLVE: the lockfile has optional `react-dom@19.3.0` (web-only) vs `react@19.2.3`. Workaround: `npx expo install <pkg> -- --legacy-peer-deps`.
+- New files sometimes aren't picked up by a normal reload in Expo Go — if the user doesn't see a change, have them restart with `npx expo start -c`.
 - After any direct Supabase write that isn't done through a React Query mutation hook, remember to `queryClient.invalidateQueries(...)` the relevant key or the UI won't reflect it (hit this with the food diary).
 
 ## Architecture quick reference
@@ -73,6 +74,6 @@ For any new tables, write new numbered migration files and ask the user to run t
 
 1. Read the plan doc's Phase 4 section.
 2. (done) Workouts card confirmed.
-3. Remaining, in order: profile settings screen.
+3. Profile settings: user only wanted **name** (not height/sex/DOB/units). Built as an inline name box + Save on the Profile tab (`profiles.display_name`, `src/lib/profile.ts`, `useDisplayName`, key `['displayName', userId]`); Home shows "Hi, <name>!". Tested on-device by user. No separate `profile/settings.tsx`.
 4. **Forgot password — parked, user is deciding.** Code-based version is built on branch `forgot-password` (not merged). Blocker: Supabase only allows editing email templates (needed to put `{{ .Token }}` in the Reset Password email) with custom SMTP. Options discussed: a dedicated Gmail (e.g. a new app-only account) + app password as SMTP (recommended), Resend, or the default link email + deep linking (flaky in Expo Go). Custom SMTP would also lift the built-in sender's low hourly email limit.
 5. Deferred polish items: Supabase Site URL deep link for email verification (see gotchas).
