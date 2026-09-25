@@ -114,8 +114,3 @@ export type DailyNutrition = {
   fatG: number;
 };
 
-export type WorkoutVolume = {
-  id: string;
-  startedAt: string;
-  volumeKg: number;
-};

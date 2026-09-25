@@ -1,5 +1,6 @@
 import { supabase } from './supabase';
-import type { BodyWeight, DailyNutrition, WorkoutVolume } from '../types/domain';
+import { localDateOf } from './dateUtils';
+import type { BodyWeight, DailyNutrition } from '../types/domain';
 
 export async function getBodyWeights(userId: string, sinceDate: string): Promise<BodyWeight[]> {
   const { data, error } = await supabase
@@ -58,28 +59,17 @@ export async function getDailyNutrition(
   return [...totals.values()].sort((a, b) => a.date.localeCompare(b.date));
 }
 
-// Volume = sum of weight × reps over all strength sets in a completed workout.
-export async function getWorkoutVolumes(
-  userId: string,
-  sinceDate: string
-): Promise<WorkoutVolume[]> {
+// Local dates ("YYYY-MM-DD") of completed workouts, oldest first. One entry
+// per workout, so a day with two workouts appears twice.
+export async function getWorkoutDates(userId: string, sinceDate: string): Promise<string[]> {
   const { data, error } = await supabase
     .from('workout_logs')
-    .select('id, started_at, workout_log_exercises(workout_log_sets(weight_kg, reps))')
+    .select('started_at')
     .eq('user_id', userId)
     .not('completed_at', 'is', null)
     .gte('started_at', sinceDate)
     .order('started_at', { ascending: true });
 
   if (error) throw error;
-
-  return (data ?? []).map((log: any) => {
-    let volumeKg = 0;
-    for (const le of log.workout_log_exercises ?? []) {
-      for (const set of le.workout_log_sets ?? []) {
-        volumeKg += Number(set.weight_kg ?? 0) * Number(set.reps ?? 0);
-      }
-    }
-    return { id: log.id, startedAt: log.started_at, volumeKg };
-  });
+  return (data ?? []).map((row) => localDateOf(new Date(row.started_at)));
 }

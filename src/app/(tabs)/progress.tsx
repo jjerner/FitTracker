@@ -11,10 +11,10 @@ import {
   View,
   useWindowDimensions,
 } from 'react-native';
-import { BarChart, LineChart } from 'react-native-gifted-charts';
+import { LineChart } from 'react-native-gifted-charts';
 
-import { useBodyWeights, useDailyNutrition, useWorkoutVolumes } from '../../hooks/useProgress';
-import { todayLocalDate } from '../../lib/dateUtils';
+import { useBodyWeights, useDailyNutrition, useWorkoutDates } from '../../hooks/useProgress';
+import { localDateDaysAgo, todayLocalDate } from '../../lib/dateUtils';
 
 // "2026-09-24" -> "24/9"
 function shortDate(date: string): string {
@@ -38,7 +38,7 @@ export default function Progress() {
   useFocusEffect(
     useCallback(() => {
       queryClient.invalidateQueries({ queryKey: ['dailyNutrition'] });
-      queryClient.invalidateQueries({ queryKey: ['workoutVolumes'] });
+      queryClient.invalidateQueries({ queryKey: ['workoutDates'] });
     }, [queryClient])
   );
 
@@ -46,7 +46,7 @@ export default function Progress() {
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <WeightCard chartWidth={chartWidth} />
       <NutritionAveragesCard />
-      <VolumeCard chartWidth={chartWidth} />
+      <WorkoutsCard />
     </ScrollView>
   );
 }
@@ -188,41 +188,122 @@ function NutritionAveragesCard() {
   );
 }
 
-function VolumeCard({ chartWidth }: { chartWidth: number }) {
-  const { data: workouts, isLoading } = useWorkoutVolumes();
+const COUNT_RANGES = [
+  { days: 30, label: 'Last 30 days' },
+  { days: 90, label: 'Last 90 days' },
+  { days: 365, label: 'Last year' },
+];
 
-  const points = workouts ?? [];
-  const barSpacing = 8;
-  const barWidth = Math.min(
-    32,
-    Math.max(6, chartWidth / Math.max(points.length, 1) - barSpacing)
-  );
+const MONTH_NAMES = [
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December',
+];
+const WEEKDAYS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+// Workout data goes back a year, so the calendar does too.
+const MAX_MONTHS_BACK = 12;
+
+const pad = (n: number) => String(n).padStart(2, '0');
+
+function WorkoutsCard() {
+  const { data, isLoading } = useWorkoutDates();
+  const [rangeDays, setRangeDays] = useState(30);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  // 0 = current month, 1 = last month, ...
+  const [monthsBack, setMonthsBack] = useState(0);
+
+  const dates = data ?? [];
+  const workoutDays = new Set(dates);
+  const today = todayLocalDate();
+
+  // Last N days including today.
+  const rangeStart = localDateDaysAgo(rangeDays - 1);
+  const count = dates.filter((d) => d >= rangeStart).length;
+  const rangeLabel = COUNT_RANGES.find((r) => r.days === rangeDays)?.label;
+
+  const now = new Date();
+  const first = new Date(now.getFullYear(), now.getMonth() - monthsBack, 1);
+  const year = first.getFullYear();
+  const month = first.getMonth();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const leadingBlanks = (first.getDay() + 6) % 7; // Monday-first week
+  const cells: (number | null)[] = [
+    ...Array<null>(leadingBlanks).fill(null),
+    ...Array.from({ length: daysInMonth }, (_, i) => i + 1),
+  ];
 
   return (
     <View style={styles.card}>
-      <Text style={styles.cardTitle}>Workout volume (kg × reps)</Text>
-      <Text style={styles.cardSubtitle}>One bar per completed workout, last 30 days</Text>
+      <Text style={styles.cardTitle}>Workouts</Text>
 
       {isLoading ? (
         <ActivityIndicator />
-      ) : points.length === 0 ? (
-        <Text style={styles.empty}>No completed workouts in the last 30 days.</Text>
       ) : (
-        <BarChart
-          data={points.map((w, i) => ({
-            value: Math.round(w.volumeKg),
-            label: sparseLabel(i, points.length, w.startedAt),
-          }))}
-          width={chartWidth}
-          height={160}
-          barWidth={barWidth}
-          spacing={barSpacing}
-          initialSpacing={barSpacing}
-          noOfSections={4}
-          frontColor="#2563eb"
-          xAxisLabelTextStyle={styles.axisLabel}
-          yAxisTextStyle={styles.axisLabel}
-        />
+        <>
+          <View style={styles.countRow}>
+            <Text style={styles.countValue}>{count}</Text>
+            <Text style={styles.cardSubtitle}>completed</Text>
+            <Pressable style={styles.rangeButton} onPress={() => setPickerOpen(!pickerOpen)}>
+              <Text style={styles.rangeButtonText}>{rangeLabel} ▾</Text>
+            </Pressable>
+          </View>
+          {pickerOpen && (
+            <View style={styles.rangeOptions}>
+              {COUNT_RANGES.map((r) => (
+                <Pressable
+                  key={r.days}
+                  style={styles.rangeOption}
+                  onPress={() => {
+                    setRangeDays(r.days);
+                    setPickerOpen(false);
+                  }}
+                >
+                  <Text style={[styles.rangeOptionText, r.days === rangeDays && styles.rangeOptionActive]}>
+                    {r.label}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+          )}
+
+          <View style={styles.monthRow}>
+            <Pressable
+              onPress={() => setMonthsBack(monthsBack + 1)}
+              disabled={monthsBack >= MAX_MONTHS_BACK}
+              hitSlop={12}
+            >
+              <Text style={[styles.monthArrow, monthsBack >= MAX_MONTHS_BACK && styles.monthArrowDisabled]}>‹</Text>
+            </Pressable>
+            <Text style={styles.monthTitle}>
+              {MONTH_NAMES[month]} {year}
+            </Text>
+            <Pressable onPress={() => setMonthsBack(monthsBack - 1)} disabled={monthsBack === 0} hitSlop={12}>
+              <Text style={[styles.monthArrow, monthsBack === 0 && styles.monthArrowDisabled]}>›</Text>
+            </Pressable>
+          </View>
+
+          <View style={styles.calendarGrid}>
+            {WEEKDAYS.map((w, i) => (
+              <Text key={i} style={[styles.calendarCell, styles.weekday]}>
+                {w}
+              </Text>
+            ))}
+            {cells.map((day, i) => {
+              if (day === null) return <View key={`blank-${i}`} style={styles.calendarCell} />;
+              const date = `${year}-${pad(month + 1)}-${pad(day)}`;
+              const isFuture = date > today;
+              return (
+                <View key={date} style={styles.calendarCell}>
+                  <Text style={[styles.dayNumber, date === today && styles.dayToday, isFuture && styles.dayFuture]}>
+                    {day}
+                  </Text>
+                  {!isFuture && (
+                    <View style={[styles.dot, workoutDays.has(date) ? styles.dotDone : styles.dotMissed]} />
+                  )}
+                </View>
+              );
+            })}
+          </View>
+        </>
       )}
     </View>
   );
@@ -241,6 +322,39 @@ const styles = StyleSheet.create({
   tableHeader: { flex: 1, fontSize: 13, color: '#6b7280', textAlign: 'right' },
   tableCell: { flex: 1, fontSize: 14, fontWeight: '600', textAlign: 'right' },
   tableFootnote: { flex: 1, fontSize: 11, color: '#9ca3af', textAlign: 'right' },
+  countRow: { flexDirection: 'row', alignItems: 'baseline', gap: 6 },
+  countValue: { fontSize: 28, fontWeight: '700' },
+  rangeButton: {
+    marginLeft: 'auto',
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  rangeButtonText: { fontSize: 14, color: '#374151' },
+  rangeOptions: { alignSelf: 'flex-end', borderWidth: 1, borderColor: '#ddd', borderRadius: 8 },
+  rangeOption: { paddingHorizontal: 14, paddingVertical: 10 },
+  rangeOptionText: { fontSize: 14, color: '#374151' },
+  rangeOptionActive: { color: '#2563eb', fontWeight: '600' },
+  monthRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 8,
+  },
+  monthTitle: { fontSize: 15, fontWeight: '600' },
+  monthArrow: { fontSize: 24, color: '#2563eb', paddingHorizontal: 8 },
+  monthArrowDisabled: { color: '#d1d5db' },
+  calendarGrid: { flexDirection: 'row', flexWrap: 'wrap' },
+  calendarCell: { width: `${100 / 7}%`, alignItems: 'center', paddingVertical: 4, gap: 3 },
+  weekday: { fontSize: 12, color: '#9ca3af', textAlign: 'center' },
+  dayNumber: { fontSize: 13, color: '#374151' },
+  dayToday: { color: '#2563eb', fontWeight: '700' },
+  dayFuture: { color: '#d1d5db' },
+  dot: { width: 8, height: 8, borderRadius: 4 },
+  dotDone: { backgroundColor: '#16a34a' },
+  dotMissed: { backgroundColor: '#d1d5db' },
   inputRow: { flexDirection: 'row', gap: 8, marginBottom: 8 },
   input: {
     flex: 1,

@@ -5,11 +5,11 @@ import { localDateDaysAgo } from '../lib/dateUtils';
 import {
   getBodyWeights,
   getDailyNutrition,
-  getWorkoutVolumes,
+  getWorkoutDates,
   upsertBodyWeight,
 } from '../lib/progress';
 
-// Window for the weight and volume charts.
+// Window for the weight chart.
 const RANGE_DAYS = 30;
 
 export function useBodyWeights() {
@@ -47,13 +47,14 @@ export function useDailyNutrition() {
   });
 }
 
-export function useWorkoutVolumes() {
+export function useWorkoutDates() {
   const { session } = useSession();
   const userId = session?.user.id;
 
   return useQuery({
-    queryKey: ['workoutVolumes', userId],
-    queryFn: () => getWorkoutVolumes(userId as string, localDateDaysAgo(RANGE_DAYS)),
+    queryKey: ['workoutDates', userId],
+    // The calendar and the counts go back at most a year.
+    queryFn: () => getWorkoutDates(userId as string, localDateDaysAgo(365)),
     enabled: !!userId,
   });
 }
