@@ -8,16 +8,23 @@ Full plan: `C:\Users\jerne\.claude\plans\help-me-plan-what-mellow-sketch.md`
 **Phase 1 (Foundation) — done.** Expo Router, Supabase email/password auth, tab shell.
 **Phase 2 (Food logging) — done.** Manual search, barcode scanning, diary, custom foods, nutrition goals.
 **Phase 3 (Workout logging) — done.** Exercise catalog (seeded + custom), template CRUD, active workout logging, session summary + history. Tested on-device by user.
-**Phase 4 (Progress & polish) — in progress.** Done: Progress tab (body weight log + chart for last 30 days, nutrition averages table, Workouts card — see below) and exercise detail screen (`workouts/exercises/[exerciseId].tsx`: strength/cardio trend chart + per-workout set history, tap an exercise in the catalog). Charts use `react-native-gifted-charts` (+ `react-native-svg`, `expo-linear-gradient`, all Expo Go-compatible). Template tools: reorder exercises (↑/↓), duplicate (copies unsaved form state), archive/unarchive (hidden behind "Show archived"). All tested on-device by user.
+**Phase 4 (Progress & polish) — done, except forgot password (parked).** Everything below is tested on-device by the user.
 
-### Progress tab details
+### Phase 4 features
 
-- **Nutrition averages** (`NutritionAveragesCard`): kcal/protein/carbs/fat averaged over the last 7 / 30 / 90 *logged* days (empty days skipped, today excluded). Confirmed by user.
-- **Nutrition goals**: calorie goal is calculated as protein×4 + carbs×4 + fat×9 (`profile/goals.tsx`); Food tab totals show macro goals. Confirmed by user.
-- **Workouts card** (`WorkoutsCard`, replaced the workout volume chart at user's request): count of completed workouts with a dropdown (last 30 days / 90 days / year, including today) + month calendar (Monday-first, ‹ › up to 12 months back) with a green dot on days with a workout, grey on days without, no dot on future days. Tested on-device by user.
-- **Past-days food diary**: instead of a separate `food/day/[date].tsx` route, the Food tab's stack header shows a centered `‹ Today ›` (set via `<Stack.Screen options={{ headerTitle }}>` in `food/index.tsx`); tapping the date opens a modal `MonthCalendar` to jump to any past day. View, delete (✕ per entry + confirm dialog; replaced the old hidden long-press) and "+ Log Food" work on any day: the selected day lives in `DiaryDateProvider` (`src/context/`, wraps the whole tab navigator in `(tabs)/_layout.tsx` so Home can reset it to today) and `food/[foodId].tsx` logs to it. `src/components/MonthCalendar.tsx` is shared with the Progress Workouts card. Tested on-device by user.
-- **Home tab**: greeting + "Today's food" card (kcal vs goal with bar, P/C/F vs goals; tap → diary for today) + quick buttons "+ Log Food" (→ food search for today, `withAnchor` + `unstable_settings.anchor = 'index'` in `food/_layout.tsx` so back lands on the diary) and "Start Workout" (→ Workouts tab). User chose just these (no workouts/weight on Home). Tested on-device by user.
-- UX/UI polish (Nutrition Goals button visibility, double header on Food tab) — user will address later; don't change for now.
+- **Progress tab**: body weight log + chart (last 30 days); **nutrition averages** table (`NutritionAveragesCard`: kcal/P/C/F over last 7 / 30 / 90 *logged* days, empty days skipped, today excluded); **Workouts card** (`WorkoutsCard`, replaced the old volume chart): completed-workout count with a dropdown (last 30 / 90 days / year, incl. today) + month calendar with green dot = workout, grey = none, no dot on future days (‹ › up to 12 months back).
+- **Exercise detail** (`workouts/exercises/[exerciseId].tsx`): strength/cardio trend chart + per-workout set history. Charts use `react-native-gifted-charts` (+ `react-native-svg`, `expo-linear-gradient`, all Expo Go-compatible).
+- **Template tools**: reorder exercises (↑/↓), duplicate, archive/unarchive (behind "Show archived").
+- **Nutrition goals**: calorie goal is derived, protein×4 + carbs×4 + fat×9 (`profile/goals.tsx`). Food tab totals show macro goals.
+- **Past-days food diary** (no separate `food/day/[date].tsx` route): the Food tab's stack header shows a centered `‹ Today ›` (via `<Stack.Screen options={{ headerTitle }}>` in `food/index.tsx`); tapping the date opens a modal `MonthCalendar` to jump to any past day. View, delete (✕ per entry + confirm dialog) and "+ Log Food" work on any day. The selected day lives in `DiaryDateProvider`, which wraps the whole tab navigator in `(tabs)/_layout.tsx`; `food/[foodId].tsx` logs to that day.
+- **Home tab**: "Hi, <name>!" + "Today's food" card (kcal vs goal with bar, P/C/F vs goals; tap → today's diary) + quick buttons "+ Log Food" (→ food search for today; `withAnchor` + `unstable_settings = { anchor: 'index' }` in `food/_layout.tsx` so Back lands on the diary) and "Start Workout" (→ Workouts tab). User deliberately chose only these (no workouts/weight on Home).
+- **Profile**: editable display name (inline box + Save). User only wanted name — not height/sex/DOB/units — so no `profile/settings.tsx`.
+
+### On hold (user's call — don't change unless asked)
+
+- **Forgot password** — built on branch `forgot-password` (not merged): code-based flow, `resetPasswordForEmail` → user types code + new password → `verifyOtp({ type: 'recovery' })` → `updateUser({ password })`. Blocker: the Reset Password email must contain `{{ .Token }}`, and Supabase only allows editing email templates with **custom SMTP**. Options discussed: a dedicated app-only Gmail + app password as SMTP (recommended; also lifts the built-in sender's low hourly limit), Resend, or the default link email + deep linking (flaky in Expo Go). User is deciding which.
+- **UX/UI polish** — user will do a UX pass later. Known items: Profile → "Nutrition Goals" button hard to see; Food tab shows two headers ("Food" tab header + stack header). Don't fix now.
+- **Email-verification link** redirects to a dead `localhost:3000` page (see gotchas). Likely solved together with the SMTP/email decision.
 
 ## Environment
 
@@ -59,9 +66,13 @@ For any new tables, write new numbered migration files and ask the user to run t
 - `src/lib/openFoodFacts.ts` — Open Food Facts API client
 - `src/lib/progress.ts` — body weights + chart data (daily nutrition, workout dates); hooks in `src/hooks/useProgress.ts`
 - `src/lib/workouts.ts` — data access for exercises/templates/workout logs (+ `formatSet` helper)
+- `src/lib/profile.ts` — display name (`profiles.display_name`); hook `useDisplayName`
+- `src/lib/dateUtils.ts` — local-date helpers (`todayLocalDate`, `localDateDaysAgo`, `localDateOf`); dates are `YYYY-MM-DD` strings in device time
+- `src/components/MonthCalendar.tsx` — shared month grid (dots mode for Progress, select mode for the diary date picker)
 - `src/components/workouts/` — `ExerciseList` (search list) and `ExercisePicker` (modal wrapper)
 - `src/hooks/` — React Query hooks per feature
 - `src/context/AuthProvider.tsx` — session state
+- `src/context/DiaryDateProvider.tsx` — which day the food diary shows / logs to
 - No Redux/Zustand — React Query + Context only, per plan.
 
 ## Workout design notes
@@ -69,12 +80,9 @@ For any new tables, write new numbered migration files and ask the user to run t
 - An **in-progress workout** is a `workout_logs` row with `completed_at = null`. Sets are inserted as soon as they're added (not batched on finish), so a killed app loses nothing; the Workouts home shows a "Resume" button for it. Starting a new workout is hidden while one is in progress.
 - Templates are saved by deleting and re-inserting all `workout_template_exercises` rows (simpler than diffing).
 - Cardio sets store `duration_s` / `distance_m`; the UI shows minutes / km.
-- Query keys: `['exercises', userId]`, `['workoutTemplates', userId]`, `['workoutTemplate', id]`, `['workoutHistory', userId]`, `['workoutLog', id]`, `['exerciseHistory', userId, exerciseId]`. Progress: `['bodyWeights', userId]`, `['dailyNutrition', userId]`, `['workoutDates', userId]` (the latter two are invalidated whenever the Progress tab gains focus).
+- Query keys: `['exercises', userId]`, `['workoutTemplates', userId]`, `['workoutTemplate', id]`, `['workoutHistory', userId]`, `['workoutLog', id]`, `['exerciseHistory', userId, exerciseId]`. Progress: `['bodyWeights', userId]`, `['dailyNutrition', userId]`, `['workoutDates', userId]` (the latter two are invalidated whenever the Progress tab gains focus). Food/profile: `['foodDiary', userId, date]`, `['nutritionGoals', userId]`, `['displayName', userId]`.
 
 ## Next session should
 
-1. Read the plan doc's Phase 4 section.
-2. (done) Workouts card confirmed.
-3. Profile settings: user only wanted **name** (not height/sex/DOB/units). Built as an inline name box + Save on the Profile tab (`profiles.display_name`, `src/lib/profile.ts`, `useDisplayName`, key `['displayName', userId]`); Home shows "Hi, <name>!". Tested on-device by user. No separate `profile/settings.tsx`.
-4. **Forgot password — parked, user is deciding.** Code-based version is built on branch `forgot-password` (not merged). Blocker: Supabase only allows editing email templates (needed to put `{{ .Token }}` in the Reset Password email) with custom SMTP. Options discussed: a dedicated Gmail (e.g. a new app-only account) + app password as SMTP (recommended), Resend, or the default link email + deep linking (flaky in Expo Go). Custom SMTP would also lift the built-in sender's low hourly email limit.
-5. Deferred polish items: Supabase Site URL deep link for email verification (see gotchas).
+1. Ask the user what they want next — the plan's phases are complete. Candidates: pick forgot password back up once they've chosen an email route (`git switch forgot-password`, rebase onto master), the UX/UI pass, or new features.
+2. Don't touch the "On hold" items above unless the user brings them up.
