@@ -65,6 +65,10 @@ export default function Login() {
         )}
       </Pressable>
 
+      <Link href="/(auth)/forgot-password" style={styles.link}>
+        <Text>Forgot password?</Text>
+      </Link>
+
       <Link href="/(auth)/signup" style={styles.link}>
         <Text>Don&apos;t have an account? Sign up</Text>
       </Link>
