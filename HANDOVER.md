@@ -9,6 +9,7 @@ Full plan: `C:\Users\jerne\.claude\plans\help-me-plan-what-mellow-sketch.md`
 **Phase 2 (Food logging) — done.** Manual search, barcode scanning, diary, custom foods, nutrition goals.
 **Phase 3 (Workout logging) — done.** Exercise catalog (seeded + custom), template CRUD, active workout logging, session summary + history. Tested on-device by user.
 **Phase 4 (Progress & polish) — done, except forgot password (parked).** Everything below is tested on-device by the user.
+**UX pass + exercise swap — done** (plan: `C:\Users\jerne\.claude\plans\lets-explore-the-ux-ui-indexed-lynx.md`). All steps tested on-device by the user. See "UX pass features" below.
 
 ### Phase 4 features
 
@@ -16,14 +17,22 @@ Full plan: `C:\Users\jerne\.claude\plans\help-me-plan-what-mellow-sketch.md`
 - **Exercise detail** (`workouts/exercises/[exerciseId].tsx`): strength/cardio trend chart + per-workout set history. Charts use `react-native-gifted-charts` (+ `react-native-svg`, `expo-linear-gradient`, all Expo Go-compatible).
 - **Template tools**: reorder exercises (↑/↓), duplicate, archive/unarchive (behind "Show archived").
 - **Nutrition goals**: calorie goal is derived, protein×4 + carbs×4 + fat×9 (`profile/goals.tsx`). Food tab totals show macro goals.
-- **Past-days food diary** (no separate `food/day/[date].tsx` route): the Food tab's stack header shows a centered `‹ Today ›` (via `<Stack.Screen options={{ headerTitle }}>` in `food/index.tsx`); tapping the date opens a modal `MonthCalendar` to jump to any past day. View, delete (✕ per entry + confirm dialog) and "+ Log Food" work on any day. The selected day lives in `DiaryDateProvider`, which wraps the whole tab navigator in `(tabs)/_layout.tsx`; `food/[foodId].tsx` logs to that day.
-- **Home tab**: "Hi, <name>!" + "Today's food" card (kcal vs goal with bar, P/C/F vs goals; tap → today's diary) + quick buttons "+ Log Food" (→ food search for today; `withAnchor` + `unstable_settings = { anchor: 'index' }` in `food/_layout.tsx` so Back lands on the diary) and "Start Workout" (→ Workouts tab). User deliberately chose only these (no workouts/weight on Home).
-- **Profile**: editable display name (inline box + Save). User only wanted name — not height/sex/DOB/units — so no `profile/settings.tsx`.
+- **Past-days food diary** (no separate `food/day/[date].tsx` route): a centered `‹ Today ›` row at the top of `food/index.tsx` (the header just says "Food"); tapping the date opens a modal `MonthCalendar` to jump to any past day. View, delete (✕ per entry + confirm dialog) and "+ Log Food" work on any day. The selected day lives in `DiaryDateProvider`, which wraps the whole tab navigator in `(tabs)/_layout.tsx`; `food/[foodId].tsx` logs to that day.
+- **Profile**: editable display name (inline box + Save). User only wanted name — not height/sex/DOB/units — so no `profile/settings.tsx`. Settings section: Nutrition Goals row + "Vibrate when rest ends" switch.
+
+### UX pass features
+
+- **Templates** can be just a list of exercises: new exercises start without targets; "+ Targets" reveals Sets/Reps/kg.
+- **Exercise swap** (`SwapExercisePicker`, "⇄ Swap" on each exercise in `workouts/active.tsx`): suggests exercises with the same `exercises.movement_pattern` (fallback: same muscle group; plus a "Show all exercises" button). No sets yet → `swapLogExercise` replaces in place; sets logged → `insertExerciseAfter` adds the new one below. Never changes the template (user's call). Custom exercises can pick a movement (`MOVEMENT_PATTERNS` in `src/lib/workouts.ts`).
+- **Active workout, StrengthLog-style**: per-exercise table Set | Previous | kg | reps | ✓ (cardio: min | km). Unsaved rows are local state; grey placeholders = previous session's same set → template target → last set; ✓ with empty inputs uses the placeholder. ✓ saves immediately via `addSet`; tapping a green ✓ deletes the set and puts its numbers back in a row. Rest timer bar (90 s, −15/+15/Skip) after strength sets; elapsed clock under the title.
+- **Rest vibration**: off by default; device-only setting in AsyncStorage (`src/lib/settings.ts`, hook `useRestVibration`, query key `['restVibration']`).
+- **Home**: calorie ring (`react-native-svg`, kcal left/over) + P/C/F bars; "This week" card (Mon–Sun dots, count, 🔥 streak = consecutive weeks with ≥1 workout; an empty current week doesn't break it); "+ Log Food" and "Start Workout", which becomes "Resume: <name>" during a workout (`withAnchor` + `unstable_settings` anchor in both `food/_layout.tsx` and `workouts/_layout.tsx` so Back lands on the tab's list). User now **wants** workouts on Home (reverses the earlier food-only decision). Weight is still not on Home.
+- **Look & feel**: tab bar icons via `expo-symbols` (`@expo/vector-icons` is deprecated per the docs; `expo-font` is its peer dep). `src/theme.ts` = shared colors/spacing/radius; only the tab layout, Profile, active workout and Home use it so far, so move other screens over as they're touched. Food/Workouts/Profile tabs set `headerShown: false` so only their stack header shows.
 
 ### On hold (user's call — don't change unless asked)
 
 - **Forgot password** — built on branch `forgot-password` (not merged): code-based flow, `resetPasswordForEmail` → user types code + new password → `verifyOtp({ type: 'recovery' })` → `updateUser({ password })`. Blocker: the Reset Password email must contain `{{ .Token }}`, and Supabase only allows editing email templates with **custom SMTP**. Options discussed: a dedicated app-only Gmail + app password as SMTP (recommended; also lifts the built-in sender's low hourly limit), Resend, or the default link email + deep linking (flaky in Expo Go). User is deciding which.
-- **UX/UI polish** — user will do a UX pass later. Known items: Profile → "Nutrition Goals" button hard to see; Food tab shows two headers ("Food" tab header + stack header). Don't fix now.
+- **Food diary redesign (Lifesum-style)** — offered in the UX pass (calorie ring on the Food tab, "+" per meal, meal kcal totals, recent foods); user didn't pick it this round.
 - **Go live (installable APK, no Expo Go)** — Android only (OnePlus Nord 5), just for the user, no Play Store. Plan: EAS cloud build of an APK + sideload; Supabase keys as EAS env vars (`.env` isn't uploaded); `expo-updates` recommended for updates without reinstalling. Full steps in the plan doc, Phase 5. User wants it planned but not started.
 - **Email-verification link** redirects to a dead `localhost:3000` page (see gotchas). Likely solved together with the SMTP/email decision.
 
@@ -48,6 +57,7 @@ Migrations live in `supabase/migrations/*.sql`, applied manually by pasting into
 - `0004_workouts.sql` (exercises + 34 seeded rows, workout_templates/_exercises, workout_logs/_exercises/_sets)
 - `0005_body_weights.sql` (body_weights, one row per user per day)
 - `0006_archive_templates.sql` (workout_templates.archived_at)
+- `0007_movement_patterns.sql` (exercises.movement_pattern + 28 extra seeded exercises, e.g. Chest Press, Hack Squat)
 
 For any new tables, write new numbered migration files and ask the user to run them the same way.
 
@@ -70,7 +80,9 @@ For any new tables, write new numbered migration files and ask the user to run t
 - `src/lib/profile.ts` — display name (`profiles.display_name`); hook `useDisplayName`
 - `src/lib/dateUtils.ts` — local-date helpers (`todayLocalDate`, `localDateDaysAgo`, `localDateOf`); dates are `YYYY-MM-DD` strings in device time
 - `src/components/MonthCalendar.tsx` — shared month grid (dots mode for Progress, select mode for the diary date picker)
-- `src/components/workouts/` — `ExerciseList` (search list) and `ExercisePicker` (modal wrapper)
+- `src/lib/settings.ts` — device-only settings (AsyncStorage)
+- `src/theme.ts` — shared colors/spacing/radius
+- `src/components/workouts/` — `ExerciseList` (search list), `ExercisePicker` (modal wrapper), `SwapExercisePicker` (similar-exercise modal)
 - `src/hooks/` — React Query hooks per feature
 - `src/context/AuthProvider.tsx` — session state
 - `src/context/DiaryDateProvider.tsx` — which day the food diary shows / logs to
@@ -85,5 +97,5 @@ For any new tables, write new numbered migration files and ask the user to run t
 
 ## Next session should
 
-1. Ask the user what they want next — the plan's phases are complete. Candidates: pick forgot password back up once they've chosen an email route (`git switch forgot-password`, rebase onto master), the UX/UI pass, or new features.
+1. Ask the user what they want next. Candidates: forgot password once they've chosen an email route (`git switch forgot-password`, rebase onto master), going live (APK), the Lifesum-style food diary, moving remaining screens onto `src/theme.ts`, or new features.
 2. Don't touch the "On hold" items above unless the user brings them up.
