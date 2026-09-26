@@ -1,17 +1,28 @@
 import { Link } from 'expo-router';
 import { useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { SymbolView } from 'expo-symbols';
+import {
+  ActivityIndicator,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
 
 import { useSession } from '../../../context/AuthProvider';
 import { useDisplayName } from '../../../hooks/useDisplayName';
 import { supabase } from '../../../lib/supabase';
+import { colors, radius, spacing } from '../../../theme';
 
 export default function Profile() {
   const { session } = useSession();
   const { data: savedName, isLoading, saveName, isSaving } = useDisplayName();
 
   return (
-    <View style={styles.container}>
+    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+      <Text style={styles.label}>Name</Text>
       {isLoading ? (
         <ActivityIndicator />
       ) : (
@@ -19,16 +30,27 @@ export default function Profile() {
       )}
       <Text style={styles.email}>{session?.user.email}</Text>
 
+      <Text style={styles.label}>Settings</Text>
       <Link href="/(tabs)/profile/goals" asChild>
-        <Pressable style={styles.linkButton}>
-          <Text style={styles.linkButtonText}>Nutrition Goals</Text>
+        <Pressable style={styles.row}>
+          <SymbolView
+            name={{ ios: 'target', android: 'target' }}
+            tintColor={colors.primary}
+            size={22}
+          />
+          <Text style={styles.rowText}>Nutrition Goals</Text>
+          <SymbolView
+            name={{ ios: 'chevron.right', android: 'chevron_right' }}
+            tintColor={colors.muted}
+            size={22}
+          />
         </Pressable>
       </Link>
 
       <Pressable style={styles.signOutButton} onPress={() => supabase.auth.signOut()}>
         <Text style={styles.signOutButtonText}>Sign Out</Text>
       </Pressable>
-    </View>
+    </ScrollView>
   );
 }
 
@@ -69,37 +91,51 @@ function NameEditor({
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 16 },
-  nameRow: { flexDirection: 'row', alignSelf: 'stretch', gap: 8, paddingHorizontal: 24 },
+  container: { flex: 1, backgroundColor: colors.background },
+  content: { padding: spacing.lg },
+  label: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.muted,
+    textTransform: 'uppercase',
+    marginTop: spacing.xl,
+    marginBottom: spacing.sm,
+  },
+  nameRow: { flexDirection: 'row', gap: spacing.sm },
   nameInput: {
     flex: 1,
     borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    padding: 12,
+    borderColor: colors.border,
+    borderRadius: radius.md,
+    padding: spacing.md,
     fontSize: 16,
+    color: colors.text,
   },
   saveButton: {
-    backgroundColor: '#2563eb',
-    borderRadius: 8,
+    backgroundColor: colors.primary,
+    borderRadius: radius.md,
     paddingHorizontal: 20,
     justifyContent: 'center',
   },
   saveButtonDisabled: { opacity: 0.5 },
   saveButtonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
-  email: { fontSize: 16, color: '#555' },
-  linkButton: {
-    backgroundColor: '#f3f4f6',
-    borderRadius: 8,
-    paddingVertical: 12,
-    paddingHorizontal: 24,
+  email: { fontSize: 14, color: colors.muted, marginTop: spacing.sm },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    padding: spacing.lg,
   },
-  linkButtonText: { fontSize: 16, fontWeight: '600' },
+  rowText: { flex: 1, fontSize: 16, fontWeight: '600', color: colors.text },
   signOutButton: {
-    backgroundColor: '#dc2626',
-    borderRadius: 8,
-    paddingVertical: 12,
-    paddingHorizontal: 24,
+    borderWidth: 1,
+    borderColor: colors.danger,
+    borderRadius: radius.md,
+    padding: spacing.md,
+    alignItems: 'center',
+    marginTop: 40,
   },
-  signOutButtonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
+  signOutButtonText: { color: colors.danger, fontSize: 16, fontWeight: '600' },
 });

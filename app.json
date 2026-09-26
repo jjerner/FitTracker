@@ -28,7 +28,8 @@
         {
           "cameraPermission": "FitTrack uses the camera to scan food barcodes."
         }
-      ]
+      ],
+      "expo-font"
     ]
   }
 }

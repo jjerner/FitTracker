@@ -1,4 +1,4 @@
-import { Stack, router } from 'expo-router';
+import { router } from 'expo-router';
 import { useMemo, useState } from 'react';
 import {
   ActivityIndicator,
@@ -65,24 +65,17 @@ export default function FoodDiary() {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <Stack.Screen
-        options={{
-          headerTitleAlign: 'center',
-          headerTitle: () => (
-            <View style={styles.dayRow}>
-              <Pressable onPress={() => setDate(addDays(date, -1))} hitSlop={12}>
-                <Text style={styles.dayArrow}>‹</Text>
-              </Pressable>
-              <Pressable onPress={() => setCalendarOpen(true)} hitSlop={8}>
-                <Text style={styles.dayLabel}>{dayLabel}</Text>
-              </Pressable>
-              <Pressable onPress={() => setDate(addDays(date, 1))} disabled={isToday} hitSlop={12}>
-                <Text style={[styles.dayArrow, isToday && styles.dayArrowDisabled]}>›</Text>
-              </Pressable>
-            </View>
-          ),
-        }}
-      />
+      <View style={styles.dayRow}>
+        <Pressable onPress={() => setDate(addDays(date, -1))} hitSlop={12}>
+          <Text style={styles.dayArrow}>‹</Text>
+        </Pressable>
+        <Pressable onPress={() => setCalendarOpen(true)} hitSlop={8}>
+          <Text style={styles.dayLabel}>{dayLabel}</Text>
+        </Pressable>
+        <Pressable onPress={() => setDate(addDays(date, 1))} disabled={isToday} hitSlop={12}>
+          <Text style={[styles.dayArrow, isToday && styles.dayArrowDisabled]}>›</Text>
+        </Pressable>
+      </View>
 
       <Modal
         visible={calendarOpen}
@@ -201,7 +194,13 @@ function EntryRow({ entry, onDelete }: { entry: FoodLogEntry; onDelete: () => vo
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#fff' },
-  dayRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  dayRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 12,
+    marginBottom: 12,
+  },
   dayLabel: { fontSize: 17, fontWeight: '600', minWidth: 110, textAlign: 'center' },
   dayArrow: { fontSize: 28, color: '#2563eb', paddingHorizontal: 8 },
   dayArrowDisabled: { color: '#d1d5db' },
