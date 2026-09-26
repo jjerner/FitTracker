@@ -24,6 +24,7 @@ Full plan: `C:\Users\jerne\.claude\plans\help-me-plan-what-mellow-sketch.md`
 
 - **Forgot password** — built on branch `forgot-password` (not merged): code-based flow, `resetPasswordForEmail` → user types code + new password → `verifyOtp({ type: 'recovery' })` → `updateUser({ password })`. Blocker: the Reset Password email must contain `{{ .Token }}`, and Supabase only allows editing email templates with **custom SMTP**. Options discussed: a dedicated app-only Gmail + app password as SMTP (recommended; also lifts the built-in sender's low hourly limit), Resend, or the default link email + deep linking (flaky in Expo Go). User is deciding which.
 - **UX/UI polish** — user will do a UX pass later. Known items: Profile → "Nutrition Goals" button hard to see; Food tab shows two headers ("Food" tab header + stack header). Don't fix now.
+- **Go live (installable APK, no Expo Go)** — Android only (OnePlus Nord 5), just for the user, no Play Store. Plan: EAS cloud build of an APK + sideload; Supabase keys as EAS env vars (`.env` isn't uploaded); `expo-updates` recommended for updates without reinstalling. Full steps in the plan doc, Phase 5. User wants it planned but not started.
 - **Email-verification link** redirects to a dead `localhost:3000` page (see gotchas). Likely solved together with the SMTP/email decision.
 
 ## Environment
