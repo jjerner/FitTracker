@@ -5,7 +5,7 @@ import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 
 
 import { ExerciseList } from '../../../../components/workouts/ExerciseList';
 import { useSession } from '../../../../context/AuthProvider';
-import { createCustomExercise } from '../../../../lib/workouts';
+import { MOVEMENT_PATTERNS, createCustomExercise } from '../../../../lib/workouts';
 import type { ExerciseCategory } from '../../../../types/domain';
 
 const CATEGORIES: ExerciseCategory[] = ['strength', 'cardio'];
@@ -17,6 +17,7 @@ export default function ExerciseCatalog() {
   const [name, setName] = useState('');
   const [category, setCategory] = useState<ExerciseCategory>('strength');
   const [muscleGroup, setMuscleGroup] = useState('');
+  const [movementPattern, setMovementPattern] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -34,10 +35,12 @@ export default function ExerciseCatalog() {
         name: name.trim(),
         category,
         muscleGroup: muscleGroup.trim() || null,
+        movementPattern: category === 'strength' ? movementPattern : 'cardio',
       });
       await queryClient.invalidateQueries({ queryKey: ['exercises', session.user.id] });
       setName('');
       setMuscleGroup('');
+      setMovementPattern(null);
       setShowForm(false);
     } catch {
       setError('Could not save. Try again.');
@@ -75,6 +78,28 @@ export default function ExerciseCatalog() {
             value={muscleGroup}
             onChangeText={setMuscleGroup}
           />
+          {category === 'strength' ? (
+            <>
+              <Text style={styles.label}>Movement (optional, used for swap suggestions)</Text>
+              <View style={[styles.chipRow, styles.chipWrap]}>
+                {MOVEMENT_PATTERNS.map((p) => (
+                  <Pressable
+                    key={p.value}
+                    style={[styles.smallChip, movementPattern === p.value && styles.chipActive]}
+                    onPress={() =>
+                      setMovementPattern((cur) => (cur === p.value ? null : p.value))
+                    }
+                  >
+                    <Text
+                      style={movementPattern === p.value ? styles.chipTextActive : styles.chipText}
+                    >
+                      {p.label}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+            </>
+          ) : null}
           {error ? <Text style={styles.error}>{error}</Text> : null}
           <Pressable style={styles.saveButton} onPress={handleCreate} disabled={isSaving}>
             {isSaving ? (
@@ -116,6 +141,15 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 16,
   },
+  chipWrap: { flexWrap: 'wrap' },
+  smallChip: {
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 16,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+  },
+  label: { fontSize: 13, color: '#555' },
   chipActive: { backgroundColor: '#2563eb', borderColor: '#2563eb' },
   chipText: { color: '#333' },
   chipTextActive: { color: '#fff' },

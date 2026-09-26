@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 
 import { ExercisePicker } from '../../../components/workouts/ExercisePicker';
+import { SwapExercisePicker } from '../../../components/workouts/SwapExercisePicker';
 import { useSession } from '../../../context/AuthProvider';
 import { useWorkoutLog, useWorkoutTemplate } from '../../../hooks/useWorkouts';
 import {
@@ -22,9 +23,11 @@ import {
   deleteWorkoutLog,
   finishWorkout,
   formatSet,
+  insertExerciseAfter,
   removeExerciseFromLog,
+  swapLogExercise,
 } from '../../../lib/workouts';
-import type { WorkoutLogExercise, WorkoutTemplateExercise } from '../../../types/domain';
+import type { Exercise, WorkoutLogExercise, WorkoutTemplateExercise } from '../../../types/domain';
 
 function toNumberOrNull(value: string): number | null {
   const n = Number(value.replace(',', '.'));
@@ -94,7 +97,9 @@ export default function ActiveWorkout() {
 
       {log.exercises.map((logExercise) => (
         <ExerciseCard
-          key={logExercise.id}
+          // Includes the exercise so a swap resets the card's pre-filled inputs.
+          key={`${logExercise.id}-${logExercise.exercise.id}`}
+          logId={log.id}
           logExercise={logExercise}
           target={template?.exercises.find((te) => te.exercise.id === logExercise.exercise.id)}
           onChanged={refresh}
@@ -135,10 +140,12 @@ export default function ActiveWorkout() {
 }
 
 function ExerciseCard({
+  logId,
   logExercise,
   target,
   onChanged,
 }: {
+  logId: string;
   logExercise: WorkoutLogExercise;
   target: WorkoutTemplateExercise | undefined;
   onChanged: () => Promise<void>;
@@ -158,6 +165,21 @@ function ExerciseCard({
   );
   const [km, setKm] = useState(lastSet?.distanceM != null ? String(lastSet.distanceM / 1000) : '');
   const [isSaving, setIsSaving] = useState(false);
+  const [swapOpen, setSwapOpen] = useState(false);
+
+  // No sets yet: replace in place. Sets logged: keep them and add the new exercise below.
+  async function handleSwap(exercise: Exercise) {
+    if (logExercise.sets.length === 0) {
+      await swapLogExercise(logExercise.id, exercise.id);
+    } else {
+      await insertExerciseAfter({
+        logId,
+        afterPosition: logExercise.position,
+        exerciseId: exercise.id,
+      });
+    }
+    await onChanged();
+  }
 
   async function handleAddSet() {
     const minutesNum = toNumberOrNull(minutes);
@@ -194,6 +216,9 @@ function ExerciseCard({
     <View style={styles.card}>
       <View style={styles.cardHeader}>
         <Text style={styles.cardTitle}>{logExercise.exercise.name}</Text>
+        <Pressable onPress={() => setSwapOpen(true)}>
+          <Text style={styles.swapText}>⇄ Swap</Text>
+        </Pressable>
         {logExercise.sets.length === 0 ? (
           <Pressable onPress={handleRemoveExercise}>
             <Text style={styles.removeText}>Remove</Text>
@@ -238,6 +263,13 @@ function ExerciseCard({
           )}
         </Pressable>
       </View>
+
+      <SwapExercisePicker
+        current={logExercise.exercise}
+        visible={swapOpen}
+        onClose={() => setSwapOpen(false)}
+        onSelect={handleSwap}
+      />
     </View>
   );
 }
@@ -274,7 +306,8 @@ const styles = StyleSheet.create({
   cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   cardTitle: { fontSize: 16, fontWeight: '600', flex: 1 },
   targetText: { fontSize: 13, color: '#555', marginTop: 2 },
-  removeText: { color: '#dc2626', fontSize: 15 },
+  removeText: { color: '#dc2626', fontSize: 15, marginLeft: 12 },
+  swapText: { color: '#2563eb', fontSize: 15 },
   setRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',

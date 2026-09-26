@@ -46,6 +46,7 @@ export type Exercise = {
   category: ExerciseCategory;
   muscleGroup: string | null;
   equipment: string | null;
+  movementPattern: string | null;
   isCustom: boolean;
 };
 

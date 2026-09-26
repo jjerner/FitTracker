@@ -17,6 +17,7 @@ function mapExerciseRow(row: any): Exercise {
     category: row.category,
     muscleGroup: row.muscle_group,
     equipment: row.equipment,
+    movementPattern: row.movement_pattern,
     isCustom: row.created_by != null,
   };
 }
@@ -34,6 +35,27 @@ function mapSetRow(row: any): WorkoutSet {
 
 // --- Exercises ---
 
+// Exercises with the same pattern are offered as swaps mid-workout.
+export const MOVEMENT_PATTERNS: { value: string; label: string }[] = [
+  { value: 'horizontal_press', label: 'Chest press' },
+  { value: 'incline_press', label: 'Incline press' },
+  { value: 'vertical_press', label: 'Shoulder press' },
+  { value: 'chest_fly', label: 'Chest fly' },
+  { value: 'squat', label: 'Squat' },
+  { value: 'hinge', label: 'Hinge' },
+  { value: 'lunge', label: 'Lunge' },
+  { value: 'knee_flexion', label: 'Leg curl' },
+  { value: 'knee_extension', label: 'Leg extension' },
+  { value: 'calf', label: 'Calves' },
+  { value: 'vertical_pull', label: 'Pull-down' },
+  { value: 'horizontal_pull', label: 'Row' },
+  { value: 'lateral_raise', label: 'Lateral raise' },
+  { value: 'rear_delt', label: 'Rear delt' },
+  { value: 'biceps', label: 'Biceps' },
+  { value: 'triceps', label: 'Triceps' },
+  { value: 'core', label: 'Core' },
+];
+
 export async function getExercises(): Promise<Exercise[]> {
   const { data, error } = await supabase.from('exercises').select('*').order('name');
   if (error) throw error;
@@ -45,6 +67,7 @@ export async function createCustomExercise(input: {
   name: string;
   category: ExerciseCategory;
   muscleGroup: string | null;
+  movementPattern: string | null;
 }): Promise<Exercise> {
   const { data, error } = await supabase
     .from('exercises')
@@ -52,6 +75,7 @@ export async function createCustomExercise(input: {
       name: input.name,
       category: input.category,
       muscle_group: input.muscleGroup,
+      movement_pattern: input.movementPattern,
       created_by: input.userId,
     })
     .select()
@@ -281,6 +305,45 @@ export async function addExerciseToLog(input: {
     position: input.position,
   });
   if (error) throw error;
+}
+
+// Replaces the exercise in place; only used while it has no sets.
+export async function swapLogExercise(logExerciseId: string, exerciseId: string): Promise<void> {
+  const { error } = await supabase
+    .from('workout_log_exercises')
+    .update({ exercise_id: exerciseId })
+    .eq('id', logExerciseId);
+  if (error) throw error;
+}
+
+// Inserts right after the given position, shifting later exercises down one.
+export async function insertExerciseAfter(input: {
+  logId: string;
+  afterPosition: number;
+  exerciseId: string;
+}): Promise<void> {
+  const { data, error } = await supabase
+    .from('workout_log_exercises')
+    .select('id, position')
+    .eq('log_id', input.logId)
+    .gt('position', input.afterPosition)
+    .order('position', { ascending: false });
+  if (error) throw error;
+
+  // Highest first, one at a time, so positions never collide mid-way.
+  for (const row of data ?? []) {
+    const { error: shiftError } = await supabase
+      .from('workout_log_exercises')
+      .update({ position: row.position + 1 })
+      .eq('id', row.id);
+    if (shiftError) throw shiftError;
+  }
+
+  await addExerciseToLog({
+    logId: input.logId,
+    exerciseId: input.exerciseId,
+    position: input.afterPosition + 1,
+  });
 }
 
 export async function removeExerciseFromLog(logExerciseId: string): Promise<void> {
