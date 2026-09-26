@@ -41,6 +41,8 @@ type DraftExercise = {
   sets: string;
   reps: string;
   weight: string;
+  // Targets are optional; the inputs stay hidden until asked for.
+  showTargets: boolean;
 };
 
 function toNumberOrNull(value: string): number | null {
@@ -58,6 +60,7 @@ function TemplateForm({ template }: { template: WorkoutTemplate | null }) {
       sets: te.targetSets?.toString() ?? '',
       reps: te.targetReps?.toString() ?? '',
       weight: te.targetWeightKg?.toString() ?? '',
+      showTargets: te.targetSets != null || te.targetReps != null || te.targetWeightKg != null,
     }))
   );
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -212,7 +215,12 @@ function TemplateForm({ template }: { template: WorkoutTemplate | null }) {
               <Text style={styles.removeText}>Remove</Text>
             </Pressable>
           </View>
-          {e.exercise.category === 'strength' ? (
+          {e.exercise.category === 'strength' && !e.showTargets ? (
+            <Pressable onPress={() => updateExercise(index, { showTargets: true })}>
+              <Text style={styles.addTargetsText}>+ Targets</Text>
+            </Pressable>
+          ) : null}
+          {e.exercise.category === 'strength' && e.showTargets ? (
             <View style={styles.targetsRow}>
               <TargetInput label="Sets" value={e.sets} onChange={(v) => updateExercise(index, { sets: v })} />
               <TargetInput label="Reps" value={e.reps} onChange={(v) => updateExercise(index, { reps: v })} />
@@ -263,7 +271,10 @@ function TemplateForm({ template }: { template: WorkoutTemplate | null }) {
         visible={pickerOpen}
         onClose={() => setPickerOpen(false)}
         onSelect={(exercise) =>
-          setExercises((prev) => [...prev, { exercise, sets: '3', reps: '10', weight: '' }])
+          setExercises((prev) => [
+            ...prev,
+            { exercise, sets: '', reps: '', weight: '', showTargets: false },
+          ])
         }
       />
     </ScrollView>
@@ -317,6 +328,7 @@ const styles = StyleSheet.create({
   moveButton: { paddingHorizontal: 8, paddingVertical: 2 },
   moveText: { fontSize: 18, color: '#2563eb' },
   moveTextDisabled: { fontSize: 18, color: '#ccc' },
+  addTargetsText: { color: '#2563eb', fontSize: 14, marginTop: 6 },
   targetsRow: { flexDirection: 'row', gap: 8, marginTop: 8 },
   targetField: { flex: 1 },
   targetLabel: { fontSize: 12, color: '#555', marginBottom: 4 },
