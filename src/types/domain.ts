@@ -2,7 +2,7 @@ export type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack';
 
 export type Food = {
   id: string;
-  source: 'off' | 'custom';
+  source: 'off' | 'custom' | 'slv';
   barcode: string | null;
   name: string;
   brand: string | null;

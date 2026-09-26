@@ -73,6 +73,34 @@ export async function searchMyFoods(userId: string, query: string): Promise<Food
   return [...byId.values()].slice(0, 20);
 }
 
+// Generic Livsmedelsverket foods. Every word must match; closest names first,
+// so "banan" puts "Banan" above "Banan torkad".
+export async function searchBasicFoods(query: string): Promise<Food[]> {
+  const words = query.toLowerCase().split(/\s+/).filter(Boolean);
+  let request = supabase.from('foods').select('*').eq('source', 'slv');
+  for (const word of words) request = request.ilike('name', `%${word}%`);
+  // Fetch all matches (the table is small) so the best ones aren't cut off before sorting.
+  const { data, error } = await request.limit(1000);
+  if (error) throw error;
+
+  // Whole words beat parts of words: "mjölk" ranks "Mjölk fett 3%" above "Mjölkchoklad".
+  const q = query.trim().toLowerCase();
+  function rank(name: string): number {
+    const n = name.toLowerCase();
+    const nameWords = n.split(/[\s,.()]+/);
+    const wholeWords = words.every((w) => nameWords.includes(w));
+    if (n === q) return 0;
+    if (wholeWords && n.startsWith(q)) return 1;
+    if (wholeWords) return 2;
+    if (n.startsWith(q)) return 3;
+    return 4;
+  }
+  return (data ?? [])
+    .map(mapFoodRow)
+    .sort((a, b) => rank(a.name) - rank(b.name) || a.name.length - b.name.length)
+    .slice(0, 15);
+}
+
 export async function upsertOffFood(off: OffFood): Promise<Food> {
   const { data, error } = await supabase
     .from('foods')

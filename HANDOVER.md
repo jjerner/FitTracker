@@ -20,6 +20,13 @@ Full plan: `C:\Users\jerne\.claude\plans\help-me-plan-what-mellow-sketch.md`
 - **Past-days food diary** (no separate `food/day/[date].tsx` route): a centered `‹ Today ›` row at the top of `food/index.tsx` (the header just says "Food"); tapping the date opens a modal `MonthCalendar` to jump to any past day. View, delete (✕ per entry + confirm dialog) and "+ Log Food" work on any day. The selected day lives in `DiaryDateProvider`, which wraps the whole tab navigator in `(tabs)/_layout.tsx`; `food/[foodId].tsx` logs to that day.
 - **Profile**: editable display name (inline box + Save). User only wanted name — not height/sex/DOB/units — so no `profile/settings.tsx`. Settings section: Nutrition Goals row + "Vibrate when rest ends" switch.
 
+### Food search (`food/search.tsx`)
+
+Three sections, fetched in parallel with `Promise.allSettled` (one failing doesn't hide the others):
+1. **My foods** — `searchMyFoods`: foods the user has logged (most recent first, matched on `food_log_entries.food_name`) + their custom foods.
+2. **Basic foods** — `searchBasicFoods`: Livsmedelsverket foods (`source = 'slv'`). Every query word must match; ranked exact → whole words at start → whole words anywhere → prefix → contains, then shorter names first (so "mjölk" gives "Mjölk fett 3%" before "Mjölkchoklad").
+3. **Branded products** — Open Food Facts, still the legacy `cgi/search.pl` endpoint. It often returns HTTP 503; the newer `search.openfoodfacts.org` (search-a-licious) was faster and reliable in testing, but the user chose not to switch for now.
+
 ### UX pass features
 
 - **Templates** can be just a list of exercises: new exercises start without targets; "+ Targets" reveals Sets/Reps/kg.
@@ -58,6 +65,7 @@ Migrations live in `supabase/migrations/*.sql`, applied manually by pasting into
 - `0005_body_weights.sql` (body_weights, one row per user per day)
 - `0006_archive_templates.sql` (workout_templates.archived_at)
 - `0007_movement_patterns.sql` (exercises.movement_pattern + 28 extra seeded exercises, e.g. Chest Press, Hack Squat)
+- `0008_slv_foods.sql` (foods.source may be `'slv'`, foods.slv_number; 2,606 Livsmedelsverket generic foods, per 100 g, fetched once from their open API)
 
 For any new tables, write new numbered migration files and ask the user to run them the same way.
 

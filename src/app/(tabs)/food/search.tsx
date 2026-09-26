@@ -11,17 +11,18 @@ import {
 } from 'react-native';
 
 import { useSession } from '../../../context/AuthProvider';
-import { searchMyFoods, upsertOffFood } from '../../../lib/foods';
+import { searchBasicFoods, searchMyFoods, upsertOffFood } from '../../../lib/foods';
 import { searchByName, type OffFood } from '../../../lib/openFoodFacts';
 import type { Food } from '../../../types/domain';
 
-// My foods are already in the database; OFF results get saved when picked.
-type Result = { kind: 'mine'; food: Food } | { kind: 'off'; food: OffFood };
+// My/basic foods are already in the database; OFF results get saved when picked.
+type Result = { kind: 'db'; food: Food } | { kind: 'off'; food: OffFood };
 
 export default function FoodSearch() {
   const { session } = useSession();
   const [query, setQuery] = useState('');
   const [myFoods, setMyFoods] = useState<Food[]>([]);
+  const [basicFoods, setBasicFoods] = useState<Food[]>([]);
   const [offResults, setOffResults] = useState<OffFood[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -35,12 +36,17 @@ export default function FoodSearch() {
     setIsSearching(true);
     setError(null);
     const timeout = setTimeout(() => {
-      // Either source can fail on its own without hiding the other's results.
-      Promise.allSettled([searchMyFoods(session.user.id, query.trim()), searchByName(query)])
-        .then(([mine, off]) => {
+      // Any source can fail on its own without hiding the others' results.
+      Promise.allSettled([
+        searchMyFoods(session.user.id, query.trim()),
+        searchBasicFoods(query),
+        searchByName(query),
+      ])
+        .then(([mine, basic, off]) => {
           setMyFoods(mine.status === 'fulfilled' ? mine.value : []);
+          setBasicFoods(basic.status === 'fulfilled' ? basic.value : []);
           setOffResults(off.status === 'fulfilled' ? off.value : []);
-          if (mine.status === 'rejected' || off.status === 'rejected') {
+          if ([mine, basic, off].some((r) => r.status === 'rejected')) {
             setError('Some results failed to load. Check your connection.');
           }
         })
@@ -52,14 +58,21 @@ export default function FoodSearch() {
 
   const hasQuery = query.trim().length >= 2;
   const myBarcodes = new Set(myFoods.map((f) => f.barcode).filter(Boolean));
+  const myIds = new Set(myFoods.map((f) => f.id));
   const sections = hasQuery
     ? [
         {
           title: 'My foods',
-          data: myFoods.map((food): Result => ({ kind: 'mine', food })),
+          data: myFoods.map((food): Result => ({ kind: 'db', food })),
         },
         {
-          title: 'All foods',
+          title: 'Basic foods',
+          data: basicFoods
+            .filter((f) => !myIds.has(f.id))
+            .map((food): Result => ({ kind: 'db', food })),
+        },
+        {
+          title: 'Branded products',
           data: offResults
             .filter((f) => !f.barcode || !myBarcodes.has(f.barcode))
             .map((food): Result => ({ kind: 'off', food })),
@@ -68,11 +81,11 @@ export default function FoodSearch() {
     : [];
 
   function resultKey(item: Result, index: number): string {
-    return item.kind === 'mine' ? item.food.id : (item.food.barcode ?? `${item.food.name}-${index}`);
+    return item.kind === 'db' ? item.food.id : (item.food.barcode ?? `${item.food.name}-${index}`);
   }
 
   async function handleSelect(item: Result, key: string) {
-    if (item.kind === 'mine') {
+    if (item.kind === 'db') {
       router.push(`/(tabs)/food/food/${item.food.id}`);
       return;
     }
