@@ -1,5 +1,8 @@
 import { Stack } from 'expo-router';
 
+// Keeps the workouts list below screens opened from another tab (e.g. Resume on Home).
+export const unstable_settings = { anchor: 'index' };
+
 export default function WorkoutsLayout() {
   return (
     <Stack>
