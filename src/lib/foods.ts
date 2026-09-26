@@ -47,6 +47,32 @@ export async function searchCachedFoods(query: string): Promise<Food[]> {
   return (data ?? []).map(mapFoodRow);
 }
 
+// Foods this user has logged (most recent first), then their custom foods, matching the query.
+export async function searchMyFoods(userId: string, query: string): Promise<Food[]> {
+  const pattern = `%${query}%`;
+  const [logged, custom] = await Promise.all([
+    supabase
+      .from('food_log_entries')
+      .select('food_id, foods(*)')
+      .eq('user_id', userId)
+      .ilike('food_name', pattern)
+      .order('logged_at', { ascending: false })
+      .limit(200),
+    supabase.from('foods').select('*').eq('created_by', userId).ilike('name', pattern).limit(20),
+  ]);
+  if (logged.error) throw logged.error;
+  if (custom.error) throw custom.error;
+
+  const byId = new Map<string, Food>();
+  for (const row of logged.data ?? []) {
+    if (row.foods && !byId.has(row.food_id)) byId.set(row.food_id, mapFoodRow(row.foods));
+  }
+  for (const row of custom.data ?? []) {
+    if (!byId.has(row.id)) byId.set(row.id, mapFoodRow(row));
+  }
+  return [...byId.values()].slice(0, 20);
+}
+
 export async function upsertOffFood(off: OffFood): Promise<Food> {
   const { data, error } = await supabase
     .from('foods')
