@@ -6,6 +6,7 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
+  Switch,
   Text,
   TextInput,
   View,
@@ -13,12 +14,14 @@ import {
 
 import { useSession } from '../../../context/AuthProvider';
 import { useDisplayName } from '../../../hooks/useDisplayName';
+import { useRestVibration } from '../../../hooks/useRestVibration';
 import { supabase } from '../../../lib/supabase';
 import { colors, radius, spacing } from '../../../theme';
 
 export default function Profile() {
   const { session } = useSession();
   const { data: savedName, isLoading, saveName, isSaving } = useDisplayName();
+  const restVibration = useRestVibration();
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
@@ -46,6 +49,15 @@ export default function Profile() {
           />
         </Pressable>
       </Link>
+      <View style={[styles.row, styles.rowSpaced]}>
+        <SymbolView
+          name={{ ios: 'iphone.radiowaves.left.and.right', android: 'vibration' }}
+          tintColor={colors.primary}
+          size={22}
+        />
+        <Text style={styles.rowText}>Vibrate when rest ends</Text>
+        <Switch value={restVibration.enabled} onValueChange={restVibration.setEnabled} />
+      </View>
 
       <Pressable style={styles.signOutButton} onPress={() => supabase.auth.signOut()}>
         <Text style={styles.signOutButtonText}>Sign Out</Text>
@@ -128,6 +140,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg,
     padding: spacing.lg,
   },
+  rowSpaced: { marginTop: spacing.sm, paddingVertical: spacing.sm },
   rowText: { flex: 1, fontSize: 16, fontWeight: '600', color: colors.text },
   signOutButton: {
     borderWidth: 1,
