@@ -8,7 +8,8 @@ Full plan: `C:\Users\jerne\.claude\plans\help-me-plan-what-mellow-sketch.md`
 **Phase 1 (Foundation) — done.** Expo Router, Supabase email/password auth, tab shell.
 **Phase 2 (Food logging) — done.** Manual search, barcode scanning, diary, custom foods, nutrition goals.
 **Phase 3 (Workout logging) — done.** Exercise catalog (seeded + custom), template CRUD, active workout logging, session summary + history. Tested on-device by user.
-**Phase 4 (Progress & polish) — done, except forgot password (parked).** Everything below is tested on-device by the user.
+**Phase 4 (Progress & polish) — done.** Everything below is tested on-device by the user.
+**Forgot password — done** (`(auth)/forgot-password.tsx`, linked from login). Code-based: `resetPasswordForEmail` → user types emailed code + new password → `verifyOtp({ type: 'recovery' })` → `updateUser({ password })`. Supabase uses **custom SMTP via the user's own Gmail** (app password "FitTrack", `smtp.gmail.com:465`); the Reset Password template contains only `{{ .Token }}` (no link — Gmail's link scanner could burn the code). Swap the SMTP settings in the dashboard if the app is ever shared. Tested on-device by the user.
 **UX pass + exercise swap — done** (plan: `C:\Users\jerne\.claude\plans\lets-explore-the-ux-ui-indexed-lynx.md`). All steps tested on-device by the user. See "UX pass features" below.
 **Food search improvements — done.** My foods first + Livsmedelsverket basic foods. Tested on-device by the user. See "Food search" below.
 
@@ -39,10 +40,9 @@ Three sections, fetched in parallel with `Promise.allSettled` (one failing doesn
 
 ### On hold (user's call — don't change unless asked)
 
-- **Forgot password** — built on branch `forgot-password` (not merged): code-based flow, `resetPasswordForEmail` → user types code + new password → `verifyOtp({ type: 'recovery' })` → `updateUser({ password })`. Blocker: the Reset Password email must contain `{{ .Token }}`, and Supabase only allows editing email templates with **custom SMTP**. Options discussed: a dedicated app-only Gmail + app password as SMTP (recommended; also lifts the built-in sender's low hourly limit), Resend, or the default link email + deep linking (flaky in Expo Go). User is deciding which.
 - **Food diary redesign (Lifesum-style)** — offered in the UX pass (calorie ring on the Food tab, "+" per meal, meal kcal totals, recent foods); user didn't pick it this round.
 - **Go live (installable APK, no Expo Go)** — Android only (OnePlus Nord 5), just for the user, no Play Store. Plan: EAS cloud build of an APK + sideload; Supabase keys as EAS env vars (`.env` isn't uploaded); `expo-updates` recommended for updates without reinstalling. Full steps in the plan doc, Phase 5. User wants it planned but not started.
-- **Email-verification link** redirects to a dead `localhost:3000` page (see gotchas). Likely solved together with the SMTP/email decision.
+- **Email-verification link** redirects to a dead `localhost:3000` page (see gotchas). Custom SMTP is now set up, so the "Confirm signup" template could be switched to a code too (same approach as forgot password).
 
 ## Environment
 
@@ -80,6 +80,7 @@ For any new tables, write new numbered migration files and ask the user to run t
 - The `react-hooks/refs` lint rule rejects reading a ref during render, including inside a `useState` initializer. Use a module-level counter or state instead (see `newRow` in `workouts/active.tsx`).
 - `expo-symbols` on Android takes Material Symbols names (`{ ios: 'house.fill', android: 'home' }`); tsc checks the names.
 - The Livsmedelsverket import script isn't in the repo (it was a one-off). To re-fetch: `GET https://dataportal.livsmedelsverket.se/livsmedel/api/v1/livsmedel?offset=0&limit=3000&sprak=1` for the list, then `.../livsmedel/{nummer}/naringsvarden?sprak=1` per food (kcal = `forkortning` `Ener` with `enhet` `kcal`; `Prot`, `Kolh`, `Fett`, `Fibe`, `Mono/disack`, `Na`).
+- Reset codes: each new send invalidates the previous code, and Gmail threads same-subject emails with the **oldest first** — "token has expired or is invalid" was the user copying an old code.
 - After any direct Supabase write that isn't done through a React Query mutation hook, remember to `queryClient.invalidateQueries(...)` the relevant key or the UI won't reflect it (hit this with the food diary).
 
 ## Architecture quick reference
@@ -110,5 +111,5 @@ For any new tables, write new numbered migration files and ask the user to run t
 
 ## Next session should
 
-1. Ask the user what they want next. Candidates: forgot password once they've chosen an email route (`git switch forgot-password`, rebase onto master), going live (APK), the Lifesum-style food diary, switching Open Food Facts to the newer search endpoint, moving remaining screens onto `src/theme.ts`, or new features.
+1. Ask the user what they want next. Candidates: going live (APK), the Lifesum-style food diary, switching Open Food Facts to the newer search endpoint, moving remaining screens onto `src/theme.ts`, or new features.
 2. Don't touch the "On hold" items above unless the user brings them up.
