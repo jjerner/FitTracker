@@ -13,6 +13,8 @@ Full plan: `C:\Users\jerne\.claude\plans\help-me-plan-what-mellow-sketch.md`
 **UX pass + exercise swap — done** (plan: `C:\Users\jerne\.claude\plans\lets-explore-the-ux-ui-indexed-lynx.md`). All steps tested on-device by the user. See "UX pass features" below.
 **Food search improvements — done.** My foods first + Livsmedelsverket basic foods. Tested on-device by the user. See "Food search" below.
 
+**Go live (installable APK) — in progress.** Android only (OnePlus Nord 5), just for the user, no Play Store. Done: Expo account `jjerner` (Google login), `eas init` (project `@jjerner/FitTrack`), `android.package` = `com.jjerner.fittrack`, `eas.json` `preview` profile (internal APK, `environment: preview`, `channel: preview`), `expo-updates` + `eas update:configure` (`runtimeVersion` policy `appVersion`), Supabase URL/anon key set as EAS env vars in the `preview` environment, keystore generated in the cloud. Mic permission disabled (`recordAudioAndroid: false`). Build #1 failed (npm ci, fixed by `.npmrc`); build #2 `59501503-f0f1-4d39-842a-cfdd5c602949` queued. **Remaining:** user installs the APK on the phone and tests. Rebuild: `npx eas-cli@latest build -p android --profile preview`. JS-only changes later: `npx eas-cli@latest update --channel preview --environment preview --message "..."` (no reinstall; app picks it up after 1–2 restarts). Native changes (new native package, app.json plugins, version bump) need a new build.
+
 ### Phase 4 features
 
 - **Progress tab**: body weight log + chart (last 30 days); **nutrition averages** table (`NutritionAveragesCard`: kcal/P/C/F over last 7 / 30 / 90 *logged* days, empty days skipped, today excluded); **Workouts card** (`WorkoutsCard`, replaced the old volume chart): completed-workout count with a dropdown (last 30 / 90 days / year, incl. today) + month calendar with green dot = workout, grey = none, no dot on future days (‹ › up to 12 months back).
@@ -41,7 +43,6 @@ Three sections, fetched in parallel with `Promise.allSettled` (one failing doesn
 ### On hold (user's call — don't change unless asked)
 
 - **Food diary redesign (Lifesum-style)** — offered in the UX pass (calorie ring on the Food tab, "+" per meal, meal kcal totals, recent foods); user didn't pick it this round.
-- **Go live (installable APK, no Expo Go)** — Android only (OnePlus Nord 5), just for the user, no Play Store. Plan: EAS cloud build of an APK + sideload; Supabase keys as EAS env vars (`.env` isn't uploaded); `expo-updates` recommended for updates without reinstalling. Full steps in the plan doc, Phase 5. User wants it planned but not started.
 - **Email-verification link** redirects to a dead `localhost:3000` page (see gotchas). Custom SMTP is now set up, so the "Confirm signup" template could be switched to a code too (same approach as forgot password).
 
 ## Environment
@@ -74,7 +75,9 @@ For any new tables, write new numbered migration files and ask the user to run t
 
 - Supabase's default "Site URL" is `localhost:3000`, so the email-verification link redirects to a dead localhost page after confirming. Cosmetic only — verification succeeds before the redirect. Fix is tied to the SMTP/email decision (see On hold).
 - A `.upsert(..., { onConflict: 'barcode' })` needs a **non-partial** unique constraint on that column — a partial index (`WHERE barcode IS NOT NULL`) doesn't work as an ON CONFLICT target. Fixed in `0003`. Keep this in mind for any future upsert-by-nullable-column tables.
-- `npm install` currently fails with ERESOLVE: the lockfile has optional `react-dom@19.3.0` (web-only) vs `react@19.2.3`. Workaround: `npx expo install <pkg> -- --legacy-peer-deps`.
+- `npm install` used to fail with ERESOLVE (optional web-only `react-dom@19.3.0` vs `react@19.2.3`). Now `.npmrc` has `legacy-peer-deps=true`, so plain `npx expo install <pkg>` works. **Don't remove `.npmrc`**: EAS Build runs strict `npm ci`, which fails ("Missing: react-dom@19.3.0 from lock file") without it.
+- EAS build logs (`build:view --json` → `logFiles`) are gzipped JSON lines; PowerShell's `Invoke-WebRequest` mangles them, so fetch with Node's `fetch` + `zlib.gunzipSync`.
+- Free-tier EAS builds can sit **in the queue for 1–2+ hours** in the evening (Europe). Not an error.
 - New files sometimes aren't picked up by a normal reload in Expo Go — if the user doesn't see a change, have them restart with `npx expo start -c`.
 - `StyleSheet.absoluteFillObject` no longer exists (RN 0.86) — use explicit `position: 'absolute', top/right/bottom/left: 0`.
 - The `react-hooks/refs` lint rule rejects reading a ref during render, including inside a `useState` initializer. Use a module-level counter or state instead (see `newRow` in `workouts/active.tsx`).
@@ -111,5 +114,5 @@ For any new tables, write new numbered migration files and ask the user to run t
 
 ## Next session should
 
-1. Ask the user what they want next. Candidates: going live (APK), the Lifesum-style food diary, switching Open Food Facts to the newer search endpoint, moving remaining screens onto `src/theme.ts`, or new features.
+1. Ask the user what they want next. Candidates: finish going live if the APK isn't installed yet (see Status), the Lifesum-style food diary, switching Open Food Facts to the newer search endpoint, moving remaining screens onto `src/theme.ts`, or new features.
 2. Don't touch the "On hold" items above unless the user brings them up.
