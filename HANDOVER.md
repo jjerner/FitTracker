@@ -13,7 +13,7 @@ Full plan: `C:\Users\jerne\.claude\plans\help-me-plan-what-mellow-sketch.md`
 **UX pass + exercise swap — done** (plan: `C:\Users\jerne\.claude\plans\lets-explore-the-ux-ui-indexed-lynx.md`). All steps tested on-device by the user. See "UX pass features" below.
 **Food search improvements — done.** My foods first + Livsmedelsverket basic foods. Tested on-device by the user. See "Food search" below.
 
-**Go live (installable APK) — in progress.** Android only (OnePlus Nord 5), just for the user, no Play Store. Done: Expo account `jjerner` (Google login), `eas init` (project `@jjerner/FitTrack`), `android.package` = `com.jjerner.fittrack`, `eas.json` `preview` profile (internal APK, `environment: preview`, `channel: preview`), `expo-updates` + `eas update:configure` (`runtimeVersion` policy `appVersion`), Supabase URL/anon key set as EAS env vars in the `preview` environment, keystore generated in the cloud. Mic permission disabled (`recordAudioAndroid: false`). Build #1 failed (npm ci, fixed by `.npmrc`); build #2 `59501503-f0f1-4d39-842a-cfdd5c602949` queued. **Remaining:** user installs the APK on the phone and tests. Rebuild: `npx eas-cli@latest build -p android --profile preview`. JS-only changes later: `npx eas-cli@latest update --channel preview --environment preview --message "..."` (no reinstall; app picks it up after 1–2 restarts). Native changes (new native package, app.json plugins, version bump) need a new build.
+**Go live (installable APK) — done.** Installed on the user's phone 2026-10-01 and working; user is beta testing it. Android only (OnePlus Nord 5), just for the user, no Play Store. Done: Expo account `jjerner` (Google login), `eas init` (project `@jjerner/FitTrack`), `android.package` = `com.jjerner.fittrack`, `eas.json` `preview` profile (internal APK, `environment: preview`, `channel: preview`), `expo-updates` + `eas update:configure` (`runtimeVersion` policy `appVersion`), Supabase URL/anon key set as EAS env vars in the `preview` environment, keystore generated in the cloud. Mic permission disabled (`recordAudioAndroid: false`). Build #1 failed (npm ci, fixed by `.npmrc`); build #2 `59501503-f0f1-4d39-842a-cfdd5c602949` is the installed one. Rebuild: `npx eas-cli@latest build -p android --profile preview`. JS-only changes later: `npx eas-cli@latest update --channel preview --environment preview --message "..."` (no reinstall; app picks it up after 1–2 restarts). Native changes (new native package, app.json plugins, version bump) need a new build.
 
 ### Phase 4 features
 
@@ -114,5 +114,86 @@ For any new tables, write new numbered migration files and ask the user to run t
 
 ## Next session should
 
-1. Ask the user what they want next. Candidates: finish going live if the APK isn't installed yet (see Status), the Lifesum-style food diary, switching Open Food Facts to the newer search endpoint, moving remaining screens onto `src/theme.ts`, or new features.
-2. Don't touch the "On hold" items above unless the user brings them up.
+1. Collect the user's beta-test feedback from using the installed app (bugs and irritations come first).
+2. Go through the **Proposed roadmap** below together and pick what's next. Nothing in it is approved yet.
+3. Don't touch the "On hold" items above unless the user brings them up.
+4. Remember: JS-only changes reach the phone with `eas update` (see Status → Go live); 🔁 items need a new APK build.
+
+## Proposed roadmap (for review — not approved yet)
+
+Made 2026-10-02 from our known gaps + a look at MyFitnessPal, Lifesum, MacroFactor, Cronometer, Strong, Hevy and StrengthLog.
+Effort: **S** = under an hour, **M** = a session, **L** = several sessions.
+🔁 = native change → needs a new APK build (`eas build`). Everything else ships with `eas update`.
+🗄 = needs a new SQL migration (user pastes it into Supabase).
+
+### 1. Known gaps in our own app (quick wins, high value)
+| # | Improvement | Why | Effort |
+|---|---|---|---|
+| 1.1 | **Edit a logged food entry** (tap a row → change grams/meal). Today you can only delete. | Every competitor has it; fixing a typo now means delete + re-log. | S–M |
+| 1.2 | **Smart default meal** from time of day (breakfast before 10, lunch 10–14, dinner 17–21, else snack). Today it always defaults to "Snack". | One less tap on every log. | S |
+| 1.3 | **Log in servings, not only grams** (`serving_size_g` is already stored; `quantity_unit` already allows `'serving'`). E.g. "1 bar (45 g)". | Branded products are eaten in pieces, not grams. | S–M |
+| 1.4 | **Meal totals** (kcal per breakfast/lunch/...) in the diary. | Lifesum/MFP show it; helps see where calories go. | S |
+| 1.5 | **Edit past workouts** (fix a weight/reps after finishing). Today only delete. | Common mistake after the session. | M |
+| 1.6 | **Offline-safe set logging.** Sets are saved over the network on ✓; in a basement gym with no signal that fails. Queue failed saves locally and retry. | Data loss risk in a real gym. Check during beta. | M |
+| 1.7 | **App icon + splash screen** (still the Expo default). 🔁 | Feels like a real app on the home screen. | S (+ rebuild) |
+| 1.8 | Move the remaining screens onto `src/theme.ts` (food, progress, workouts list, auth). | Consistent look; needed for dark mode later. | M |
+| 1.9 | Switch Open Food Facts search to `search.openfoodfacts.org` (old endpoint often returns 503). | Branded search often fails today. | S |
+| 1.10 | Email-verification link → code (same approach as forgot password). SMTP is already set up. | The current link lands on a dead localhost page. Only matters for new accounts. | S |
+
+### 2. Food — features competitors have that we don't
+| # | Feature | Seen in | Effort |
+|---|---|---|---|
+| 2.1 | **Copy meal / copy yesterday** ("same breakfast as yesterday"). | MFP, Lifesum | S–M |
+| 2.2 | **Saved meals / recipes** (a group of foods logged in one tap, e.g. "Overnight oats"). 🗄 | MFP "My Meals", Lifesum, Cronometer | M |
+| 2.3 | **Quick add** (type kcal + macros directly, no food needed). 🗄 (`food_id` is required today) | MFP, MacroFactor | S–M |
+| 2.4 | **Lifesum-style diary** (calorie ring on the Food tab, "+" per meal that pre-selects the meal, recent foods). Reuses the Home ring. | Lifesum | M |
+| 2.5 | **Water tracker** (glasses per day on Home/Food). 🗄 | Lifesum, MFP | S–M |
+| 2.6 | **Favourites** (star a food; shown first in "My foods"). 🗄 | most apps | S |
+| 2.7 | Fiber/sugar/sodium on the food page + optional fiber goal (fields already exist). | Cronometer | S |
+| 2.8 | *Later / bigger:* AI photo or text logging ("2 eggs and a toast") via the Claude API. Needs a server-side key (Supabase Edge Function) and costs money per call. | MFP Meal Scan, MacroFactor, Lifesum | L |
+| 2.9 | *Later / bigger:* adaptive calorie goal from weight trend + intake (MacroFactor's main idea). We already have both data series. | MacroFactor | L |
+
+### 3. Workouts — features competitors have that we don't
+| # | Feature | Seen in | Effort |
+|---|---|---|---|
+| 3.1 | **Personal records** (🏆 when a set beats your best weight / estimated 1RM; list per exercise). Data is all there. | Strong, Hevy, StrengthLog | M |
+| 3.2 | **Estimated 1RM trend** on the exercise page (Epley formula) next to max weight. | Strong | S |
+| 3.3 | **Workout notes** + per-exercise notes ("seat at 4"). 🗄 | Strong, Hevy | S–M |
+| 3.4 | **Set types**: warm-up / drop set / failure; warm-ups excluded from PRs and volume. 🗄 | Strong, Hevy | M |
+| 3.5 | **Plate calculator** (tap a weight → plates per side). | Strong | S |
+| 3.6 | **Per-exercise rest time** (today a fixed 90 s for everything). 🗄 | Strong, Hevy | S–M |
+| 3.7 | **Supersets** (group 2 exercises, rest after the pair). 🗄 | Strong, Hevy | M–L |
+| 3.8 | **Finish summary with highlights** (duration, volume vs last time, new PRs). Extends `log/[logId].tsx`. | Hevy | S–M |
+| 3.9 | *Later:* rest-timer notification while the phone is locked (expo-notifications). 🔁 | Strong, Hevy | M |
+
+### 4. Progress & motivation
+| # | Feature | Effort |
+|---|---|---|
+| 4.1 | Weight chart: 7-day moving average line + range (30/90/365 days). Daily weight jumps around; the trend is what matters. | S–M |
+| 4.2 | Weekly sets per muscle group. | M |
+| 4.3 | Body measurements (waist, etc.) and progress photos. 🗄 (photos need Supabase Storage) | M–L |
+| 4.4 | Calorie/protein goal hit-streak on Home (like the workout streak). | S |
+
+### 5. Settings that are missing
+| # | Setting | Effort |
+|---|---|---|
+| 5.1 | **Default rest time** (and per exercise, see 3.6). | S |
+| 5.2 | **Goal helper**: suggest calories/macros from weight, height, age, activity and goal (lose/keep/gain). `profiles` already has `height_cm`, `sex`, `date_of_birth` (user earlier said they only wanted name in Profile — ask before adding these fields to the UI). | M |
+| 5.3 | **Different goals on training vs rest days.** 🗄 | M |
+| 5.4 | **Reminders** ("log your lunch", "weigh in Monday morning"). 🔁 expo-notifications | M |
+| 5.5 | **Export my data** (CSV of food log, workouts, weight) via share sheet. | M |
+| 5.6 | Dark mode (after 1.8). | M |
+| 5.7 | Change password / delete account (from Profile). | S–M |
+
+### 6. Deliberately not proposed
+Social feed/friends (Hevy), diet-pattern scores (Lifesum), 80+ micronutrients (Cronometer), coaching programs (StrengthLog), wearables — too big or not useful for a single user.
+
+### Suggested order (recommendation)
+1. Beta-test fixes →
+2. Quick food wins: 1.1, 1.2, 1.3, 1.4, 2.1 (one session) →
+3. Gym safety + motivation: 1.6, 3.1, 3.2, 3.8 →
+4. Saved meals (2.2) + quick add (2.3) →
+5. Look & feel: 1.7 icon (bundle with the next native build), 1.8 theme, 2.4 Lifesum diary →
+6. Bigger bets to discuss: 5.2 goal helper / 2.9 adaptive goal, 2.8 AI logging.
+
+Sources: MyFitnessPal (Meal Scan, Quick Add, My Meals), MacroFactor (adaptive targets), Cronometer (micronutrients), Lifesum (diet patterns, water/habits), Strong (plate calculator, PRs, 1RM, CSV export), Hevy (social, set types), StrengthLog (programs) — 2026 comparison articles.
