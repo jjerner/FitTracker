@@ -7,9 +7,9 @@ import {
   Pressable,
   StyleSheet,
   Text,
-  TextInput,
 } from 'react-native';
 
+import { LabeledInput } from '../../components/LabeledInput';
 import { supabase } from '../../lib/supabase';
 
 // Two steps: 1) email us a reset code, 2) enter the code + a new password.
@@ -71,9 +71,9 @@ export default function ForgotPassword() {
       {!codeSent ? (
         <>
           <Text style={styles.info}>Enter your email and we&apos;ll send you a reset code.</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Email"
+          <LabeledInput
+            label="Email address"
+            placeholder="you@example.com"
             autoCapitalize="none"
             keyboardType="email-address"
             value={email}
@@ -85,17 +85,17 @@ export default function ForgotPassword() {
           <Text style={styles.info}>
             We sent a code to {email.trim()}. Enter it below with your new password.
           </Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Code from email"
+          <LabeledInput
+            label="Code from email"
+            placeholder="123456"
             keyboardType="number-pad"
             value={code}
             onChangeText={setCode}
           />
-          <TextInput
-            style={styles.input}
-            placeholder="New password"
-            secureTextEntry
+          <LabeledInput
+            label="New password"
+            placeholder="Choose a new password"
+            password
             value={password}
             onChangeText={setPassword}
           />
@@ -147,14 +147,6 @@ const styles = StyleSheet.create({
     color: '#555',
     marginBottom: 16,
     textAlign: 'center',
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    padding: 14,
-    marginBottom: 12,
-    fontSize: 16,
   },
   button: {
     backgroundColor: '#2563eb',

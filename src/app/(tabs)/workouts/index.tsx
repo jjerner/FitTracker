@@ -73,9 +73,9 @@ export default function WorkoutsHome() {
         </Pressable>
       )}
 
-      <Text style={styles.sectionTitle}>Templates</Text>
+      <Text style={styles.sectionTitle}>Routines</Text>
       {activeTemplates.length === 0 ? (
-        <Text style={styles.emptyText}>No templates yet</Text>
+        <Text style={styles.emptyText}>No routines yet</Text>
       ) : (
         activeTemplates.map((template) => (
           <Pressable
@@ -124,7 +124,7 @@ export default function WorkoutsHome() {
         style={styles.secondaryButton}
         onPress={() => router.push('/(tabs)/workouts/new')}
       >
-        <Text style={styles.secondaryButtonText}>+ New Template</Text>
+        <Text style={styles.secondaryButtonText}>+ New Routine</Text>
       </Pressable>
 
       <Pressable

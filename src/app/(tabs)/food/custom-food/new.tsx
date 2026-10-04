@@ -8,9 +8,9 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
 } from 'react-native';
 
+import { LabeledInput } from '../../../../components/LabeledInput';
 import { useSession } from '../../../../context/AuthProvider';
 import { createCustomFood } from '../../../../lib/foods';
 
@@ -60,38 +60,38 @@ export default function NewCustomFood() {
           {barcode ? `Barcode ${barcode} wasn't found. ` : ''}Enter nutrition per 100g.
         </Text>
 
-        <TextInput style={styles.input} placeholder="Name" value={name} onChangeText={setName} />
-        <TextInput
-          style={styles.input}
-          placeholder="Calories (kcal)"
+        <LabeledInput label="Name" placeholder="e.g. Oat bar" value={name} onChangeText={setName} />
+        <LabeledInput
+          label="Calories per 100 g (kcal)"
+          placeholder="e.g. 380"
           keyboardType="numeric"
           value={calories}
           onChangeText={setCalories}
         />
-        <TextInput
-          style={styles.input}
-          placeholder="Protein (g)"
+        <LabeledInput
+          label="Protein per 100 g (g)"
+          placeholder="e.g. 12"
           keyboardType="numeric"
           value={protein}
           onChangeText={setProtein}
         />
-        <TextInput
-          style={styles.input}
-          placeholder="Carbs (g)"
+        <LabeledInput
+          label="Carbs per 100 g (g)"
+          placeholder="e.g. 55"
           keyboardType="numeric"
           value={carbs}
           onChangeText={setCarbs}
         />
-        <TextInput
-          style={styles.input}
-          placeholder="Fat (g)"
+        <LabeledInput
+          label="Fat per 100 g (g)"
+          placeholder="e.g. 8"
           keyboardType="numeric"
           value={fat}
           onChangeText={setFat}
         />
-        <TextInput
-          style={styles.input}
-          placeholder="Fiber (g) — optional"
+        <LabeledInput
+          label="Fiber per 100 g (g) — optional"
+          placeholder="e.g. 6"
           keyboardType="numeric"
           value={fiber}
           onChangeText={setFiber}
@@ -119,14 +119,6 @@ const styles = StyleSheet.create({
   flex: { flex: 1, backgroundColor: '#fff' },
   container: { padding: 16 },
   hint: { color: '#888', marginBottom: 16 },
-  input: {
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    padding: 14,
-    fontSize: 16,
-    marginBottom: 12,
-  },
   error: { color: '#dc2626', marginBottom: 12 },
   saveButton: {
     backgroundColor: '#2563eb',

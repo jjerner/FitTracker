@@ -7,9 +7,9 @@ import {
   Pressable,
   StyleSheet,
   Text,
-  TextInput,
 } from 'react-native';
 
+import { LabeledInput } from '../../components/LabeledInput';
 import { supabase } from '../../lib/supabase';
 
 export default function Login() {
@@ -39,18 +39,18 @@ export default function Login() {
     >
       <Text style={styles.title}>FitTrack</Text>
 
-      <TextInput
-        style={styles.input}
-        placeholder="Email"
+      <LabeledInput
+        label="Email address"
+        placeholder="you@example.com"
         autoCapitalize="none"
         keyboardType="email-address"
         value={email}
         onChangeText={setEmail}
       />
-      <TextInput
-        style={styles.input}
-        placeholder="Password"
-        secureTextEntry
+      <LabeledInput
+        label="Password"
+        placeholder="Your password"
+        password
         value={password}
         onChangeText={setPassword}
       />
@@ -88,14 +88,6 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     marginBottom: 32,
     textAlign: 'center',
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    padding: 14,
-    marginBottom: 12,
-    fontSize: 16,
   },
   button: {
     backgroundColor: '#2563eb',

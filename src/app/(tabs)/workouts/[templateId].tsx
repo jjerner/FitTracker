@@ -98,7 +98,7 @@ function TemplateForm({ template }: { template: WorkoutTemplate | null }) {
   async function handleSave() {
     if (!session) return;
     if (!name.trim()) {
-      setError('Give the template a name.');
+      setError('Give the routine a name.');
       return;
     }
     setIsSaving(true);
@@ -128,7 +128,7 @@ function TemplateForm({ template }: { template: WorkoutTemplate | null }) {
       const newId = await saveTemplate({
         id: null,
         userId: session.user.id,
-        name: `${name.trim() || 'Template'} (copy)`,
+        name: `${name.trim() || 'Routine'} (copy)`,
         exercises: draftToTemplateExercises(),
       });
       await invalidate();
@@ -157,7 +157,7 @@ function TemplateForm({ template }: { template: WorkoutTemplate | null }) {
 
   function handleDelete() {
     if (!template) return;
-    Alert.alert('Delete template?', template.name, [
+    Alert.alert('Delete routine?', template.name, [
       { text: 'Cancel', style: 'cancel' },
       {
         text: 'Delete',
@@ -240,7 +240,7 @@ function TemplateForm({ template }: { template: WorkoutTemplate | null }) {
         {isSaving ? (
           <ActivityIndicator color="#fff" />
         ) : (
-          <Text style={styles.saveButtonText}>Save Template</Text>
+          <Text style={styles.saveButtonText}>Save Routine</Text>
         )}
       </Pressable>
 
@@ -263,7 +263,7 @@ function TemplateForm({ template }: { template: WorkoutTemplate | null }) {
 
       {template ? (
         <Pressable style={styles.deleteButton} onPress={handleDelete}>
-          <Text style={styles.deleteButtonText}>Delete Template</Text>
+          <Text style={styles.deleteButtonText}>Delete Routine</Text>
         </Pressable>
       ) : null}
 
