@@ -136,7 +136,7 @@ From the user's own use of the installed APK, collected 2026-10-04.
 | B2+B3 | *Option:* one shared labelled-input component with an explicit placeholder colour, used on all screens | Overlaps with 1.8 (theme). | M |
 | B4 | **Rename "Templates" to "Routines"** (user's choice) | On-screen words only, ~69 occurrences in 6 files (`workouts/index.tsx`, `workouts/[templateId].tsx`, `workouts/active.tsx`, `workouts/_layout.tsx`, `home.tsx`; check the one in `forgot-password.tsx` is a false match). Code names, file names and DB tables stay. | S |
 | B5 | **Withings scale sync** (new feature) | Withings OAuth2 public API. Needs a Supabase Edge Function (holds the client secret, login + token refresh), a 🗄 migration for tokens, a "Connect Withings" button in Profile, and a pull of new weights into `body_weights` when Progress opens (webhook push later). User must register a free Withings developer app. 🔁 may be needed for the redirect. Open: scale wins over a manual entry on the same day (suggested); weight only at first, body fat later. | L |
-| B6 | **No-food-logged reminder** (promotes 5.4) | One daily local notification, default 19:00, toggle + time picker in Profile → Settings. `expo-notifications`. When any food is logged for today, reschedule today's reminder to tomorrow, so it only fires when nothing is logged. Asks for notification permission. 🔁 | M |
+| B6 | **No-food-logged reminder** (promotes 5.4) — **done in code, needs APK build + on-device test.** Schedules 14 one-off notifications (`src/lib/reminders.ts`), refreshed on app open and on every food log/delete; setting in Profile. Not yet handled: signing out doesn't cancel reminders. | One daily local notification, default 19:00, toggle + time picker in Profile → Settings. `expo-notifications`. When any food is logged for today, reschedule today's reminder to tomorrow, so it only fires when nothing is logged. Asks for notification permission. 🔁 | M |
 
 Bundles: **A** (JS-only, one `eas update`): B1 + B2 + B3 + B4 — do first. **B** (next native build): B6 + 1.7 icon, optionally 3.9. **C** (moved back — a new feature no competitor seems to have, so it comes after the polish and gym-safety items): B5.
 
@@ -149,7 +149,7 @@ Bundles: **A** (JS-only, one `eas update`): B1 + B2 + B3 + B4 — do first. **B*
 | 1.4 | **Meal totals** (kcal per breakfast/lunch/...) in the diary. | Lifesum/MFP show it; helps see where calories go. | S |
 | 1.5 | **Edit past workouts** (fix a weight/reps after finishing). Today only delete. | Common mistake after the session. | M |
 | 1.6 | **Offline-safe set logging.** Sets are saved over the network on ✓; in a basement gym with no signal that fails. Queue failed saves locally and retry. | Data loss risk in a real gym. Check during beta. | M |
-| 1.7 | **App icon + splash screen** (still the Expo default). 🔁 | Feels like a real app on the home screen. | S (+ rebuild) |
+| 1.7 | **App icon + splash screen** — done in code (generated blue dumbbell, `assets/`); ships with the next APK build. 🔁 | Feels like a real app on the home screen. | S (+ rebuild) |
 | 1.8 | Move the remaining screens onto `src/theme.ts` (food, progress, workouts list, auth). | Consistent look; needed for dark mode later. | M |
 | 1.9 | Switch Open Food Facts search to `search.openfoodfacts.org` (old endpoint often returns 503). | Branded search often fails today. | S |
 | 1.10 | Email-verification link → code (same approach as forgot password). SMTP is already set up. | The current link lands on a dead localhost page. Only matters for new accounts. | S |
