@@ -114,7 +114,7 @@ For any new tables, write new numbered migration files and ask the user to run t
 
 ## Next session should
 
-1. Collect the user's beta-test feedback from using the installed app (bugs and irritations come first).
+1. Beta-test feedback is collected (roadmap section 0, B1–B6). Start with bundle A (B1–B4); more feedback may come.
 2. Go through the **Proposed roadmap** below together and pick what's next. Nothing in it is approved yet.
 3. Don't touch the "On hold" items above unless the user brings them up.
 4. Remember: JS-only changes reach the phone with `eas update` (see Status → Go live); 🔁 items need a new APK build.
@@ -125,6 +125,20 @@ Made 2026-10-02 from our known gaps + a look at MyFitnessPal, Lifesum, MacroFact
 Effort: **S** = under an hour, **M** = a session, **L** = several sessions.
 🔁 = native change → needs a new APK build (`eas build`). Everything else ships with `eas update`.
 🗄 = needs a new SQL migration (user pastes it into Supabase).
+
+### 0. Beta-test feedback (do first)
+From the user's own use of the installed APK, collected 2026-10-04.
+| # | Item | Details | Effort |
+|---|---|---|---|
+| B1 | **Show/hide password** toggle | Login, signup and the new-password box in forgot-password (`src/app/(auth)/*.tsx`). User asked about login; the other two are for consistency (confirm). | S |
+| B2 | **Clear field labels** on auth screens | The "Email" placeholder is faint and vanishes when typing, so it was unclear what to enter. Add a visible label above each box ("Email address", "Password") and a clearer placeholder (`you@example.com`). | S |
+| B3 | **New Food form is unclear** | `food/custom-food/new.tsx`: the placeholders are invisible on the device (colour probably too faint or same as the background). Add labels ("Calories per 100 g (kcal)") and set an explicit placeholder colour. | S |
+| B2+B3 | *Option:* one shared labelled-input component with an explicit placeholder colour, used on all screens | Overlaps with 1.8 (theme). | M |
+| B4 | **Rename "Templates" to "Routines"** (user's choice) | On-screen words only, ~69 occurrences in 6 files (`workouts/index.tsx`, `workouts/[templateId].tsx`, `workouts/active.tsx`, `workouts/_layout.tsx`, `home.tsx`; check the one in `forgot-password.tsx` is a false match). Code names, file names and DB tables stay. | S |
+| B5 | **Withings scale sync** (new feature) | Withings OAuth2 public API. Needs a Supabase Edge Function (holds the client secret, login + token refresh), a 🗄 migration for tokens, a "Connect Withings" button in Profile, and a pull of new weights into `body_weights` when Progress opens (webhook push later). User must register a free Withings developer app. 🔁 may be needed for the redirect. Open: scale wins over a manual entry on the same day (suggested); weight only at first, body fat later. | L |
+| B6 | **No-food-logged reminder** (promotes 5.4) | One daily local notification, default 19:00, toggle + time picker in Profile → Settings. `expo-notifications`. When any food is logged for today, reschedule today's reminder to tomorrow, so it only fires when nothing is logged. Asks for notification permission. 🔁 | M |
+
+Bundles: **A** (JS-only, one `eas update`): B1 + B2 + B3 + B4 — do first. **B** (next native build): B6 + 1.7 icon, optionally 3.9. **C** (separate project): B5.
 
 ### 1. Known gaps in our own app (quick wins, high value)
 | # | Improvement | Why | Effort |
@@ -167,6 +181,8 @@ Effort: **S** = under an hour, **M** = a session, **L** = several sessions.
 | 3.9 | *Later:* rest-timer notification while the phone is locked (expo-notifications). 🔁 | Strong, Hevy | M |
 
 ### 4. Progress & motivation
+Withings scale sync is B5 in section 0.
+
 | # | Feature | Effort |
 |---|---|---|
 | 4.1 | Weight chart: 7-day moving average line + range (30/90/365 days). Daily weight jumps around; the trend is what matters. | S–M |
@@ -180,7 +196,7 @@ Effort: **S** = under an hour, **M** = a session, **L** = several sessions.
 | 5.1 | **Default rest time** (and per exercise, see 3.6). | S |
 | 5.2 | **Goal helper**: suggest calories/macros from weight, height, age, activity and goal (lose/keep/gain). `profiles` already has `height_cm`, `sex`, `date_of_birth` (user earlier said they only wanted name in Profile — ask before adding these fields to the UI). | M |
 | 5.3 | **Different goals on training vs rest days.** 🗄 | M |
-| 5.4 | **Reminders** ("log your lunch", "weigh in Monday morning"). 🔁 expo-notifications | M |
+| 5.4 | **Reminders** ("log your lunch", "weigh in Monday morning"). 🔁 expo-notifications. Food reminder promoted — see B6. | M |
 | 5.5 | **Export my data** (CSV of food log, workouts, weight) via share sheet. | M |
 | 5.6 | Dark mode (after 1.8). | M |
 | 5.7 | Change password / delete account (from Profile). | S–M |
@@ -189,7 +205,7 @@ Effort: **S** = under an hour, **M** = a session, **L** = several sessions.
 Social feed/friends (Hevy), diet-pattern scores (Lifesum), 80+ micronutrients (Cronometer), coaching programs (StrengthLog), wearables — too big or not useful for a single user.
 
 ### Suggested order (recommendation)
-1. Beta-test fixes →
+1. Beta-test fixes (section 0, bundle A: B1–B4) →
 2. Quick food wins: 1.1, 1.2, 1.3, 1.4, 2.1 (one session) →
 3. Gym safety + motivation: 1.6, 3.1, 3.2, 3.8 →
 4. Saved meals (2.2) + quick add (2.3) →
