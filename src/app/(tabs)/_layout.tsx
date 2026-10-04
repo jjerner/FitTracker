@@ -1,9 +1,11 @@
 import { Redirect, Tabs } from 'expo-router';
 import { SymbolView, type SymbolViewProps } from 'expo-symbols';
-import type { ColorValue } from 'react-native';
+import { useEffect } from 'react';
+import { AppState, type ColorValue } from 'react-native';
 
 import { useSession } from '../../context/AuthProvider';
 import { DiaryDateProvider } from '../../context/DiaryDateProvider';
+import { refreshFoodReminders } from '../../lib/reminders';
 import { colors } from '../../theme';
 
 function tabIcon(name: SymbolViewProps['name']) {
@@ -15,6 +17,17 @@ function tabIcon(name: SymbolViewProps['name']) {
 
 export default function TabsLayout() {
   const { session, isLoading } = useSession();
+  const isSignedIn = !!session;
+
+  // Keep the next two weeks of reminders fresh whenever the app opens.
+  useEffect(() => {
+    if (!isSignedIn) return;
+    refreshFoodReminders().catch(() => {});
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state === 'active') refreshFoodReminders().catch(() => {});
+    });
+    return () => sub.remove();
+  }, [isSignedIn]);
 
   if (!isLoading && !session) {
     return <Redirect href="/(auth)/login" />;

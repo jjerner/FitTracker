@@ -34,7 +34,13 @@
           "recordAudioAndroid": false
         }
       ],
-      "expo-font"
+      "expo-font",
+      [
+        "expo-notifications",
+        {
+          "color": "#2563eb"
+        }
+      ]
     ],
     "extra": {
       "router": {},

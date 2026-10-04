@@ -138,7 +138,7 @@ From the user's own use of the installed APK, collected 2026-10-04.
 | B5 | **Withings scale sync** (new feature) | Withings OAuth2 public API. Needs a Supabase Edge Function (holds the client secret, login + token refresh), a 🗄 migration for tokens, a "Connect Withings" button in Profile, and a pull of new weights into `body_weights` when Progress opens (webhook push later). User must register a free Withings developer app. 🔁 may be needed for the redirect. Open: scale wins over a manual entry on the same day (suggested); weight only at first, body fat later. | L |
 | B6 | **No-food-logged reminder** (promotes 5.4) | One daily local notification, default 19:00, toggle + time picker in Profile → Settings. `expo-notifications`. When any food is logged for today, reschedule today's reminder to tomorrow, so it only fires when nothing is logged. Asks for notification permission. 🔁 | M |
 
-Bundles: **A** (JS-only, one `eas update`): B1 + B2 + B3 + B4 — do first. **B** (next native build): B6 + 1.7 icon, optionally 3.9. **C** (separate project): B5.
+Bundles: **A** (JS-only, one `eas update`): B1 + B2 + B3 + B4 — do first. **B** (next native build): B6 + 1.7 icon, optionally 3.9. **C** (moved back — a new feature no competitor seems to have, so it comes after the polish and gym-safety items): B5.
 
 ### 1. Known gaps in our own app (quick wins, high value)
 | # | Improvement | Why | Effort |
@@ -181,7 +181,7 @@ Bundles: **A** (JS-only, one `eas update`): B1 + B2 + B3 + B4 — do first. **B*
 | 3.9 | *Later:* rest-timer notification while the phone is locked (expo-notifications). 🔁 | Strong, Hevy | M |
 
 ### 4. Progress & motivation
-Withings scale sync is B5 in section 0.
+Withings scale sync is B5 in section 0 (deprioritised: new feature, do after the quick wins).
 
 | # | Feature | Effort |
 |---|---|---|

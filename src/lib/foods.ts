@@ -1,5 +1,6 @@
 import type { OffFood } from './openFoodFacts';
 import { supabase } from './supabase';
+import { refreshFoodReminders } from './reminders';
 import type { Food, FoodLogEntry, MealType, NutritionGoals } from '../types/domain';
 
 function mapFoodRow(row: any): Food {
@@ -195,6 +196,7 @@ export async function logFoodEntry(input: {
   });
 
   if (error) throw error;
+  refreshFoodReminders().catch(() => {});
 }
 
 export async function getDiaryForDate(userId: string, date: string): Promise<FoodLogEntry[]> {
@@ -212,6 +214,7 @@ export async function getDiaryForDate(userId: string, date: string): Promise<Foo
 export async function deleteFoodLogEntry(id: string): Promise<void> {
   const { error } = await supabase.from('food_log_entries').delete().eq('id', id);
   if (error) throw error;
+  refreshFoodReminders().catch(() => {});
 }
 
 export async function getNutritionGoals(userId: string): Promise<NutritionGoals | null> {

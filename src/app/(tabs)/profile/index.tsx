@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { SymbolView } from 'expo-symbols';
 import {
   ActivityIndicator,
+  Alert,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -14,6 +15,7 @@ import {
 
 import { useSession } from '../../../context/AuthProvider';
 import { useDisplayName } from '../../../hooks/useDisplayName';
+import { useFoodReminder } from '../../../hooks/useFoodReminder';
 import { useRestVibration } from '../../../hooks/useRestVibration';
 import { supabase } from '../../../lib/supabase';
 import { colors, radius, spacing } from '../../../theme';
@@ -22,6 +24,14 @@ export default function Profile() {
   const { session } = useSession();
   const { data: savedName, isLoading, saveName, isSaving } = useDisplayName();
   const restVibration = useRestVibration();
+  const foodReminder = useFoodReminder();
+
+  async function handleReminderToggle(enabled: boolean) {
+    const allowed = await foodReminder.setEnabled(enabled);
+    if (!allowed) {
+      Alert.alert('Notifications are off', 'Allow notifications for FitTrack in your phone settings.');
+    }
+  }
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
@@ -58,12 +68,45 @@ export default function Profile() {
         <Text style={styles.rowText}>Vibrate when rest ends</Text>
         <Switch value={restVibration.enabled} onValueChange={restVibration.setEnabled} />
       </View>
+      <View style={[styles.row, styles.rowSpaced]}>
+        <SymbolView
+          name={{ ios: 'bell.fill', android: 'notifications' }}
+          tintColor={colors.primary}
+          size={22}
+        />
+        <Text style={styles.rowText}>Remind me if no food logged</Text>
+        <Switch value={foodReminder.enabled} onValueChange={handleReminderToggle} />
+      </View>
+      {foodReminder.enabled ? (
+        <View style={[styles.row, styles.rowSpaced]}>
+          <Text style={styles.rowText}>Reminder time</Text>
+          <Pressable
+            style={styles.stepButton}
+            onPress={() => foodReminder.setMinutes((foodReminder.minutes + 24 * 60 - 30) % (24 * 60))}
+          >
+            <Text style={styles.stepButtonText}>−</Text>
+          </Pressable>
+          <Text style={styles.timeText}>{formatMinutes(foodReminder.minutes)}</Text>
+          <Pressable
+            style={styles.stepButton}
+            onPress={() => foodReminder.setMinutes((foodReminder.minutes + 30) % (24 * 60))}
+          >
+            <Text style={styles.stepButtonText}>+</Text>
+          </Pressable>
+        </View>
+      ) : null}
 
       <Pressable style={styles.signOutButton} onPress={() => supabase.auth.signOut()}>
         <Text style={styles.signOutButtonText}>Sign Out</Text>
       </Pressable>
     </ScrollView>
   );
+}
+
+function formatMinutes(minutes: number): string {
+  const h = String(Math.floor(minutes / 60)).padStart(2, '0');
+  const m = String(minutes % 60).padStart(2, '0');
+  return `${h}:${m}`;
 }
 
 function NameEditor({
@@ -142,6 +185,16 @@ const styles = StyleSheet.create({
   },
   rowSpaced: { marginTop: spacing.sm, paddingVertical: spacing.sm },
   rowText: { flex: 1, fontSize: 16, fontWeight: '600', color: colors.text },
+  stepButton: {
+    width: 36,
+    height: 36,
+    borderRadius: radius.md,
+    backgroundColor: colors.background,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  stepButtonText: { fontSize: 20, fontWeight: '600', color: colors.primary },
+  timeText: { fontSize: 16, fontWeight: '600', color: colors.text, minWidth: 52, textAlign: 'center' },
   signOutButton: {
     borderWidth: 1,
     borderColor: colors.danger,
