@@ -118,6 +118,7 @@ For any new tables, write new numbered migration files and ask the user to run t
 2. Bundle A (B1–B4) and B6 + icon (1.7) are done in code; **bundle A is only in build #3, not sent via `eas update`** (it was included in the build). Roadmap section 0 has the details. Next from the roadmap: suggested order step 2 (1.1, 1.2, 1.3, 1.4, 2.1), then gym safety (1.6, 3.1, 3.2, 3.8). B5 Withings is deliberately later.
 3. Don't touch the "On hold" items above unless the user brings them up.
 4. Remember: JS-only changes reach the phone with `eas update` (see Status → Go live); 🔁 items need a new APK build.
+5. Run it as `npx eas-cli@latest update --branch preview --environment preview --message "..." --non-interactive` (`--environment` is required in non-interactive mode). `runtimeVersion` (policy `appVersion`, so `1.0.0`) now lives at the top level of `app.json`; before, it sat under `android` and `eas update` rewrote `app.json` (duplicate CAMERA permission + a second `runtimeVersion`). Fixed in 9d522d2 and verified: no more rewrites. If `app.json` shows as modified after an update, `git checkout app.json`.
 
 ## Proposed roadmap (for review — not approved yet)
 
