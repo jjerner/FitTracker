@@ -17,10 +17,7 @@
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
-      "predictiveBackGestureEnabled": false,
-      "runtimeVersion": {
-        "policy": "appVersion"
-      }
+      "predictiveBackGestureEnabled": false
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -60,6 +57,9 @@
     "owner": "jjerner",
     "updates": {
       "url": "https://u.expo.dev/8d32b01f-665b-4298-bd0e-6611a579e829"
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
     }
   }
 }
