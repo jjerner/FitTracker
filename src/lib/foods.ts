@@ -166,6 +166,28 @@ export async function getFoodById(id: string): Promise<Food> {
   return mapFoodRow(data);
 }
 
+// Breakfast before 10, lunch 10-14, dinner 17-21, otherwise snack.
+export function defaultMealForNow(): MealType {
+  const hour = new Date().getHours();
+  if (hour < 10) return 'breakfast';
+  if (hour < 14) return 'lunch';
+  if (hour >= 17 && hour < 21) return 'dinner';
+  return 'snack';
+}
+
+// Nutrition on `foods` is stored per 100g; convert by quantity/unit.
+function entryNutrition(food: Food, quantity: number, quantityUnit: 'g' | 'serving') {
+  const multiplier =
+    quantityUnit === 'g' ? quantity / 100 : (food.servingSizeG ?? 100) * (quantity / 100);
+  return {
+    calories_kcal: food.caloriesKcal * multiplier,
+    protein_g: food.proteinG * multiplier,
+    carbs_g: food.carbsG * multiplier,
+    fat_g: food.fatG * multiplier,
+    fiber_g: food.fiberG != null ? food.fiberG * multiplier : null,
+  };
+}
+
 export async function logFoodEntry(input: {
   userId: string;
   food: Food;
@@ -174,12 +196,6 @@ export async function logFoodEntry(input: {
   quantity: number;
   quantityUnit: 'g' | 'serving';
 }): Promise<void> {
-  // Nutrition on `foods` is stored per 100g; convert by quantity/unit.
-  const multiplier =
-    input.quantityUnit === 'g'
-      ? input.quantity / 100
-      : (input.food.servingSizeG ?? 100) * (input.quantity / 100);
-
   const { error } = await supabase.from('food_log_entries').insert({
     user_id: input.userId,
     food_id: input.food.id,
@@ -188,12 +204,56 @@ export async function logFoodEntry(input: {
     meal_type: input.mealType,
     quantity: input.quantity,
     quantity_unit: input.quantityUnit,
-    calories_kcal: input.food.caloriesKcal * multiplier,
-    protein_g: input.food.proteinG * multiplier,
-    carbs_g: input.food.carbsG * multiplier,
-    fat_g: input.food.fatG * multiplier,
-    fiber_g: input.food.fiberG != null ? input.food.fiberG * multiplier : null,
+    ...entryNutrition(input.food, input.quantity, input.quantityUnit),
   });
+
+  if (error) throw error;
+  refreshFoodReminders().catch(() => {});
+}
+
+export async function updateFoodLogEntry(input: {
+  entryId: string;
+  food: Food;
+  mealType: MealType;
+  quantity: number;
+  quantityUnit: 'g' | 'serving';
+}): Promise<void> {
+  const { error } = await supabase
+    .from('food_log_entries')
+    .update({
+      meal_type: input.mealType,
+      quantity: input.quantity,
+      quantity_unit: input.quantityUnit,
+      ...entryNutrition(input.food, input.quantity, input.quantityUnit),
+    })
+    .eq('id', input.entryId);
+
+  if (error) throw error;
+}
+
+// Copies entries as they were logged (same amounts and nutrition) onto another day.
+export async function copyEntriesToDate(
+  userId: string,
+  entries: FoodLogEntry[],
+  loggedDate: string
+): Promise<void> {
+  if (entries.length === 0) return;
+  const { error } = await supabase.from('food_log_entries').insert(
+    entries.map((e) => ({
+      user_id: userId,
+      food_id: e.foodId,
+      food_name: e.foodName,
+      logged_date: loggedDate,
+      meal_type: e.mealType,
+      quantity: e.quantity,
+      quantity_unit: e.quantityUnit,
+      calories_kcal: e.caloriesKcal,
+      protein_g: e.proteinG,
+      carbs_g: e.carbsG,
+      fat_g: e.fatG,
+      fiber_g: e.fiberG,
+    }))
+  );
 
   if (error) throw error;
   refreshFoodReminders().catch(() => {});

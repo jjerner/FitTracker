@@ -1,3 +1,4 @@
+import { useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { useMemo, useState } from 'react';
 import {
@@ -12,10 +13,12 @@ import {
 } from 'react-native';
 
 import { MonthCalendar } from '../../../components/MonthCalendar';
+import { useSession } from '../../../context/AuthProvider';
 import { useDiaryDate } from '../../../context/DiaryDateProvider';
 import { useFoodDiary } from '../../../hooks/useFoodDiary';
 import { useNutritionGoals } from '../../../hooks/useNutritionGoals';
 import { localDateOf, todayLocalDate } from '../../../lib/dateUtils';
+import { copyEntriesToDate } from '../../../lib/foods';
 import type { FoodLogEntry, MealType, NutritionGoals } from '../../../types/domain';
 
 const MEAL_TYPES: MealType[] = ['breakfast', 'lunch', 'dinner', 'snack'];
@@ -50,6 +53,27 @@ export default function FoodDiary() {
   const dayLabel = isToday ? 'Today' : date === addDays(today, -1) ? 'Yesterday' : formatDay(date);
   const { data: entries, isLoading, deleteEntry } = useFoodDiary(date);
   const { data: goals } = useNutritionGoals();
+  const { session } = useSession();
+  const queryClient = useQueryClient();
+  const [isCopying, setIsCopying] = useState(false);
+  const { data: previousEntries } = useFoodDiary(addDays(date, -1));
+
+  async function copyMeal(mealType: MealType) {
+    if (!session || isCopying) return;
+    setIsCopying(true);
+    try {
+      await copyEntriesToDate(
+        session.user.id,
+        (previousEntries ?? []).filter((e) => e.mealType === mealType),
+        date
+      );
+      await queryClient.invalidateQueries({ queryKey: ['foodDiary', session.user.id, date] });
+    } catch {
+      Alert.alert('Could not copy', 'Check your connection and try again.');
+    } finally {
+      setIsCopying(false);
+    }
+  }
 
   const totals = useMemo(() => {
     return (entries ?? []).reduce(
@@ -114,6 +138,9 @@ export default function FoodDiary() {
           totals={totals}
           goals={goals}
           onDelete={deleteEntry}
+          previousEntries={previousEntries ?? []}
+          onCopyMeal={copyMeal}
+          isCopying={isCopying}
         />
       )}
 
@@ -132,11 +159,17 @@ function DiaryContent({
   totals,
   goals,
   onDelete,
+  previousEntries,
+  onCopyMeal,
+  isCopying,
 }: {
   entries: FoodLogEntry[];
   totals: { calories: number; protein: number; carbs: number; fat: number };
   goals: NutritionGoals | null | undefined;
   onDelete: (id: string) => void;
+  previousEntries: FoodLogEntry[];
+  onCopyMeal: (mealType: MealType) => void;
+  isCopying: boolean;
 }) {
   return (
     <>
@@ -155,9 +188,21 @@ function DiaryContent({
 
       {MEAL_TYPES.map((mealType) => {
         const mealEntries = entries.filter((e) => e.mealType === mealType);
+        const mealCalories = mealEntries.reduce((sum, e) => sum + e.caloriesKcal, 0);
+        const canCopy =
+          mealEntries.length === 0 && previousEntries.some((e) => e.mealType === mealType);
         return (
           <View key={mealType} style={styles.mealSection}>
-            <Text style={styles.mealTitle}>{MEAL_LABELS[mealType]}</Text>
+            <View style={styles.mealHeader}>
+              <Text style={styles.mealTitle}>{MEAL_LABELS[mealType]}</Text>
+              {mealEntries.length > 0 ? (
+                <Text style={styles.mealCalories}>{Math.round(mealCalories)} kcal</Text>
+              ) : canCopy ? (
+                <Pressable onPress={() => onCopyMeal(mealType)} disabled={isCopying} hitSlop={8}>
+                  <Text style={styles.copyText}>Copy from previous day</Text>
+                </Pressable>
+              ) : null}
+            </View>
             {mealEntries.length === 0 ? (
               <Text style={styles.emptyText}>Nothing logged</Text>
             ) : (
@@ -175,8 +220,24 @@ function DiaryContent({
 function EntryRow({ entry, onDelete }: { entry: FoodLogEntry; onDelete: () => void }) {
   return (
     <View style={styles.entryRow}>
-      <Text style={styles.entryName}>{entry.foodName}</Text>
-      <Text style={styles.entryCalories}>{Math.round(entry.caloriesKcal)} kcal</Text>
+      <Pressable
+        style={styles.entryTap}
+        onPress={() =>
+          router.push({
+            pathname: '/(tabs)/food/food/[foodId]',
+            params: {
+              foodId: entry.foodId,
+              entryId: entry.id,
+              quantity: String(entry.quantity),
+              unit: entry.quantityUnit,
+              meal: entry.mealType,
+            },
+          })
+        }
+      >
+        <Text style={styles.entryName}>{entry.foodName}</Text>
+        <Text style={styles.entryCalories}>{Math.round(entry.caloriesKcal)} kcal</Text>
+      </Pressable>
       <Pressable
         onPress={() =>
           Alert.alert('Delete entry?', entry.foodName, [
@@ -225,7 +286,15 @@ const styles = StyleSheet.create({
   totalsCalories: { fontSize: 24, fontWeight: '700' },
   totalsMacros: { fontSize: 14, color: '#555', marginTop: 4 },
   mealSection: { marginBottom: 20 },
-  mealTitle: { fontSize: 16, fontWeight: '600', marginBottom: 8 },
+  mealHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  mealTitle: { fontSize: 16, fontWeight: '600' },
+  mealCalories: { fontSize: 14, color: '#555' },
+  copyText: { fontSize: 14, color: '#2563eb' },
   emptyText: { color: '#999', fontSize: 14 },
   entryRow: {
     flexDirection: 'row',
@@ -235,6 +304,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#eee',
   },
+  entryTap: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 12 },
   entryName: { flex: 1, fontSize: 15 },
   entryCalories: { fontSize: 15, color: '#555' },
   entryDelete: { fontSize: 16, color: '#9ca3af', paddingHorizontal: 4 },

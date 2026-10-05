@@ -12,7 +12,12 @@ import {
 
 import { useSession } from '../../../../context/AuthProvider';
 import { useDiaryDate } from '../../../../context/DiaryDateProvider';
-import { getFoodById, logFoodEntry } from '../../../../lib/foods';
+import {
+  defaultMealForNow,
+  getFoodById,
+  logFoodEntry,
+  updateFoodLogEntry,
+} from '../../../../lib/foods';
 import type { MealType } from '../../../../types/domain';
 
 const MEAL_TYPES: MealType[] = ['breakfast', 'lunch', 'dinner', 'snack'];
@@ -24,12 +29,21 @@ const MEAL_LABELS: Record<MealType, string> = {
 };
 
 export default function FoodDetail() {
-  const { foodId } = useLocalSearchParams<{ foodId: string }>();
+  // entryId/quantity/unit/meal are set only when editing a logged entry.
+  const params = useLocalSearchParams<{
+    foodId: string;
+    entryId?: string;
+    quantity?: string;
+    unit?: 'g' | 'serving';
+    meal?: MealType;
+  }>();
+  const { foodId, entryId } = params;
   const { session } = useSession();
   const queryClient = useQueryClient();
   const { date: loggedDate } = useDiaryDate();
-  const [grams, setGrams] = useState('100');
-  const [mealType, setMealType] = useState<MealType>('snack');
+  const [amount, setAmount] = useState(params.quantity ?? '100');
+  const [unit, setUnit] = useState<'g' | 'serving'>(params.unit ?? 'g');
+  const [mealType, setMealType] = useState<MealType>(params.meal ?? defaultMealForNow());
   const [isSaving, setIsSaving] = useState(false);
 
   const { data: food, isLoading } = useQuery({
@@ -38,30 +52,41 @@ export default function FoodDetail() {
     enabled: !!foodId,
   });
 
-  const gramsNumber = Number(grams) || 0;
+  const amountNumber = Number(amount) || 0;
   const preview = useMemo(() => {
     if (!food) return null;
-    const multiplier = gramsNumber / 100;
+    const grams = unit === 'g' ? amountNumber : amountNumber * (food.servingSizeG ?? 100);
+    const multiplier = grams / 100;
     return {
       calories: food.caloriesKcal * multiplier,
       protein: food.proteinG * multiplier,
       carbs: food.carbsG * multiplier,
       fat: food.fatG * multiplier,
     };
-  }, [food, gramsNumber]);
+  }, [food, amountNumber, unit]);
 
   async function handleSave() {
     if (!food || !session) return;
     setIsSaving(true);
     try {
-      await logFoodEntry({
-        userId: session.user.id,
-        food,
-        loggedDate,
-        mealType,
-        quantity: gramsNumber,
-        quantityUnit: 'g',
-      });
+      if (entryId) {
+        await updateFoodLogEntry({
+          entryId,
+          food,
+          mealType,
+          quantity: amountNumber,
+          quantityUnit: unit,
+        });
+      } else {
+        await logFoodEntry({
+          userId: session.user.id,
+          food,
+          loggedDate,
+          mealType,
+          quantity: amountNumber,
+          quantityUnit: unit,
+        });
+      }
       await queryClient.invalidateQueries({ queryKey: ['foodDiary', session.user.id, loggedDate] });
       router.dismissTo('/(tabs)/food');
     } finally {
@@ -82,11 +107,32 @@ export default function FoodDetail() {
       <Text style={styles.name}>{food.name}</Text>
       {food.brand ? <Text style={styles.brand}>{food.brand}</Text> : null}
 
-      <Text style={styles.label}>Amount (grams)</Text>
+      {food.servingSizeG ? (
+        <View style={styles.mealRow}>
+          {(['g', 'serving'] as const).map((u) => (
+            <Pressable
+              key={u}
+              style={[styles.mealChip, unit === u && styles.mealChipActive]}
+              onPress={() => {
+                setUnit(u);
+                setAmount(u === 'g' ? String(food.servingSizeG) : '1');
+              }}
+            >
+              <Text style={unit === u ? styles.mealChipTextActive : styles.mealChipText}>
+                {u === 'g'
+                  ? 'Grams'
+                  : `Serving (${food.servingDescription ?? `${food.servingSizeG} g`})`}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
+      ) : null}
+
+      <Text style={styles.label}>{unit === 'g' ? 'Amount (grams)' : 'Number of servings'}</Text>
       <TextInput
         style={styles.input}
-        value={grams}
-        onChangeText={setGrams}
+        value={amount}
+        onChangeText={setAmount}
         keyboardType="numeric"
       />
 
@@ -119,7 +165,7 @@ export default function FoodDetail() {
         {isSaving ? (
           <ActivityIndicator color="#fff" />
         ) : (
-          <Text style={styles.saveButtonText}>Add to Diary</Text>
+          <Text style={styles.saveButtonText}>{entryId ? 'Save changes' : 'Add to Diary'}</Text>
         )}
       </Pressable>
     </View>
