@@ -21,6 +21,7 @@ import {
   logSavedMeal,
 } from '../../../lib/foods';
 import type { MealType, SavedMeal } from '../../../types/domain';
+import { colors } from '../../../theme';
 
 const MEAL_TYPES: MealType[] = ['breakfast', 'lunch', 'dinner', 'snack'];
 const MEAL_LABELS: Record<MealType, string> = {
@@ -136,33 +137,33 @@ export default function SavedMeals() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff', padding: 16 },
+  container: { flex: 1, backgroundColor: colors.background, padding: 16 },
   label: { fontSize: 14, fontWeight: '600', marginBottom: 8 },
   loading: { paddingVertical: 40 },
-  empty: { color: '#6b7280', fontSize: 14, paddingVertical: 24 },
+  empty: { color: colors.muted, fontSize: 14, paddingVertical: 24 },
   mealRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 12 },
   mealChip: {
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: colors.borderStrong,
     borderRadius: 20,
     paddingVertical: 8,
     paddingHorizontal: 16,
   },
-  mealChipActive: { backgroundColor: '#2563eb', borderColor: '#2563eb' },
-  mealChipText: { color: '#333' },
-  mealChipTextActive: { color: '#fff' },
+  mealChipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
+  mealChipText: { color: colors.textSecondary },
+  mealChipTextActive: { color: colors.onPrimary },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    borderBottomColor: colors.border,
   },
   rowTap: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 12 },
   rowInfo: { flex: 1 },
   rowName: { fontSize: 15, fontWeight: '500' },
-  rowSub: { fontSize: 13, color: '#888' },
-  add: { fontSize: 15, color: '#2563eb', fontWeight: '600' },
-  delete: { fontSize: 16, color: '#9ca3af', paddingHorizontal: 4 },
+  rowSub: { fontSize: 13, color: colors.muted },
+  add: { fontSize: 15, color: colors.primary, fontWeight: '600' },
+  delete: { fontSize: 16, color: colors.subtle, paddingHorizontal: 4 },
 });

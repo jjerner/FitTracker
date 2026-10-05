@@ -11,6 +11,7 @@ import {
 
 import { useNutritionGoals } from '../../../hooks/useNutritionGoals';
 import type { NutritionGoals } from '../../../types/domain';
+import { colors } from '../../../theme';
 
 const DEFAULT_GOALS: NutritionGoals = {
   caloriesKcal: 2000,
@@ -101,7 +102,7 @@ function GoalsForm({
         disabled={!isValid || isSaving}
       >
         {isSaving ? (
-          <ActivityIndicator color="#fff" />
+          <ActivityIndicator color={colors.onPrimary} />
         ) : (
           <Text style={styles.saveButtonText}>Save Goals</Text>
         )}
@@ -111,25 +112,25 @@ function GoalsForm({
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff', padding: 16 },
+  container: { flex: 1, backgroundColor: colors.background, padding: 16 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   label: { fontSize: 14, fontWeight: '600', marginTop: 12, marginBottom: 8 },
   input: {
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: colors.borderStrong,
     borderRadius: 8,
     padding: 14,
     fontSize: 16,
   },
   calories: { fontSize: 20, fontWeight: '700' },
-  hint: { fontSize: 13, color: '#6b7280', marginTop: 4 },
+  hint: { fontSize: 13, color: colors.muted, marginTop: 4 },
   saveButton: {
-    backgroundColor: '#2563eb',
+    backgroundColor: colors.primary,
     borderRadius: 8,
     padding: 14,
     alignItems: 'center',
     marginTop: 24,
   },
   saveButtonDisabled: { opacity: 0.5 },
-  saveButtonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
+  saveButtonText: { color: colors.onPrimary, fontSize: 16, fontWeight: '600' },
 });

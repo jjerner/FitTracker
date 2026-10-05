@@ -39,7 +39,7 @@ const styles = StyleSheet.create({
   label: { fontSize: 14, fontWeight: '600', color: colors.text, marginBottom: spacing.xs },
   input: {
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: colors.borderStrong,
     borderRadius: radius.md,
     padding: 14,
     fontSize: 16,

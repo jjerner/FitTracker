@@ -178,7 +178,7 @@ export default function ActiveWorkout() {
 
         <Pressable style={styles.finishButton} onPress={handleFinish} disabled={isFinishing}>
           {isFinishing ? (
-            <ActivityIndicator color="#fff" />
+            <ActivityIndicator color={colors.onPrimary} />
           ) : (
             <Text style={styles.finishButtonText}>Finish Workout</Text>
           )}
@@ -587,8 +587,8 @@ const styles = StyleSheet.create({
   cardTitle: { fontSize: 16, fontWeight: '600', flex: 1, color: colors.text },
   swapText: { color: colors.primary, fontSize: 15 },
   removeText: { color: colors.danger, fontSize: 15 },
-  waitingText: { fontSize: 12, color: '#b45309', marginBottom: 6 },
-  recordText: { fontSize: 13, fontWeight: '600', color: '#b45309', marginBottom: 6 },
+  waitingText: { fontSize: 12, color: colors.warning, marginBottom: 6 },
+  recordText: { fontSize: 13, fontWeight: '600', color: colors.warning, marginBottom: 6 },
   targetText: { fontSize: 13, color: colors.muted, marginTop: 2 },
   tableHeader: {
     flexDirection: 'row',
@@ -605,7 +605,7 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xs,
     borderRadius: radius.sm,
   },
-  rowDone: { backgroundColor: '#dcfce7' },
+  rowDone: { backgroundColor: colors.successBg },
   colSet: { width: 28, textAlign: 'center' },
   colPrev: { flex: 1.4, textAlign: 'center' },
   colInput: { flex: 1, textAlign: 'center' },
@@ -634,7 +634,7 @@ const styles = StyleSheet.create({
   },
   checkText: { fontSize: 18, color: colors.muted, fontWeight: '700' },
   checkDone: { backgroundColor: colors.success },
-  checkDoneText: { fontSize: 18, color: '#fff', fontWeight: '700' },
+  checkDoneText: { fontSize: 18, color: colors.onPrimary, fontWeight: '700' },
   addSetButton: { alignItems: 'center', paddingVertical: spacing.sm, marginTop: spacing.xs },
   addSetText: { color: colors.primary, fontSize: 15, fontWeight: '600' },
   secondaryButton: {
@@ -651,7 +651,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: spacing.xl,
   },
-  finishButtonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
+  finishButtonText: { color: colors.onPrimary, fontSize: 16, fontWeight: '600' },
   discardButton: { padding: 14, alignItems: 'center', marginTop: spacing.sm },
   discardButtonText: { color: colors.danger, fontSize: 15 },
   restBar: {
@@ -662,15 +662,15 @@ const styles = StyleSheet.create({
     backgroundColor: colors.text,
   },
   restCenter: { flex: 1, alignItems: 'center' },
-  restLabel: { fontSize: 12, color: '#9ca3af' },
-  restTime: { fontSize: 22, fontWeight: '700', color: '#fff' },
+  restLabel: { fontSize: 12, color: colors.subtle },
+  restTime: { fontSize: 22, fontWeight: '700', color: colors.onPrimary },
   restAdjust: {
     paddingVertical: spacing.sm,
     paddingHorizontal: spacing.md,
     borderRadius: radius.md,
-    backgroundColor: '#374151',
+    backgroundColor: colors.textSecondary,
   },
-  restAdjustText: { color: '#fff', fontSize: 15, fontWeight: '600' },
+  restAdjustText: { color: colors.onPrimary, fontSize: 15, fontWeight: '600' },
   restSkip: { paddingVertical: spacing.sm, paddingHorizontal: spacing.md },
-  restSkipText: { color: '#93c5fd', fontSize: 15, fontWeight: '600' },
+  restSkipText: { color: colors.primaryLight, fontSize: 15, fontWeight: '600' },
 });

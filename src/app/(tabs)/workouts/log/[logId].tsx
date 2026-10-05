@@ -6,6 +6,7 @@ import { useSession } from '../../../../context/AuthProvider';
 import { useWorkoutHistory, useWorkoutLog } from '../../../../hooks/useWorkouts';
 import { bestOf, bestOfSessions, findNewRecords } from '../../../../lib/records';
 import { deleteWorkoutLog, formatSet, getExerciseHistory } from '../../../../lib/workouts';
+import { colors } from '../../../../theme';
 
 function logVolume(exercises: { sets: { weightKg: number | null; reps: number | null }[] }[]) {
   return exercises.reduce(
@@ -155,37 +156,37 @@ function Stat({ label, value }: { label: string; value: string }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff' },
+  container: { flex: 1, backgroundColor: colors.background },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   content: { padding: 16, paddingBottom: 40 },
   title: { fontSize: 20, fontWeight: '700' },
-  subtitle: { fontSize: 14, color: '#888', marginTop: 2 },
+  subtitle: { fontSize: 14, color: colors.muted, marginTop: 2 },
   statsCard: {
     flexDirection: 'row',
-    backgroundColor: '#f3f4f6',
+    backgroundColor: colors.surface,
     borderRadius: 12,
     padding: 16,
     marginVertical: 20,
   },
-  compareText: { fontSize: 14, color: '#555', textAlign: 'center', marginBottom: 16 },
-  highlights: { backgroundColor: '#fef3c7', borderRadius: 12, padding: 16, marginBottom: 20 },
+  compareText: { fontSize: 14, color: colors.textSecondary, textAlign: 'center', marginBottom: 16 },
+  highlights: { backgroundColor: colors.warningBg, borderRadius: 12, padding: 16, marginBottom: 20 },
   highlightsTitle: { fontSize: 16, fontWeight: '700', marginBottom: 6 },
-  highlightText: { fontSize: 14, color: '#92400e', paddingVertical: 2 },
+  highlightText: { fontSize: 14, color: colors.warningText, paddingVertical: 2 },
   stat: { flex: 1, alignItems: 'center' },
   statValue: { fontSize: 20, fontWeight: '700' },
-  statLabel: { fontSize: 12, color: '#555', marginTop: 2 },
+  statLabel: { fontSize: 12, color: colors.textSecondary, marginTop: 2 },
   exercise: { marginBottom: 16 },
   exerciseName: { fontSize: 16, fontWeight: '600', marginBottom: 4 },
-  emptyText: { color: '#999', fontSize: 14 },
-  setText: { fontSize: 15, color: '#333', paddingVertical: 2 },
+  emptyText: { color: colors.subtle, fontSize: 14 },
+  setText: { fontSize: 15, color: colors.textSecondary, paddingVertical: 2 },
   doneButton: {
-    backgroundColor: '#2563eb',
+    backgroundColor: colors.primary,
     borderRadius: 8,
     padding: 14,
     alignItems: 'center',
     marginTop: 8,
   },
-  doneButtonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
+  doneButtonText: { color: colors.onPrimary, fontSize: 16, fontWeight: '600' },
   deleteButton: { padding: 14, alignItems: 'center', marginTop: 8 },
-  deleteButtonText: { color: '#dc2626', fontSize: 15 },
+  deleteButtonText: { color: colors.danger, fontSize: 15 },
 });

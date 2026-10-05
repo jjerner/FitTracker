@@ -13,6 +13,7 @@ import {
 import { LabeledInput } from '../../../../components/LabeledInput';
 import { useSession } from '../../../../context/AuthProvider';
 import { createCustomFood } from '../../../../lib/foods';
+import { colors } from '../../../../theme';
 
 export default function NewCustomFood() {
   const { session } = useSession();
@@ -122,7 +123,7 @@ export default function NewCustomFood() {
           disabled={!isValid || isSaving}
         >
           {isSaving ? (
-            <ActivityIndicator color="#fff" />
+            <ActivityIndicator color={colors.onPrimary} />
           ) : (
             <Text style={styles.saveButtonText}>Save Food</Text>
           )}
@@ -133,17 +134,17 @@ export default function NewCustomFood() {
 }
 
 const styles = StyleSheet.create({
-  flex: { flex: 1, backgroundColor: '#fff' },
+  flex: { flex: 1, backgroundColor: colors.background },
   container: { padding: 16 },
-  hint: { color: '#888', marginBottom: 16 },
-  error: { color: '#dc2626', marginBottom: 12 },
+  hint: { color: colors.muted, marginBottom: 16 },
+  error: { color: colors.danger, marginBottom: 12 },
   saveButton: {
-    backgroundColor: '#2563eb',
+    backgroundColor: colors.primary,
     borderRadius: 8,
     padding: 14,
     alignItems: 'center',
     marginTop: 8,
   },
   saveButtonDisabled: { opacity: 0.5 },
-  saveButtonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
+  saveButtonText: { color: colors.onPrimary, fontSize: 16, fontWeight: '600' },
 });

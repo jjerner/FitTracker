@@ -25,6 +25,7 @@ import {
 } from '../../../../lib/foods';
 import { LabeledInput } from '../../../../components/LabeledInput';
 import type { MealType } from '../../../../types/domain';
+import { colors } from '../../../../theme';
 
 const MEAL_TYPES: MealType[] = ['breakfast', 'lunch', 'dinner', 'snack'];
 const MEAL_LABELS: Record<MealType, string> = {
@@ -351,7 +352,7 @@ export default function FoodDetail() {
 
       <Pressable style={styles.saveButton} onPress={handleSave} disabled={isSaving}>
         {isSaving ? (
-          <ActivityIndicator color="#fff" />
+          <ActivityIndicator color={colors.onPrimary} />
         ) : (
           <Text style={styles.saveButtonText}>{entryId ? 'Save changes' : 'Add to Diary'}</Text>
         )}
@@ -361,17 +362,17 @@ export default function FoodDetail() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff', padding: 16 },
+  container: { flex: 1, backgroundColor: colors.background, padding: 16 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   name: { fontSize: 20, fontWeight: '700' },
-  brand: { fontSize: 14, color: '#888', marginTop: 2, marginBottom: 16 },
+  brand: { fontSize: 14, color: colors.muted, marginTop: 2, marginBottom: 16 },
   label: { fontSize: 14, fontWeight: '600', marginTop: 16, marginBottom: 8 },
   linkRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 16, marginTop: 12 },
-  servingLink: { color: '#2563eb', fontSize: 14 },
-  servingLinkMuted: { color: '#6b7280', fontSize: 14 },
+  servingLink: { color: colors.primary, fontSize: 14 },
+  servingLinkMuted: { color: colors.muted, fontSize: 14 },
   input: {
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: colors.borderStrong,
     borderRadius: 8,
     padding: 14,
     fontSize: 16,
@@ -379,29 +380,29 @@ const styles = StyleSheet.create({
   mealRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   mealChip: {
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: colors.borderStrong,
     borderRadius: 20,
     paddingVertical: 8,
     paddingHorizontal: 16,
   },
-  mealChipActive: { backgroundColor: '#2563eb', borderColor: '#2563eb' },
-  mealChipText: { color: '#333' },
-  mealChipTextActive: { color: '#fff' },
+  mealChipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
+  mealChipText: { color: colors.textSecondary },
+  mealChipTextActive: { color: colors.onPrimary },
   previewCard: {
-    backgroundColor: '#f3f4f6',
+    backgroundColor: colors.surface,
     borderRadius: 12,
     padding: 16,
     marginTop: 24,
     alignItems: 'center',
   },
   previewCalories: { fontSize: 20, fontWeight: '700' },
-  previewMacros: { fontSize: 14, color: '#555', marginTop: 4 },
+  previewMacros: { fontSize: 14, color: colors.textSecondary, marginTop: 4 },
   saveButton: {
-    backgroundColor: '#2563eb',
+    backgroundColor: colors.primary,
     borderRadius: 8,
     padding: 14,
     alignItems: 'center',
     marginTop: 24,
   },
-  saveButtonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
+  saveButtonText: { color: colors.onPrimary, fontSize: 16, fontWeight: '600' },
 });

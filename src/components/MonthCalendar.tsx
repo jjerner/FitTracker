@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { todayLocalDate } from '../lib/dateUtils';
+import { colors } from '../theme';
 
 const MONTH_NAMES = [
   'January', 'February', 'March', 'April', 'May', 'June',
@@ -110,18 +111,18 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   monthTitle: { fontSize: 15, fontWeight: '600' },
-  monthArrow: { fontSize: 24, color: '#2563eb', paddingHorizontal: 8 },
-  monthArrowDisabled: { color: '#d1d5db' },
+  monthArrow: { fontSize: 24, color: colors.primary, paddingHorizontal: 8 },
+  monthArrowDisabled: { color: colors.disabled },
   grid: { flexDirection: 'row', flexWrap: 'wrap' },
   cell: { width: `${100 / 7}%`, alignItems: 'center', paddingVertical: 4, gap: 3 },
-  weekday: { fontSize: 12, color: '#9ca3af', textAlign: 'center' },
+  weekday: { fontSize: 12, color: colors.subtle, textAlign: 'center' },
   dayCircle: { width: 30, height: 30, borderRadius: 15, alignItems: 'center', justifyContent: 'center' },
-  daySelected: { backgroundColor: '#2563eb' },
-  dayNumber: { fontSize: 13, color: '#374151' },
-  dayNumberSelected: { color: '#fff', fontWeight: '700' },
-  dayToday: { color: '#2563eb', fontWeight: '700' },
-  dayFuture: { color: '#d1d5db' },
+  daySelected: { backgroundColor: colors.primary },
+  dayNumber: { fontSize: 13, color: colors.textSecondary },
+  dayNumberSelected: { color: colors.onPrimary, fontWeight: '700' },
+  dayToday: { color: colors.primary, fontWeight: '700' },
+  dayFuture: { color: colors.disabled },
   dot: { width: 8, height: 8, borderRadius: 4 },
-  dotDone: { backgroundColor: '#16a34a' },
-  dotMissed: { backgroundColor: '#d1d5db' },
+  dotDone: { backgroundColor: colors.success },
+  dotMissed: { backgroundColor: colors.disabled },
 });

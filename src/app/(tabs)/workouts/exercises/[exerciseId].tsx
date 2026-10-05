@@ -15,6 +15,7 @@ import { useExerciseHistory, useExercises } from '../../../../hooks/useWorkouts'
 import { bestOf } from '../../../../lib/records';
 import { formatSet } from '../../../../lib/workouts';
 import type { ExerciseSession } from '../../../../types/domain';
+import { colors } from '../../../../theme';
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString(undefined, {
@@ -142,8 +143,8 @@ export default function ExerciseDetail() {
                 height={160}
                 adjustToWidth
                 noOfSections={4}
-                color="#2563eb"
-                dataPointsColor="#2563eb"
+                color={colors.primary}
+                dataPointsColor={colors.primary}
                 thickness={2}
                 xAxisLabelTextStyle={styles.axisLabel}
                 yAxisTextStyle={styles.axisLabel}
@@ -170,30 +171,30 @@ export default function ExerciseDetail() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f3f4f6' },
+  container: { flex: 1, backgroundColor: colors.surface },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   content: { padding: 16, gap: 12 },
-  card: { backgroundColor: '#fff', borderRadius: 12, padding: 16, gap: 8, marginBottom: 4 },
+  card: { backgroundColor: colors.background, borderRadius: 12, padding: 16, gap: 8, marginBottom: 4 },
   cardTitle: { fontSize: 16, fontWeight: '600' },
-  cardSubtitle: { fontSize: 13, color: '#6b7280' },
+  cardSubtitle: { fontSize: 13, color: colors.muted },
   recordsRow: { flexDirection: 'row', gap: 12 },
-  record: { flex: 1, backgroundColor: '#f3f4f6', borderRadius: 8, padding: 12 },
+  record: { flex: 1, backgroundColor: colors.surface, borderRadius: 8, padding: 12 },
   recordValue: { fontSize: 16, fontWeight: '700' },
-  recordLabel: { fontSize: 12, color: '#6b7280', marginTop: 2 },
+  recordLabel: { fontSize: 12, color: colors.muted, marginTop: 2 },
   toggleRow: { flexDirection: 'row', gap: 8 },
   toggle: {
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: colors.borderStrong,
     borderRadius: 16,
     paddingVertical: 6,
     paddingHorizontal: 14,
   },
-  toggleActive: { backgroundColor: '#2563eb', borderColor: '#2563eb' },
-  toggleText: { color: '#333', fontSize: 13 },
-  toggleTextActive: { color: '#fff', fontSize: 13 },
-  empty: { fontSize: 14, color: '#6b7280', paddingVertical: 16 },
-  axisLabel: { fontSize: 10, color: '#6b7280' },
-  session: { backgroundColor: '#fff', borderRadius: 12, padding: 16, gap: 4 },
+  toggleActive: { backgroundColor: colors.primary, borderColor: colors.primary },
+  toggleText: { color: colors.textSecondary, fontSize: 13 },
+  toggleTextActive: { color: colors.onPrimary, fontSize: 13 },
+  empty: { fontSize: 14, color: colors.muted, paddingVertical: 16 },
+  axisLabel: { fontSize: 10, color: colors.muted },
+  session: { backgroundColor: colors.background, borderRadius: 12, padding: 16, gap: 4 },
   sessionDate: { fontSize: 15, fontWeight: '600', marginBottom: 4 },
-  setText: { fontSize: 14, color: '#374151' },
+  setText: { fontSize: 14, color: colors.textSecondary },
 });

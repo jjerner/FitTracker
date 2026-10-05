@@ -14,6 +14,7 @@ import { useSession } from '../../../context/AuthProvider';
 import { useWorkoutHistory, useWorkoutTemplates } from '../../../hooks/useWorkouts';
 import { startWorkout } from '../../../lib/workouts';
 import type { WorkoutTemplate } from '../../../types/domain';
+import { colors } from '../../../theme';
 
 export default function WorkoutsHome() {
   const { session } = useSession();
@@ -66,7 +67,7 @@ export default function WorkoutsHome() {
           disabled={isStarting}
         >
           {isStarting ? (
-            <ActivityIndicator color="#fff" />
+            <ActivityIndicator color={colors.onPrimary} />
           ) : (
             <Text style={styles.primaryButtonText}>Start Empty Workout</Text>
           )}
@@ -154,18 +155,18 @@ export default function WorkoutsHome() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff' },
+  container: { flex: 1, backgroundColor: colors.background },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   content: { padding: 16, paddingBottom: 40 },
   primaryButton: {
-    backgroundColor: '#2563eb',
+    backgroundColor: colors.primary,
     borderRadius: 8,
     padding: 14,
     alignItems: 'center',
   },
-  primaryButtonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
+  primaryButtonText: { color: colors.onPrimary, fontSize: 16, fontWeight: '600' },
   secondaryButton: {
-    backgroundColor: '#f3f4f6',
+    backgroundColor: colors.surface,
     borderRadius: 8,
     padding: 12,
     alignItems: 'center',
@@ -173,26 +174,26 @@ const styles = StyleSheet.create({
   },
   secondaryButtonText: { fontSize: 15, fontWeight: '600' },
   sectionTitle: { fontSize: 16, fontWeight: '600', marginTop: 24, marginBottom: 8 },
-  emptyText: { color: '#999', fontSize: 14 },
+  emptyText: { color: colors.subtle, fontSize: 14 },
   row: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    borderBottomColor: colors.border,
   },
   rowInfo: { flex: 1 },
   rowTitle: { fontSize: 15, fontWeight: '500' },
-  rowMeta: { fontSize: 13, color: '#888' },
-  archivedTitle: { color: '#888' },
+  rowMeta: { fontSize: 13, color: colors.muted },
+  archivedTitle: { color: colors.muted },
   archivedToggle: { paddingVertical: 10 },
-  archivedToggleText: { color: '#2563eb', fontSize: 14 },
+  archivedToggleText: { color: colors.primary, fontSize: 14 },
   startChip: {
-    backgroundColor: '#2563eb',
+    backgroundColor: colors.primary,
     borderRadius: 16,
     paddingVertical: 6,
     paddingHorizontal: 14,
   },
-  startChipText: { color: '#fff', fontWeight: '600' },
+  startChipText: { color: colors.onPrimary, fontWeight: '600' },
 });

@@ -11,6 +11,7 @@ import {
 
 import { useExercises } from '../../hooks/useWorkouts';
 import type { Exercise } from '../../types/domain';
+import { colors } from '../../theme';
 
 export function ExerciseList({ onSelect }: { onSelect?: (exercise: Exercise) => void }) {
   const { data: exercises, isLoading } = useExercises();
@@ -60,13 +61,13 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   input: {
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: colors.borderStrong,
     borderRadius: 8,
     padding: 14,
     fontSize: 16,
     marginBottom: 12,
   },
-  row: { paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#eee' },
+  row: { paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.border },
   name: { fontSize: 15, fontWeight: '500' },
-  meta: { fontSize: 13, color: '#888', marginTop: 2 },
+  meta: { fontSize: 13, color: colors.muted, marginTop: 2 },
 });

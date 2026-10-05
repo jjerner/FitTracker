@@ -5,6 +5,7 @@ import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-nati
 
 import { upsertOffFood } from '../../../lib/foods';
 import { getByBarcode } from '../../../lib/openFoodFacts';
+import { colors } from '../../../theme';
 
 export default function ScanBarcode() {
   const { meal } = useLocalSearchParams<{ meal?: string }>();
@@ -63,7 +64,7 @@ export default function ScanBarcode() {
       />
       <View style={styles.overlay}>
         {isProcessing ? (
-          <ActivityIndicator color="#fff" size="large" />
+          <ActivityIndicator color={colors.onPrimary} size="large" />
         ) : (
           <Text style={styles.hint}>Point the camera at a barcode</Text>
         )}
@@ -74,17 +75,17 @@ export default function ScanBarcode() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#000' },
+  container: { flex: 1, backgroundColor: colors.black },
   camera: { flex: 1 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24, gap: 16 },
   permissionText: { textAlign: 'center', fontSize: 16 },
   permissionButton: {
-    backgroundColor: '#2563eb',
+    backgroundColor: colors.primary,
     borderRadius: 8,
     paddingVertical: 12,
     paddingHorizontal: 24,
   },
-  permissionButtonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
+  permissionButtonText: { color: colors.onPrimary, fontSize: 16, fontWeight: '600' },
   overlay: {
     position: 'absolute',
     bottom: 40,
@@ -93,6 +94,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
   },
-  hint: { color: '#fff', fontSize: 15 },
-  error: { color: '#f87171', fontSize: 14, paddingHorizontal: 24, textAlign: 'center' },
+  hint: { color: colors.onPrimary, fontSize: 15 },
+  error: { color: colors.dangerLight, fontSize: 14, paddingHorizontal: 24, textAlign: 'center' },
 });

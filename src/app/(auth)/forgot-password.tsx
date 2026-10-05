@@ -11,6 +11,7 @@ import {
 
 import { LabeledInput } from '../../components/LabeledInput';
 import { supabase } from '../../lib/supabase';
+import { colors } from '../../theme';
 
 // Two steps: 1) email us a reset code, 2) enter the code + a new password.
 // A code instead of a link, so it works without deep links (e.g. in Expo Go).
@@ -110,7 +111,7 @@ export default function ForgotPassword() {
         disabled={isSubmitting}
       >
         {isSubmitting ? (
-          <ActivityIndicator color="#fff" />
+          <ActivityIndicator color={colors.onPrimary} />
         ) : (
           <Text style={styles.buttonText}>{codeSent ? 'Set New Password' : 'Send Code'}</Text>
         )}
@@ -134,7 +135,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     paddingHorizontal: 24,
-    backgroundColor: '#fff',
+    backgroundColor: colors.background,
   },
   title: {
     fontSize: 28,
@@ -144,24 +145,24 @@ const styles = StyleSheet.create({
   },
   info: {
     fontSize: 15,
-    color: '#555',
+    color: colors.textSecondary,
     marginBottom: 16,
     textAlign: 'center',
   },
   button: {
-    backgroundColor: '#2563eb',
+    backgroundColor: colors.primary,
     borderRadius: 8,
     padding: 14,
     alignItems: 'center',
     marginTop: 8,
   },
   buttonText: {
-    color: '#fff',
+    color: colors.onPrimary,
     fontSize: 16,
     fontWeight: '600',
   },
   error: {
-    color: '#dc2626',
+    color: colors.danger,
     marginBottom: 12,
   },
   link: {

@@ -15,6 +15,7 @@ import { useSession } from '../../../context/AuthProvider';
 import { getRecentFoods, searchBasicFoods, searchMyFoods, upsertOffFood } from '../../../lib/foods';
 import { searchByName, type OffFood } from '../../../lib/openFoodFacts';
 import type { Food, MealType } from '../../../types/domain';
+import { colors } from '../../../theme';
 
 // My/basic foods are already in the database; OFF results get saved when picked.
 type Result = { kind: 'db'; food: Food } | { kind: 'off'; food: OffFood };
@@ -187,39 +188,39 @@ export default function FoodSearch() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff', padding: 16 },
+  container: { flex: 1, backgroundColor: colors.background, padding: 16 },
   input: {
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: colors.borderStrong,
     borderRadius: 8,
     padding: 14,
     fontSize: 16,
     marginBottom: 12,
   },
   scanButton: {
-    backgroundColor: '#111827',
+    backgroundColor: colors.text,
     borderRadius: 8,
     padding: 12,
     alignItems: 'center',
     marginBottom: 12,
   },
-  scanButtonText: { color: '#fff', fontSize: 15, fontWeight: '600' },
+  scanButtonText: { color: colors.onPrimary, fontSize: 15, fontWeight: '600' },
   shortcutRow: { flexDirection: 'row', gap: 8, marginBottom: 12 },
   shortcut: {
     flex: 1,
     borderWidth: 1,
-    borderColor: '#2563eb',
+    borderColor: colors.primary,
     borderRadius: 8,
     padding: 12,
     alignItems: 'center',
   },
-  shortcutText: { color: '#2563eb', fontSize: 15, fontWeight: '600' },
+  shortcutText: { color: colors.primary, fontSize: 15, fontWeight: '600' },
   loader: { marginBottom: 12 },
-  error: { color: '#dc2626', marginBottom: 12 },
+  error: { color: colors.danger, marginBottom: 12 },
   sectionTitle: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#6b7280',
+    color: colors.muted,
     textTransform: 'uppercase',
     marginTop: 12,
     marginBottom: 4,
@@ -230,9 +231,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    borderBottomColor: colors.border,
   },
   resultInfo: { flex: 1, marginRight: 8 },
   resultName: { fontSize: 15, fontWeight: '500' },
-  resultBrand: { fontSize: 13, color: '#888' },
-  resultCalories: { fontSize: 13, color: '#555' },});
+  resultBrand: { fontSize: 13, color: colors.muted },
+  resultCalories: { fontSize: 13, color: colors.textSecondary },});

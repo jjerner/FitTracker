@@ -16,6 +16,7 @@ import { useSession } from '../../../context/AuthProvider';
 import { useDiaryDate } from '../../../context/DiaryDateProvider';
 import { defaultMealForNow, logQuickEntry, updateQuickEntry } from '../../../lib/foods';
 import type { MealType } from '../../../types/domain';
+import { colors } from '../../../theme';
 
 const MEAL_TYPES: MealType[] = ['breakfast', 'lunch', 'dinner', 'snack'];
 const MEAL_LABELS: Record<MealType, string> = {
@@ -143,7 +144,7 @@ export default function QuickAdd() {
         disabled={!isValid || isSaving}
       >
         {isSaving ? (
-          <ActivityIndicator color="#fff" />
+          <ActivityIndicator color={colors.onPrimary} />
         ) : (
           <Text style={styles.saveButtonText}>{entryId ? 'Save changes' : 'Add to Diary'}</Text>
         )}
@@ -153,12 +154,12 @@ export default function QuickAdd() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff' },
+  container: { flex: 1, backgroundColor: colors.background },
   content: { padding: 16 },
   label: { fontSize: 14, fontWeight: '600', marginTop: 16, marginBottom: 8 },
   input: {
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: colors.borderStrong,
     borderRadius: 8,
     padding: 14,
     fontSize: 16,
@@ -168,21 +169,21 @@ const styles = StyleSheet.create({
   mealRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   mealChip: {
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: colors.borderStrong,
     borderRadius: 20,
     paddingVertical: 8,
     paddingHorizontal: 16,
   },
-  mealChipActive: { backgroundColor: '#2563eb', borderColor: '#2563eb' },
-  mealChipText: { color: '#333' },
-  mealChipTextActive: { color: '#fff' },
+  mealChipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
+  mealChipText: { color: colors.textSecondary },
+  mealChipTextActive: { color: colors.onPrimary },
   saveButton: {
-    backgroundColor: '#2563eb',
+    backgroundColor: colors.primary,
     borderRadius: 8,
     padding: 14,
     alignItems: 'center',
     marginTop: 24,
   },
   saveButtonDisabled: { opacity: 0.5 },
-  saveButtonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
+  saveButtonText: { color: colors.onPrimary, fontSize: 16, fontWeight: '600' },
 });

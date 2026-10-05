@@ -12,6 +12,7 @@ import {
 
 import { LabeledInput } from '../../components/LabeledInput';
 import { supabase } from '../../lib/supabase';
+import { colors } from '../../theme';
 
 export default function Signup() {
   const [email, setEmail] = useState('');
@@ -79,7 +80,7 @@ export default function Signup() {
 
       <Pressable style={styles.button} onPress={handleSignup} disabled={isSubmitting}>
         {isSubmitting ? (
-          <ActivityIndicator color="#fff" />
+          <ActivityIndicator color={colors.onPrimary} />
         ) : (
           <Text style={styles.buttonText}>Sign Up</Text>
         )}
@@ -97,7 +98,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     paddingHorizontal: 24,
-    backgroundColor: '#fff',
+    backgroundColor: colors.background,
   },
   title: {
     fontSize: 28,
@@ -106,19 +107,19 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   button: {
-    backgroundColor: '#2563eb',
+    backgroundColor: colors.primary,
     borderRadius: 8,
     padding: 14,
     alignItems: 'center',
     marginTop: 8,
   },
   buttonText: {
-    color: '#fff',
+    color: colors.onPrimary,
     fontSize: 16,
     fontWeight: '600',
   },
   error: {
-    color: '#dc2626',
+    color: colors.danger,
     marginBottom: 12,
   },
   link: {

@@ -136,7 +136,7 @@ function NameEditor({
         disabled={!isChanged || isSaving}
       >
         {isSaving ? (
-          <ActivityIndicator color="#fff" />
+          <ActivityIndicator color={colors.onPrimary} />
         ) : (
           <Text style={styles.saveButtonText}>Save</Text>
         )}
@@ -173,7 +173,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   saveButtonDisabled: { opacity: 0.5 },
-  saveButtonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
+  saveButtonText: { color: colors.onPrimary, fontSize: 16, fontWeight: '600' },
   email: { fontSize: 14, color: colors.muted, marginTop: spacing.sm },
   row: {
     flexDirection: 'row',

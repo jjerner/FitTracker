@@ -7,6 +7,7 @@ import { ExerciseList } from '../../../../components/workouts/ExerciseList';
 import { useSession } from '../../../../context/AuthProvider';
 import { MOVEMENT_PATTERNS, createCustomExercise } from '../../../../lib/workouts';
 import type { ExerciseCategory } from '../../../../types/domain';
+import { colors } from '../../../../theme';
 
 const CATEGORIES: ExerciseCategory[] = ['strength', 'cardio'];
 
@@ -103,7 +104,7 @@ export default function ExerciseCatalog() {
           {error ? <Text style={styles.error}>{error}</Text> : null}
           <Pressable style={styles.saveButton} onPress={handleCreate} disabled={isSaving}>
             {isSaving ? (
-              <ActivityIndicator color="#fff" />
+              <ActivityIndicator color={colors.onPrimary} />
             ) : (
               <Text style={styles.saveButtonText}>Save Exercise</Text>
             )}
@@ -124,11 +125,11 @@ export default function ExerciseCatalog() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff', padding: 16 },
+  container: { flex: 1, backgroundColor: colors.background, padding: 16 },
   form: { marginBottom: 16, gap: 10 },
   input: {
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: colors.borderStrong,
     borderRadius: 8,
     padding: 14,
     fontSize: 16,
@@ -136,7 +137,7 @@ const styles = StyleSheet.create({
   chipRow: { flexDirection: 'row', gap: 8 },
   chip: {
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: colors.borderStrong,
     borderRadius: 20,
     paddingVertical: 8,
     paddingHorizontal: 16,
@@ -144,26 +145,26 @@ const styles = StyleSheet.create({
   chipWrap: { flexWrap: 'wrap' },
   smallChip: {
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: colors.borderStrong,
     borderRadius: 16,
     paddingVertical: 6,
     paddingHorizontal: 12,
   },
-  label: { fontSize: 13, color: '#555' },
-  chipActive: { backgroundColor: '#2563eb', borderColor: '#2563eb' },
-  chipText: { color: '#333' },
-  chipTextActive: { color: '#fff' },
-  error: { color: '#dc2626' },
+  label: { fontSize: 13, color: colors.textSecondary },
+  chipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
+  chipText: { color: colors.textSecondary },
+  chipTextActive: { color: colors.onPrimary },
+  error: { color: colors.danger },
   saveButton: {
-    backgroundColor: '#2563eb',
+    backgroundColor: colors.primary,
     borderRadius: 8,
     padding: 14,
     alignItems: 'center',
   },
-  saveButtonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
+  saveButtonText: { color: colors.onPrimary, fontSize: 16, fontWeight: '600' },
   cancelButton: { alignItems: 'center', padding: 8 },
   addButton: {
-    backgroundColor: '#f3f4f6',
+    backgroundColor: colors.surface,
     borderRadius: 8,
     padding: 12,
     alignItems: 'center',

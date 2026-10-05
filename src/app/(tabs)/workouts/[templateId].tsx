@@ -17,6 +17,7 @@ import { useSession } from '../../../context/AuthProvider';
 import { useWorkoutTemplate } from '../../../hooks/useWorkouts';
 import { deleteTemplate, saveTemplate, setTemplateArchived } from '../../../lib/workouts';
 import type { WorkoutTemplate, WorkoutTemplateExercise } from '../../../types/domain';
+import { colors } from '../../../theme';
 
 export default function TemplateScreen() {
   const { templateId } = useLocalSearchParams<{ templateId: string }>();
@@ -238,7 +239,7 @@ function TemplateForm({ template }: { template: WorkoutTemplate | null }) {
 
       <Pressable style={styles.saveButton} onPress={handleSave} disabled={isSaving}>
         {isSaving ? (
-          <ActivityIndicator color="#fff" />
+          <ActivityIndicator color={colors.onPrimary} />
         ) : (
           <Text style={styles.saveButtonText}>Save Routine</Text>
         )}
@@ -304,59 +305,59 @@ function TargetInput({
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff' },
+  container: { flex: 1, backgroundColor: colors.background },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   content: { padding: 16, paddingBottom: 40 },
   label: { fontSize: 14, fontWeight: '600', marginTop: 16, marginBottom: 8 },
   input: {
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: colors.borderStrong,
     borderRadius: 8,
     padding: 14,
     fontSize: 16,
   },
-  emptyText: { color: '#999', fontSize: 14 },
+  emptyText: { color: colors.subtle, fontSize: 14 },
   exerciseCard: {
-    backgroundColor: '#f3f4f6',
+    backgroundColor: colors.surface,
     borderRadius: 12,
     padding: 12,
     marginBottom: 8,
   },
   exerciseHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   exerciseName: { fontSize: 15, fontWeight: '600', flex: 1 },
-  removeText: { color: '#dc2626', marginLeft: 8 },
+  removeText: { color: colors.danger, marginLeft: 8 },
   moveButton: { paddingHorizontal: 8, paddingVertical: 2 },
-  moveText: { fontSize: 18, color: '#2563eb' },
-  moveTextDisabled: { fontSize: 18, color: '#ccc' },
-  addTargetsText: { color: '#2563eb', fontSize: 14, marginTop: 6 },
+  moveText: { fontSize: 18, color: colors.primary },
+  moveTextDisabled: { fontSize: 18, color: colors.borderStrong },
+  addTargetsText: { color: colors.primary, fontSize: 14, marginTop: 6 },
   targetsRow: { flexDirection: 'row', gap: 8, marginTop: 8 },
   targetField: { flex: 1 },
-  targetLabel: { fontSize: 12, color: '#555', marginBottom: 4 },
+  targetLabel: { fontSize: 12, color: colors.textSecondary, marginBottom: 4 },
   targetInput: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.background,
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: colors.borderStrong,
     borderRadius: 6,
     padding: 8,
     fontSize: 15,
   },
   secondaryButton: {
-    backgroundColor: '#f3f4f6',
+    backgroundColor: colors.surface,
     borderRadius: 8,
     padding: 12,
     alignItems: 'center',
     marginTop: 8,
   },
   secondaryButtonText: { fontSize: 15, fontWeight: '600' },
-  error: { color: '#dc2626', marginTop: 12 },
+  error: { color: colors.danger, marginTop: 12 },
   saveButton: {
-    backgroundColor: '#2563eb',
+    backgroundColor: colors.primary,
     borderRadius: 8,
     padding: 14,
     alignItems: 'center',
     marginTop: 24,
   },
-  saveButtonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
+  saveButtonText: { color: colors.onPrimary, fontSize: 16, fontWeight: '600' },
   deleteButton: { padding: 14, alignItems: 'center', marginTop: 8 },
-  deleteButtonText: { color: '#dc2626', fontSize: 15 },
+  deleteButtonText: { color: colors.danger, fontSize: 15 },
 });

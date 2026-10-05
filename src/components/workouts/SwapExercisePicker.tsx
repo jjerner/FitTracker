@@ -5,6 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { ExerciseList } from './ExerciseList';
 import { useExercises } from '../../hooks/useWorkouts';
 import type { Exercise } from '../../types/domain';
+import { colors } from '../../theme';
 
 // Suggests exercises with the same movement pattern (or muscle group if it has none).
 export function SwapExercisePicker({
@@ -79,7 +80,7 @@ export function SwapExercisePicker({
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff', padding: 16 },
+  container: { flex: 1, backgroundColor: colors.background, padding: 16 },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -88,13 +89,13 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   title: { fontSize: 20, fontWeight: '700', flex: 1 },
-  link: { fontSize: 16, color: '#2563eb' },
-  empty: { color: '#999', fontSize: 14, paddingVertical: 12 },
-  row: { paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#eee' },
+  link: { fontSize: 16, color: colors.primary },
+  empty: { color: colors.subtle, fontSize: 14, paddingVertical: 12 },
+  row: { paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.border },
   name: { fontSize: 15, fontWeight: '500' },
-  meta: { fontSize: 13, color: '#888', marginTop: 2 },
+  meta: { fontSize: 13, color: colors.muted, marginTop: 2 },
   showAllButton: {
-    backgroundColor: '#f3f4f6',
+    backgroundColor: colors.surface,
     borderRadius: 8,
     padding: 12,
     alignItems: 'center',

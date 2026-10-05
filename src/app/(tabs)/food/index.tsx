@@ -22,6 +22,7 @@ import { useNutritionGoals } from '../../../hooks/useNutritionGoals';
 import { localDateOf, todayLocalDate } from '../../../lib/dateUtils';
 import { copyEntriesToDate, saveMealFromEntries } from '../../../lib/foods';
 import type { FoodLogEntry, MealType, NutritionGoals } from '../../../types/domain';
+import { colors } from '../../../theme';
 
 const MEAL_TYPES: MealType[] = ['breakfast', 'lunch', 'dinner', 'snack'];
 const MEAL_LABELS: Record<MealType, string> = {
@@ -179,7 +180,7 @@ export default function FoodDiary() {
               disabled={!mealName.trim() || isSavingMeal}
             >
               {isSavingMeal ? (
-                <ActivityIndicator color="#fff" />
+                <ActivityIndicator color={colors.onPrimary} />
               ) : (
                 <Text style={styles.logButtonText}>Save</Text>
               )}
@@ -336,7 +337,7 @@ function EntryRow({ entry, onDelete }: { entry: FoodLogEntry; onDelete: () => vo
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff' },
+  container: { flex: 1, backgroundColor: colors.background },
   dayRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -345,8 +346,8 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   dayLabel: { fontSize: 17, fontWeight: '600', minWidth: 110, textAlign: 'center' },
-  dayArrow: { fontSize: 28, color: '#2563eb', paddingHorizontal: 8 },
-  dayArrowDisabled: { color: '#d1d5db' },
+  dayArrow: { fontSize: 28, color: colors.primary, paddingHorizontal: 8 },
+  dayArrowDisabled: { color: colors.disabled },
   loading: { paddingVertical: 40 },
   modalBackdrop: {
     flex: 1,
@@ -354,21 +355,21 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     padding: 16,
   },
-  modalCard: { backgroundColor: '#fff', borderRadius: 12, padding: 16 },
+  modalCard: { backgroundColor: colors.background, borderRadius: 12, padding: 16 },
   modalTitle: { fontSize: 17, fontWeight: '600', marginBottom: 12 },
   modalInput: {
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: colors.borderStrong,
     borderRadius: 8,
     padding: 14,
     fontSize: 16,
   },
   buttonDisabled: { opacity: 0.5 },
   modalTodayButton: { alignItems: 'center', paddingTop: 12 },
-  modalTodayText: { color: '#2563eb', fontSize: 15, fontWeight: '600' },
+  modalTodayText: { color: colors.primary, fontSize: 15, fontWeight: '600' },
   content: { padding: 16, paddingBottom: 40 },
   totalsCard: {
-    backgroundColor: '#f3f4f6',
+    backgroundColor: colors.surface,
     borderRadius: 12,
     padding: 16,
     marginBottom: 20,
@@ -381,11 +382,11 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: '#2563eb',
+    backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  addButtonText: { color: '#fff', fontSize: 20, lineHeight: 22, fontWeight: '600' },
+  addButtonText: { color: colors.onPrimary, fontSize: 20, lineHeight: 22, fontWeight: '600' },
   mealSection: { marginBottom: 20 },
   mealHeader: {
     flexDirection: 'row',
@@ -395,27 +396,27 @@ const styles = StyleSheet.create({
   },
   mealHeaderRight: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   mealTitle: { fontSize: 16, fontWeight: '600' },
-  mealCalories: { fontSize: 14, color: '#555' },
-  copyText: { fontSize: 14, color: '#2563eb' },
-  emptyText: { color: '#999', fontSize: 14 },
+  mealCalories: { fontSize: 14, color: colors.textSecondary },
+  copyText: { fontSize: 14, color: colors.primary },
+  emptyText: { color: colors.subtle, fontSize: 14 },
   entryRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
     paddingVertical: 8,
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    borderBottomColor: colors.border,
   },
   entryTap: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 12 },
   entryName: { flex: 1, fontSize: 15 },
-  entryCalories: { fontSize: 15, color: '#555' },
-  entryDelete: { fontSize: 16, color: '#9ca3af', paddingHorizontal: 4 },
+  entryCalories: { fontSize: 15, color: colors.textSecondary },
+  entryDelete: { fontSize: 16, color: colors.subtle, paddingHorizontal: 4 },
   logButton: {
-    backgroundColor: '#2563eb',
+    backgroundColor: colors.primary,
     borderRadius: 8,
     padding: 14,
     alignItems: 'center',
     marginTop: 8,
   },
-  logButtonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
+  logButtonText: { color: colors.onPrimary, fontSize: 16, fontWeight: '600' },
 });

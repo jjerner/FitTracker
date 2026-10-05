@@ -3,6 +3,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ExerciseList } from './ExerciseList';
 import type { Exercise } from '../../types/domain';
+import { colors } from '../../theme';
 
 export function ExercisePicker({
   visible,
@@ -36,7 +37,7 @@ export function ExercisePicker({
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff', padding: 16 },
+  container: { flex: 1, backgroundColor: colors.background, padding: 16 },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -44,5 +45,5 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   title: { fontSize: 20, fontWeight: '700' },
-  close: { fontSize: 16, color: '#2563eb' },
+  close: { fontSize: 16, color: colors.primary },
 });

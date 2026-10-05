@@ -179,7 +179,7 @@ const styles = StyleSheet.create({
   muted: { fontSize: 13, color: colors.muted },
   foodRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.lg },
   macroList: { flex: 1, gap: spacing.md },
-  streak: { fontSize: 13, fontWeight: '600', color: '#ea580c' },
+  streak: { fontSize: 13, fontWeight: '600', color: colors.streak },
   weekRow: { flexDirection: 'row', justifyContent: 'space-between' },
   weekDay: { alignItems: 'center', gap: spacing.xs },
   dot: { width: 28, height: 28, borderRadius: 14, backgroundColor: colors.border },
@@ -196,5 +196,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   resumeButton: { backgroundColor: colors.success },
-  buttonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
+  buttonText: { color: colors.onPrimary, fontSize: 16, fontWeight: '600' },
 });

@@ -24,6 +24,7 @@ import {
 import { useExerciseHistory, useExercises } from '../../hooks/useWorkouts';
 import { localDateDaysAgo, todayLocalDate } from '../../lib/dateUtils';
 import { trackedStats } from '../../lib/records';
+import { colors } from '../../theme';
 
 // "2026-09-24" -> "24/9"
 function shortDate(date: string): string {
@@ -103,7 +104,7 @@ function WeightCard({ chartWidth }: { chartWidth: number }) {
           disabled={!isValid || isSaving}
         >
           {isSaving ? (
-            <ActivityIndicator color="#fff" />
+            <ActivityIndicator color={colors.onPrimary} />
           ) : (
             <Text style={styles.buttonText}>Log</Text>
           )}
@@ -126,8 +127,8 @@ function WeightCard({ chartWidth }: { chartWidth: number }) {
           yAxisOffset={minValue}
           maxValue={maxValue - minValue}
           noOfSections={4}
-          color="#2563eb"
-          dataPointsColor="#2563eb"
+          color={colors.primary}
+          dataPointsColor={colors.primary}
           thickness={2}
           xAxisLabelTextStyle={styles.axisLabel}
           yAxisTextStyle={styles.axisLabel}
@@ -351,59 +352,59 @@ function TrackedRow({
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f3f4f6' },
+  container: { flex: 1, backgroundColor: colors.surface },
   content: { padding: 16, gap: 16 },
-  card: { backgroundColor: '#fff', borderRadius: 12, padding: 16, gap: 8 },
+  card: { backgroundColor: colors.background, borderRadius: 12, padding: 16, gap: 8 },
   cardTitle: { fontSize: 16, fontWeight: '600' },
-  cardSubtitle: { fontSize: 13, color: '#6b7280' },
-  empty: { fontSize: 14, color: '#6b7280', paddingVertical: 16 },
-  axisLabel: { fontSize: 10, color: '#6b7280' },
+  cardSubtitle: { fontSize: 13, color: colors.muted },
+  empty: { fontSize: 14, color: colors.muted, paddingVertical: 16 },
+  axisLabel: { fontSize: 10, color: colors.muted },
   tableRow: { flexDirection: 'row', paddingVertical: 6 },
-  tableLabel: { flex: 1.2, fontSize: 14, color: '#374151' },
-  tableHeader: { flex: 1, fontSize: 13, color: '#6b7280', textAlign: 'right' },
+  tableLabel: { flex: 1.2, fontSize: 14, color: colors.textSecondary },
+  tableHeader: { flex: 1, fontSize: 13, color: colors.muted, textAlign: 'right' },
   tableCell: { flex: 1, fontSize: 14, fontWeight: '600', textAlign: 'right' },
-  tableFootnote: { flex: 1, fontSize: 11, color: '#9ca3af', textAlign: 'right' },
+  tableFootnote: { flex: 1, fontSize: 11, color: colors.subtle, textAlign: 'right' },
   countRow: { flexDirection: 'row', alignItems: 'baseline', gap: 6 },
   countValue: { fontSize: 28, fontWeight: '700' },
   rangeButton: {
     marginLeft: 'auto',
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: colors.borderStrong,
     borderRadius: 8,
     paddingHorizontal: 10,
     paddingVertical: 6,
   },
-  rangeButtonText: { fontSize: 14, color: '#374151' },
-  rangeOptions: { alignSelf: 'flex-end', borderWidth: 1, borderColor: '#ddd', borderRadius: 8 },
+  rangeButtonText: { fontSize: 14, color: colors.textSecondary },
+  rangeOptions: { alignSelf: 'flex-end', borderWidth: 1, borderColor: colors.borderStrong, borderRadius: 8 },
   rangeOption: { paddingHorizontal: 14, paddingVertical: 10 },
-  rangeOptionText: { fontSize: 14, color: '#374151' },
-  rangeOptionActive: { color: '#2563eb', fontWeight: '600' },
+  rangeOptionText: { fontSize: 14, color: colors.textSecondary },
+  rangeOptionActive: { color: colors.primary, fontWeight: '600' },
   trackedRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     paddingVertical: 8,
     borderTopWidth: 1,
-    borderTopColor: '#f3f4f6',
+    borderTopColor: colors.surface,
   },
   trackedMain: { flex: 1, gap: 2 },
   trackedName: { fontSize: 15, fontWeight: '600' },
   trackedValue: { fontSize: 20, fontWeight: '700' },
-  trackedRemove: { fontSize: 16, color: '#9ca3af', paddingHorizontal: 4 },
+  trackedRemove: { fontSize: 16, color: colors.subtle, paddingHorizontal: 4 },
   inputRow: { flexDirection: 'row', gap: 8, marginBottom: 8 },
   input: {
     flex: 1,
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: colors.borderStrong,
     borderRadius: 8,
     padding: 12,
     fontSize: 16,
   },
   button: {
-    backgroundColor: '#2563eb',
+    backgroundColor: colors.primary,
     borderRadius: 8,
     paddingHorizontal: 20,
     justifyContent: 'center',
   },
   buttonDisabled: { opacity: 0.5 },
-  buttonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
+  buttonText: { color: colors.onPrimary, fontSize: 16, fontWeight: '600' },
 });
