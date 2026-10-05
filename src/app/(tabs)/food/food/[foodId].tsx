@@ -118,7 +118,12 @@ export default function FoodDetail() {
   const [servingSize, setServingSize] = useState('');
   const [servingName, setServingName] = useState('');
   const canEditDefault = !!food && !!food.servingSizeG && !!userId && food.createdBy === userId;
-  const canDeleteSelected = !!selected && selected.id !== 'default' && selected.id !== 'entry';
+  // Your own servings, and the built-in one on a custom food you made. Servings that come
+  // with other foods (e.g. from a barcode) can't be removed.
+  const canDeleteSelected =
+    !!selected &&
+    selected.id !== 'entry' &&
+    (selected.id !== 'default' || canEditDefault);
 
   async function handleSaveServing() {
     if (!food || !userId) return;
@@ -160,8 +165,13 @@ export default function FoodDetail() {
         style: 'destructive',
         onPress: async () => {
           try {
-            await deleteFoodServing(selected.id);
-            await queryClient.invalidateQueries({ queryKey: ['foodServings', userId, foodId] });
+            if (selected.id === 'default') {
+              await updateFoodServing(food!.id, null, null);
+              await queryClient.invalidateQueries({ queryKey: ['food', foodId] });
+            } else {
+              await deleteFoodServing(selected.id);
+              await queryClient.invalidateQueries({ queryKey: ['foodServings', userId, foodId] });
+            }
             selectOption(null);
           } catch {
             Alert.alert('Could not delete', 'Check your connection and try again.');
