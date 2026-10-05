@@ -58,7 +58,7 @@ export default function Home() {
 
   const activeWorkout = history?.find((log) => log.completedAt == null);
 
-  // This week (Monâ€“Sun) and how many weeks in a row had a workout.
+  // This week (Mon–Sun) and how many weeks in a row had a workout.
   const workoutDays = new Set(workoutDates ?? []);
   const thisMonday = mondayOf(today);
   const week = WEEKDAYS.map((label, i) => {
@@ -123,7 +123,7 @@ export default function Home() {
           <Text style={styles.cardTitle}>This week</Text>
           {streak > 0 ? (
             <Text style={styles.streak}>
-              ðŸ”¥ {streak} {streak === 1 ? 'week' : 'weeks'} in a row
+              🔥 {streak} {streak === 1 ? 'week' : 'weeks'} in a row
             </Text>
           ) : null}
         </View>
