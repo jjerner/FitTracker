@@ -13,6 +13,13 @@ Full plan: `C:\Users\jerne\.claude\plans\help-me-plan-what-mellow-sketch.md`
 **UX pass + exercise swap — done** (plan: `C:\Users\jerne\.claude\plans\lets-explore-the-ux-ui-indexed-lynx.md`). All steps tested on-device by the user. See "UX pass features" below.
 **Food search improvements — done.** My foods first + Livsmedelsverket basic foods. Tested on-device by the user. See "Food search" below.
 
+**Session 2026-10-05 (all shipped via `eas update`, all confirmed on the phone):**
+- **Tracked exercises** card on Progress (migration 0010, `tracked_exercises`). Shows only *logged* values, never an estimated 1RM (user's call): current best (heaviest set of the latest session, kg × reps), all-time PR + date, change vs 30/90 days ago. Stats in `trackedStats` (`src/lib/records.ts`); data in `src/lib/progress.ts` + `useTrackedExercises`; reuses `ExercisePicker` (new `title` prop) and `useExerciseHistory`. Commit ed405a9.
+- **Saved meals + quick add** (migration 0011: `food_log_entries.food_id` now nullable, `saved_meals`, `saved_meal_items`). "Save as meal" link on each diary meal (name modal) → Log Food → "Saved meals" logs one entry per food, recalculated from the foods as they are now (quick-add entries are skipped when saving). Quick-add screen (`food/quick-add.tsx`) still exists but has **no button leading to it** any more (user found it pointless); it only serves editing old quick-add entries (tap an entry with `foodId == null`). Commit b21aa32.
+- **Lifesum-style diary (2.4)**: calorie ring + macro bars on the Food tab (shared `src/components/CalorieRing.tsx`, also used by Home), blue "+" per meal opens Log Food with `?meal=` pre-selected (carried through search, scan, saved meals, custom food), "Recent" foods list on Log Food (`getRecentFoods`). The bottom "+ Log Food" button on the diary was removed. Log Food's shortcut row is now **Saved meals | Custom food** (custom food was moved up from the bottom of the screen). Commits 3dff940, 249533a.
+- **Theme cleanup (1.8)**: no hard-coded hex colors left in `src/**/*.tsx`; everything uses `colors` from `src/theme.ts` (new tokens: onPrimary, primaryLight, successBg, dangerLight, warning*, streak, textSecondary, subtle, disabled, borderStrong, black). Near-identical greys were merged. Commit 07e1a41. Dark mode (5.6) is now possible by swapping those values (screens would still need a hook to read the active palette instead of the static import).
+- Commit 8055033 fixed a garbled 🔥 on Home (see gotcha below).
+
 **Go live (installable APK) — done.** Installed on the user's phone 2026-10-01 and working; user is beta testing it. Android only (OnePlus Nord 5), just for the user, no Play Store. Done: Expo account `jjerner` (Google login), `eas init` (project `@jjerner/FitTrack`), `android.package` = `com.jjerner.fittrack`, `eas.json` `preview` profile (internal APK, `environment: preview`, `channel: preview`), `expo-updates` + `eas update:configure` (`runtimeVersion` policy `appVersion`), Supabase URL/anon key set as EAS env vars in the `preview` environment, keystore generated in the cloud. Mic permission disabled (`recordAudioAndroid: false`). Build #1 failed (npm ci, fixed by `.npmrc`); build #2 `59501503-f0f1-4d39-842a-cfdd5c602949` was the first installed one; build #3 `cb263946-1335-4e68-9a3f-108e17a90cb6` (2026-10-04, finished) adds bundle A, the food reminder and the new icon — **user is about to install and test it**. Rebuild: `npx eas-cli@latest build -p android --profile preview`. JS-only changes later: `npx eas-cli@latest update --channel preview --environment preview --message "..."` (no reinstall; app picks it up after 1–2 restarts). Native changes (new native package, app.json plugins, version bump) need a new build.
 
 ### Phase 4 features
@@ -38,11 +45,10 @@ Three sections, fetched in parallel with `Promise.allSettled` (one failing doesn
 - **Active workout, StrengthLog-style**: per-exercise table Set | Previous | kg | reps | ✓ (cardio: min | km). Unsaved rows are local state; grey placeholders = previous session's same set → template target → last set; ✓ with empty inputs uses the placeholder. ✓ saves immediately via `addSet`; tapping a green ✓ deletes the set and puts its numbers back in a row. Rest timer bar (90 s, −15/+15/Skip) after strength sets; elapsed clock under the title.
 - **Rest vibration**: off by default; device-only setting in AsyncStorage (`src/lib/settings.ts`, hook `useRestVibration`, query key `['restVibration']`).
 - **Home**: calorie ring (`react-native-svg`, kcal left/over) + P/C/F bars; "This week" card (Mon–Sun dots, count, 🔥 streak = consecutive weeks with ≥1 workout; an empty current week doesn't break it); "+ Log Food" and "Start Workout", which becomes "Resume: <name>" during a workout (`withAnchor` + `unstable_settings` anchor in both `food/_layout.tsx` and `workouts/_layout.tsx` so Back lands on the tab's list). User now **wants** workouts on Home (reverses the earlier food-only decision). Weight is still not on Home.
-- **Look & feel**: tab bar icons via `expo-symbols` (`@expo/vector-icons` is deprecated per the docs; `expo-font` is its peer dep). `src/theme.ts` = shared colors/spacing/radius; only the tab layout, Profile, active workout and Home use it so far, so move other screens over as they're touched. Food/Workouts/Profile tabs set `headerShown: false` so only their stack header shows.
+- **Look & feel**: tab bar icons via `expo-symbols` (`@expo/vector-icons` is deprecated per the docs; `expo-font` is its peer dep). `src/theme.ts` = shared colors/spacing/radius, now used by every screen (see 2026-10-05 session above). Food/Workouts/Profile tabs set `headerShown: false` so only their stack header shows.
 
 ### On hold (user's call — don't change unless asked)
 
-- **Food diary redesign (Lifesum-style)** — offered in the UX pass (calorie ring on the Food tab, "+" per meal, meal kcal totals, recent foods); user didn't pick it this round.
 - **Email-verification link** redirects to a dead `localhost:3000` page (see gotchas). Custom SMTP is now set up, so the "Confirm signup" template could be switched to a code too (same approach as forgot password).
 
 ## Environment
@@ -70,6 +76,9 @@ Migrations live in `supabase/migrations/*.sql`, applied manually by pasting into
 - `0008_slv_foods.sql` (foods.source may be `'slv'`, foods.slv_number; 2,606 Livsmedelsverket generic foods, per 100 g, fetched once from their open API)
 - `0009_food_servings.sql` (food_servings: personal named servings per food, RLS own rows; food_log_entries.serving_g = grams per serving the entry was logged in)
 
+- `0010_tracked_exercises.sql` (tracked_exercises: user_id + exercise_id, RLS own rows)
+- `0011_saved_meals_quick_add.sql` (food_log_entries.food_id nullable for quick-add; saved_meals + saved_meal_items, RLS own rows / via parent meal)
+
 For any new tables, write new numbered migration files and ask the user to run them the same way.
 
 ## Known gotchas hit this session
@@ -85,6 +94,7 @@ For any new tables, write new numbered migration files and ask the user to run t
 - `expo-symbols` on Android takes Material Symbols names (`{ ios: 'house.fill', android: 'home' }`); tsc checks the names.
 - The Livsmedelsverket import script isn't in the repo (it was a one-off). To re-fetch: `GET https://dataportal.livsmedelsverket.se/livsmedel/api/v1/livsmedel?offset=0&limit=3000&sprak=1` for the list, then `.../livsmedel/{nummer}/naringsvarden?sprak=1` per food (kcal = `forkortning` `Ener` with `enhet` `kcal`; `Prot`, `Kolh`, `Fett`, `Fibe`, `Mono/disack`, `Na`).
 - Reset codes: each new send invalidates the previous code, and Gmail threads same-subject emails with the **oldest first** — "token has expired or is invalid" was the user copying an old code.
+- **Never rewrite source files with PowerShell `Get-Content`/`Set-Content`** — it mangles UTF-8 (the 🔥 on Home turned into `ðŸ”¥` and the BOM crept in). Use the Edit/Write tools or a Node script with explicit `utf8`. Quick check for damage: grep `src` for `Ã|â€|ðŸ`.
 - After any direct Supabase write that isn't done through a React Query mutation hook, remember to `queryClient.invalidateQueries(...)` the relevant key or the UI won't reflect it (hit this with the food diary).
 
 ## Architecture quick reference
@@ -100,6 +110,8 @@ For any new tables, write new numbered migration files and ask the user to run t
 - `src/components/MonthCalendar.tsx` — shared month grid (dots mode for Progress, select mode for the diary date picker)
 - `src/lib/settings.ts` — device-only settings (AsyncStorage)
 - `src/theme.ts` — shared colors/spacing/radius
+- `src/components/CalorieRing.tsx` — `CalorieRing` + `MacroBar`, shared by Home and the Food diary
+- `src/app/(tabs)/food/` also holds `quick-add.tsx` (edit-only now) and `saved-meals.tsx`; `src/lib/foods.ts` has the saved-meal / quick-entry / `getRecentFoods` functions
 - `src/components/workouts/` — `ExerciseList` (search list), `ExercisePicker` (modal wrapper), `SwapExercisePicker` (similar-exercise modal)
 - `src/hooks/` — React Query hooks per feature
 - `src/context/AuthProvider.tsx` — session state
@@ -111,15 +123,15 @@ For any new tables, write new numbered migration files and ask the user to run t
 - An **in-progress workout** is a `workout_logs` row with `completed_at = null`. Sets are inserted as soon as they're ticked ✓ (not batched on finish), so a killed app loses nothing; the Workouts home shows a "Resume" button for it. Starting a new workout is hidden while one is in progress.
 - Templates are saved by deleting and re-inserting all `workout_template_exercises` rows (simpler than diffing).
 - Cardio sets store `duration_s` / `distance_m`; the UI shows minutes / km.
-- Query keys: `['exercises', userId]`, `['workoutTemplates', userId]`, `['workoutTemplate', id]`, `['workoutHistory', userId]`, `['workoutLog', id]`, `['exerciseHistory', userId, exerciseId]`. Progress: `['bodyWeights', userId]`, `['dailyNutrition', userId]`, `['workoutDates', userId]` (the latter two are invalidated whenever the Progress tab gains focus; Home invalidates `workoutDates` + `workoutHistory` on focus; finishing a workout invalidates `exerciseHistory`). Food/profile: `['foodDiary', userId, date]`, `['nutritionGoals', userId]`, `['displayName', userId]`, `['restVibration']` (device setting).
+- Query keys: `['exercises', userId]`, `['workoutTemplates', userId]`, `['workoutTemplate', id]`, `['workoutHistory', userId]`, `['workoutLog', id]`, `['exerciseHistory', userId, exerciseId]`. Progress: `['bodyWeights', userId]`, `['dailyNutrition', userId]`, `['workoutDates', userId]` (the latter two are invalidated whenever the Progress tab gains focus; Home invalidates `workoutDates` + `workoutHistory` on focus; finishing a workout invalidates `exerciseHistory`). Also `['trackedExercises', userId]`, `['savedMeals', userId]`, `['recentFoods', userId]`. Food/profile: `['foodDiary', userId, date]`, `['nutritionGoals', userId]`, `['displayName', userId]`, `['restVibration']` (device setting).
 
 ## Next session should
 
-1. Everything up to and including multiple serving sizes is sent via `eas update` and **confirmed working on the phone** (build #3, B7, food quick wins 1.1–1.4 + 2.1, custom/multiple servings, offline set queue 1.6, records 3.1, 1RM chart 3.2, summary highlights 3.8). Last commit before this handover: 9df8fbc. Ask the user if anything new came up.
-2. Next from the roadmap: suggested order step 4 (saved meals 2.2 + quick add 2.3 — both 🗄 migrations, write `0010_*.sql` and ask the user to paste it into Supabase **before** shipping the JS), then step 5 (1.8 theme, 2.4 Lifesum diary). Left over: 1.5 edit past workouts, 1.9 OFF search endpoint, 1.10 email-verification code. B5 Withings is deliberately later.
+1. Everything up to and including the theme cleanup is sent via `eas update` and **confirmed working on the phone** (see the 2026-10-05 session list under Status). Last commit before this handover: 8055033. Ask the user if anything new came up.
+2. Roadmap steps 1–5 are done. What's left: step 6 "bigger bets to discuss" (5.2 goal helper / 2.9 adaptive goal, 2.8 AI logging), plus smaller items: 1.5 edit past workouts, 1.9 OFF search endpoint, 1.10 email-verification code, 2.5 water, 2.6 favourites, 2.7 fiber/sugar display, 4.1 weight moving average, 5.6 dark mode (the theme groundwork is done). B5 Withings is deliberately later. Remember the migration workflow for 🗄 items: write `0012_*.sql`, ask the user to paste it into Supabase **before** shipping the JS.
 3. Don't touch the "On hold" items above unless the user brings them up.
 4. Remember: JS-only changes reach the phone with `eas update` (see Status → Go live); 🔁 items need a new APK build.
-5. Run it as `npx eas-cli@latest update --branch preview --environment preview --message "..." --non-interactive` (`--environment` is required in non-interactive mode). `runtimeVersion` (policy `appVersion`, so `1.0.0`) now lives at the top level of `app.json`; before, it sat under `android` and `eas update` rewrote `app.json` (duplicate CAMERA permission + a second `runtimeVersion`). Fixed in 9d522d2 and verified: no more rewrites. If `app.json` shows as modified after an update, `git checkout app.json`.
+5. Run it as `npx eas-cli@latest update --channel preview --environment preview --message "..." --non-interactive` (`--environment` is required in non-interactive mode). `runtimeVersion` (policy `appVersion`, so `1.0.0`) now lives at the top level of `app.json`; before, it sat under `android` and `eas update` rewrote `app.json` (duplicate CAMERA permission + a second `runtimeVersion`). Fixed in 9d522d2 and verified: no more rewrites. If `app.json` shows as modified after an update, `git checkout app.json`.
 
 ## Proposed roadmap (for review — not approved yet)
 
@@ -153,7 +165,7 @@ Bundles: **A** (JS-only, one `eas update`): B1 + B2 + B3 + B4 — do first. **B*
 | 1.5 | **Edit past workouts** (fix a weight/reps after finishing). Today only delete. | Common mistake after the session. | M |
 | 1.6 | **done 2026-10-05, `src/lib/pendingSets.ts`; sets only, starting/finishing a workout still needs signal** — **Offline-safe set logging.** Sets are saved over the network on ✓; in a basement gym with no signal that fails. Queue failed saves locally and retry. | Data loss risk in a real gym. Check during beta. | M |
 | 1.7 | **App icon + splash screen** — done in code (generated blue dumbbell, `assets/`); ships with the next APK build. 🔁 | Feels like a real app on the home screen. | S (+ rebuild) |
-| 1.8 | Move the remaining screens onto `src/theme.ts` (food, progress, workouts list, auth). | Consistent look; needed for dark mode later. | M |
+| 1.8 | **done 2026-10-05, no hex colors left in screens** — Move the remaining screens onto `src/theme.ts` (food, progress, workouts list, auth). | Consistent look; needed for dark mode later. | M |
 | 1.9 | Switch Open Food Facts search to `search.openfoodfacts.org` (old endpoint often returns 503). | Branded search often fails today. | S |
 | 1.10 | Email-verification link → code (same approach as forgot password). SMTP is already set up. | The current link lands on a dead localhost page. Only matters for new accounts. | S |
 
@@ -161,9 +173,9 @@ Bundles: **A** (JS-only, one `eas update`): B1 + B2 + B3 + B4 — do first. **B*
 | # | Feature | Seen in | Effort |
 |---|---|---|---|
 | 2.1 | **done 2026-10-05, per-meal "Copy from previous day" (no whole-day button yet)** — **Copy meal / copy yesterday** ("same breakfast as yesterday"). | MFP, Lifesum | S–M |
-| 2.2 | **Saved meals / recipes** (a group of foods logged in one tap, e.g. "Overnight oats"). 🗄 | MFP "My Meals", Lifesum, Cronometer | M |
-| 2.3 | **Quick add** (type kcal + macros directly, no food needed). 🗄 (`food_id` is required today) | MFP, MacroFactor | S–M |
-| 2.4 | **Lifesum-style diary** (calorie ring on the Food tab, "+" per meal that pre-selects the meal, recent foods). Reuses the Home ring. | Lifesum | M |
+| 2.2 | **done 2026-10-05, migration 0011** — **Saved meals / recipes** (a group of foods logged in one tap, e.g. "Overnight oats"). 🗄 | MFP "My Meals", Lifesum, Cronometer | M |
+| 2.3 | **done 2026-10-05 but the entry button was removed (user found it pointless); only editing old entries remains** — **Quick add** (type kcal + macros directly, no food needed). 🗄 (`food_id` is required today) | MFP, MacroFactor | S–M |
+| 2.4 | **done 2026-10-05** — **Lifesum-style diary** (calorie ring on the Food tab, "+" per meal that pre-selects the meal, recent foods). Reuses the Home ring. | Lifesum | M |
 | 2.5 | **Water tracker** (glasses per day on Home/Food). 🗄 | Lifesum, MFP | S–M |
 | 2.6 | **Favourites** (star a food; shown first in "My foods"). 🗄 | most apps | S |
 | 2.7 | Fiber/sugar/sodium on the food page + optional fiber goal (fields already exist). | Cronometer | S |
@@ -211,8 +223,8 @@ Social feed/friends (Hevy), diet-pattern scores (Lifesum), 80+ micronutrients (C
 1. Beta-test fixes (section 0, bundle A: B1–B4) →
 2. ~~Quick food wins: 1.1, 1.2, 1.3, 1.4, 2.1~~ (done) →
 3. ~~Gym safety + motivation: 1.6, 3.1, 3.2, 3.8~~ (done) →
-4. Saved meals (2.2) + quick add (2.3) →
-5. Look & feel: 1.7 icon (bundle with the next native build), 1.8 theme, 2.4 Lifesum diary →
+4. ~~Saved meals (2.2) + quick add (2.3)~~ (done) →
+5. ~~Look & feel: 1.8 theme, 2.4 Lifesum diary~~ (done; 1.7 icon already built) →
 6. Bigger bets to discuss: 5.2 goal helper / 2.9 adaptive goal, 2.8 AI logging.
 
 Sources: MyFitnessPal (Meal Scan, Quick Add, My Meals), MacroFactor (adaptive targets), Cronometer (micronutrients), Lifesum (diet patterns, water/habits), Strong (plate calculator, PRs, 1RM, CSV export), Hevy (social, set types), StrengthLog (programs) — 2026 comparison articles.
