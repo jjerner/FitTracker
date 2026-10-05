@@ -114,8 +114,8 @@ For any new tables, write new numbered migration files and ask the user to run t
 
 ## Next session should
 
-1. **Test build #3 first** (user installs the APK, then reports back). Checklist: icon + splash; login/signup/forgot-password labels and Show/Hide; New Food labels and readable text in dark mode; "Routines" wording; food reminder (permission, fires when nothing logged, skipped after logging, returns after deleting the entry, refused-permission message). Also check B7: ✕ on a logged set shows the confirm and deletes it; ✕ on an empty row removes it; set numbers renumber. Fix anything that fails.
-2. Bundle A (B1–B4) and B6 + icon (1.7) are done in code; **bundle A is only in build #3, not sent via `eas update`** (it was included in the build). Roadmap section 0 has the details. Next from the roadmap: suggested order step 2 (1.1, 1.2, 1.3, 1.4, 2.1), then gym safety (1.6, 3.1, 3.2, 3.8). B5 Withings is deliberately later.
+1. Build #3 and the `eas update`s since then (B7, food quick wins 1.1–1.4 + 2.1 + custom serving size, gym safety 1.6/3.1/3.2/3.8) are sent. User confirmed build #3, previous-day copy, amount editing and serving sizes work on the phone. **Still to confirm on the phone:** custom-food serving size, offline set queue (airplane mode mid-workout; Finish while a set is waiting should say "No connection"), 🏆 records, 1RM chart switch, summary highlights.
+2. Next from the roadmap: suggested order step 4 (saved meals 2.2 + quick add 2.3), then step 5 (1.8 theme, 2.4 Lifesum diary). Left over: 1.5 edit past workouts, 1.9 OFF search endpoint, 1.10 email-verification code. B5 Withings is deliberately later.
 3. Don't touch the "On hold" items above unless the user brings them up.
 4. Remember: JS-only changes reach the phone with `eas update` (see Status → Go live); 🔁 items need a new APK build.
 5. Run it as `npx eas-cli@latest update --branch preview --environment preview --message "..." --non-interactive` (`--environment` is required in non-interactive mode). `runtimeVersion` (policy `appVersion`, so `1.0.0`) now lives at the top level of `app.json`; before, it sat under `android` and `eas update` rewrote `app.json` (duplicate CAMERA permission + a second `runtimeVersion`). Fixed in 9d522d2 and verified: no more rewrites. If `app.json` shows as modified after an update, `git checkout app.json`.
@@ -145,12 +145,12 @@ Bundles: **A** (JS-only, one `eas update`): B1 + B2 + B3 + B4 — do first. **B*
 ### 1. Known gaps in our own app (quick wins, high value)
 | # | Improvement | Why | Effort |
 |---|---|---|---|
-| 1.1 | **Edit a logged food entry** (tap a row → change grams/meal). Today you can only delete. | Every competitor has it; fixing a typo now means delete + re-log. | S–M |
-| 1.2 | **Smart default meal** from time of day (breakfast before 10, lunch 10–14, dinner 17–21, else snack). Today it always defaults to "Snack". | One less tap on every log. | S |
-| 1.3 | **Log in servings, not only grams** (`serving_size_g` is already stored; `quantity_unit` already allows `'serving'`). E.g. "1 bar (45 g)". | Branded products are eaten in pieces, not grams. | S–M |
-| 1.4 | **Meal totals** (kcal per breakfast/lunch/...) in the diary. | Lifesum/MFP show it; helps see where calories go. | S |
+| 1.1 | **done 2026-10-05, tap a diary row to edit (recalculates from the food as it is now)** — **Edit a logged food entry** (tap a row → change grams/meal). Today you can only delete. | Every competitor has it; fixing a typo now means delete + re-log. | S–M |
+| 1.2 | **done 2026-10-05** — **Smart default meal** from time of day (breakfast before 10, lunch 10–14, dinner 17–21, else snack). Today it always defaults to "Snack". | One less tap on every log. | S |
+| 1.3 | **done 2026-10-05; also serving size on custom foods (new-food form + "Add/Edit serving size" on the food page, creator only)** — **Log in servings, not only grams** (`serving_size_g` is already stored; `quantity_unit` already allows `'serving'`). E.g. "1 bar (45 g)". | Branded products are eaten in pieces, not grams. | S–M |
+| 1.4 | **done 2026-10-05** — **Meal totals** (kcal per breakfast/lunch/...) in the diary. | Lifesum/MFP show it; helps see where calories go. | S |
 | 1.5 | **Edit past workouts** (fix a weight/reps after finishing). Today only delete. | Common mistake after the session. | M |
-| 1.6 | **Offline-safe set logging.** Sets are saved over the network on ✓; in a basement gym with no signal that fails. Queue failed saves locally and retry. | Data loss risk in a real gym. Check during beta. | M |
+| 1.6 | **done 2026-10-05, `src/lib/pendingSets.ts`; sets only, starting/finishing a workout still needs signal** — **Offline-safe set logging.** Sets are saved over the network on ✓; in a basement gym with no signal that fails. Queue failed saves locally and retry. | Data loss risk in a real gym. Check during beta. | M |
 | 1.7 | **App icon + splash screen** — done in code (generated blue dumbbell, `assets/`); ships with the next APK build. 🔁 | Feels like a real app on the home screen. | S (+ rebuild) |
 | 1.8 | Move the remaining screens onto `src/theme.ts` (food, progress, workouts list, auth). | Consistent look; needed for dark mode later. | M |
 | 1.9 | Switch Open Food Facts search to `search.openfoodfacts.org` (old endpoint often returns 503). | Branded search often fails today. | S |
@@ -159,7 +159,7 @@ Bundles: **A** (JS-only, one `eas update`): B1 + B2 + B3 + B4 — do first. **B*
 ### 2. Food — features competitors have that we don't
 | # | Feature | Seen in | Effort |
 |---|---|---|---|
-| 2.1 | **Copy meal / copy yesterday** ("same breakfast as yesterday"). | MFP, Lifesum | S–M |
+| 2.1 | **done 2026-10-05, per-meal "Copy from previous day" (no whole-day button yet)** — **Copy meal / copy yesterday** ("same breakfast as yesterday"). | MFP, Lifesum | S–M |
 | 2.2 | **Saved meals / recipes** (a group of foods logged in one tap, e.g. "Overnight oats"). 🗄 | MFP "My Meals", Lifesum, Cronometer | M |
 | 2.3 | **Quick add** (type kcal + macros directly, no food needed). 🗄 (`food_id` is required today) | MFP, MacroFactor | S–M |
 | 2.4 | **Lifesum-style diary** (calorie ring on the Food tab, "+" per meal that pre-selects the meal, recent foods). Reuses the Home ring. | Lifesum | M |
@@ -172,14 +172,14 @@ Bundles: **A** (JS-only, one `eas update`): B1 + B2 + B3 + B4 — do first. **B*
 ### 3. Workouts — features competitors have that we don't
 | # | Feature | Seen in | Effort |
 |---|---|---|---|
-| 3.1 | **Personal records** (🏆 when a set beats your best weight / estimated 1RM; list per exercise). Data is all there. | Strong, Hevy, StrengthLog | M |
-| 3.2 | **Estimated 1RM trend** on the exercise page (Epley formula) next to max weight. | Strong | S |
+| 3.1 | **done 2026-10-05, `src/lib/records.ts`; 🏆 on the exercise page, in the active workout and on the summary** — **Personal records** (🏆 when a set beats your best weight / estimated 1RM; list per exercise). Data is all there. | Strong, Hevy, StrengthLog | M |
+| 3.2 | **done 2026-10-05, Weight / Est. 1RM switch on the exercise chart** — **Estimated 1RM trend** on the exercise page (Epley formula) next to max weight. | Strong | S |
 | 3.3 | **Workout notes** + per-exercise notes ("seat at 4"). 🗄 | Strong, Hevy | S–M |
 | 3.4 | **Set types**: warm-up / drop set / failure; warm-ups excluded from PRs and volume. 🗄 | Strong, Hevy | M |
 | 3.5 | **Plate calculator** (tap a weight → plates per side). | Strong | S |
 | 3.6 | **Per-exercise rest time** (today a fixed 90 s for everything). 🗄 | Strong, Hevy | S–M |
 | 3.7 | **Supersets** (group 2 exercises, rest after the pair). 🗄 | Strong, Hevy | M–L |
-| 3.8 | **Finish summary with highlights** (duration, volume vs last time, new PRs). Extends `log/[logId].tsx`. | Hevy | S–M |
+| 3.8 | **done 2026-10-05, volume vs last workout of the same name + new-records box** — **Finish summary with highlights** (duration, volume vs last time, new PRs). Extends `log/[logId].tsx`. | Hevy | S–M |
 | 3.9 | *Later:* rest-timer notification while the phone is locked (expo-notifications). 🔁 | Strong, Hevy | M |
 
 ### 4. Progress & motivation
@@ -208,8 +208,8 @@ Social feed/friends (Hevy), diet-pattern scores (Lifesum), 80+ micronutrients (C
 
 ### Suggested order (recommendation)
 1. Beta-test fixes (section 0, bundle A: B1–B4) →
-2. Quick food wins: 1.1, 1.2, 1.3, 1.4, 2.1 (one session) →
-3. Gym safety + motivation: 1.6, 3.1, 3.2, 3.8 →
+2. ~~Quick food wins: 1.1, 1.2, 1.3, 1.4, 2.1~~ (done) →
+3. ~~Gym safety + motivation: 1.6, 3.1, 3.2, 3.8~~ (done) →
 4. Saved meals (2.2) + quick add (2.3) →
 5. Look & feel: 1.7 icon (bundle with the next native build), 1.8 theme, 2.4 Lifesum diary →
 6. Bigger bets to discuss: 5.2 goal helper / 2.9 adaptive goal, 2.8 AI logging.
