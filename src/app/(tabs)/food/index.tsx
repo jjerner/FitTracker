@@ -9,6 +9,7 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from 'react-native';
 
@@ -18,7 +19,7 @@ import { useDiaryDate } from '../../../context/DiaryDateProvider';
 import { useFoodDiary } from '../../../hooks/useFoodDiary';
 import { useNutritionGoals } from '../../../hooks/useNutritionGoals';
 import { localDateOf, todayLocalDate } from '../../../lib/dateUtils';
-import { copyEntriesToDate } from '../../../lib/foods';
+import { copyEntriesToDate, saveMealFromEntries } from '../../../lib/foods';
 import type { FoodLogEntry, MealType, NutritionGoals } from '../../../types/domain';
 
 const MEAL_TYPES: MealType[] = ['breakfast', 'lunch', 'dinner', 'snack'];
@@ -72,6 +73,31 @@ export default function FoodDiary() {
       Alert.alert('Could not copy', 'Check your connection and try again.');
     } finally {
       setIsCopying(false);
+    }
+  }
+
+  // Meal being saved as a reusable meal (asks for a name first).
+  const [savingMeal, setSavingMeal] = useState<MealType | null>(null);
+  const [mealName, setMealName] = useState('');
+  const [isSavingMeal, setIsSavingMeal] = useState(false);
+
+  async function handleSaveMeal() {
+    const name = mealName.trim();
+    if (!session || !savingMeal || !name || isSavingMeal) return;
+    setIsSavingMeal(true);
+    try {
+      await saveMealFromEntries(
+        session.user.id,
+        name,
+        (entries ?? []).filter((e) => e.mealType === savingMeal)
+      );
+      await queryClient.invalidateQueries({ queryKey: ['savedMeals', session.user.id] });
+      setSavingMeal(null);
+      setMealName('');
+    } catch {
+      Alert.alert('Could not save meal', 'Check your connection and try again.');
+    } finally {
+      setIsSavingMeal(false);
     }
   }
 
@@ -130,6 +156,37 @@ export default function FoodDiary() {
         </Pressable>
       </Modal>
 
+      <Modal
+        visible={savingMeal != null}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setSavingMeal(null)}
+      >
+        <Pressable style={styles.modalBackdrop} onPress={() => setSavingMeal(null)}>
+          <Pressable style={styles.modalCard}>
+            <Text style={styles.modalTitle}>Save as meal</Text>
+            <TextInput
+              style={styles.modalInput}
+              placeholder="Name, e.g. Overnight oats"
+              value={mealName}
+              onChangeText={setMealName}
+              autoFocus
+            />
+            <Pressable
+              style={[styles.logButton, !mealName.trim() && styles.buttonDisabled]}
+              onPress={handleSaveMeal}
+              disabled={!mealName.trim() || isSavingMeal}
+            >
+              {isSavingMeal ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Text style={styles.logButtonText}>Save</Text>
+              )}
+            </Pressable>
+          </Pressable>
+        </Pressable>
+      </Modal>
+
       {isLoading ? (
         <ActivityIndicator style={styles.loading} />
       ) : (
@@ -141,6 +198,7 @@ export default function FoodDiary() {
           previousEntries={previousEntries ?? []}
           onCopyMeal={copyMeal}
           isCopying={isCopying}
+          onSaveMeal={setSavingMeal}
         />
       )}
 
@@ -162,6 +220,7 @@ function DiaryContent({
   previousEntries,
   onCopyMeal,
   isCopying,
+  onSaveMeal,
 }: {
   entries: FoodLogEntry[];
   totals: { calories: number; protein: number; carbs: number; fat: number };
@@ -170,6 +229,7 @@ function DiaryContent({
   previousEntries: FoodLogEntry[];
   onCopyMeal: (mealType: MealType) => void;
   isCopying: boolean;
+  onSaveMeal: (mealType: MealType) => void;
 }) {
   return (
     <>
@@ -196,7 +256,14 @@ function DiaryContent({
             <View style={styles.mealHeader}>
               <Text style={styles.mealTitle}>{MEAL_LABELS[mealType]}</Text>
               {mealEntries.length > 0 ? (
-                <Text style={styles.mealCalories}>{Math.round(mealCalories)} kcal</Text>
+                <View style={styles.mealHeaderRight}>
+                  {mealEntries.some((e) => e.foodId != null) && (
+                    <Pressable onPress={() => onSaveMeal(mealType)} hitSlop={8}>
+                      <Text style={styles.copyText}>Save as meal</Text>
+                    </Pressable>
+                  )}
+                  <Text style={styles.mealCalories}>{Math.round(mealCalories)} kcal</Text>
+                </View>
               ) : canCopy ? (
                 <Pressable onPress={() => onCopyMeal(mealType)} disabled={isCopying} hitSlop={8}>
                   <Text style={styles.copyText}>Copy from previous day</Text>
@@ -223,17 +290,30 @@ function EntryRow({ entry, onDelete }: { entry: FoodLogEntry; onDelete: () => vo
       <Pressable
         style={styles.entryTap}
         onPress={() =>
-          router.push({
-            pathname: '/(tabs)/food/food/[foodId]',
-            params: {
-              foodId: entry.foodId,
-              entryId: entry.id,
-              quantity: String(entry.quantity),
-              unit: entry.quantityUnit,
-              servingG: entry.servingG != null ? String(entry.servingG) : undefined,
-              meal: entry.mealType,
-            },
-          })
+          entry.foodId == null
+            ? router.push({
+                pathname: '/(tabs)/food/quick-add',
+                params: {
+                  entryId: entry.id,
+                  name: entry.foodName,
+                  kcal: String(Math.round(entry.caloriesKcal * 10) / 10),
+                  protein: String(Math.round(entry.proteinG * 10) / 10),
+                  carbs: String(Math.round(entry.carbsG * 10) / 10),
+                  fat: String(Math.round(entry.fatG * 10) / 10),
+                  meal: entry.mealType,
+                },
+              })
+            : router.push({
+                pathname: '/(tabs)/food/food/[foodId]',
+                params: {
+                  foodId: entry.foodId,
+                  entryId: entry.id,
+                  quantity: String(entry.quantity),
+                  unit: entry.quantityUnit,
+                  servingG: entry.servingG != null ? String(entry.servingG) : undefined,
+                  meal: entry.mealType,
+                },
+              })
         }
       >
         <Text style={styles.entryName}>{entry.foodName}</Text>
@@ -274,6 +354,15 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   modalCard: { backgroundColor: '#fff', borderRadius: 12, padding: 16 },
+  modalTitle: { fontSize: 17, fontWeight: '600', marginBottom: 12 },
+  modalInput: {
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 8,
+    padding: 14,
+    fontSize: 16,
+  },
+  buttonDisabled: { opacity: 0.5 },
   modalTodayButton: { alignItems: 'center', paddingTop: 12 },
   modalTodayText: { color: '#2563eb', fontSize: 15, fontWeight: '600' },
   content: { padding: 16, paddingBottom: 40 },
@@ -293,6 +382,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 8,
   },
+  mealHeaderRight: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   mealTitle: { fontSize: 16, fontWeight: '600' },
   mealCalories: { fontSize: 14, color: '#555' },
   copyText: { fontSize: 14, color: '#2563eb' },

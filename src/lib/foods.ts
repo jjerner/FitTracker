@@ -1,7 +1,14 @@
 import type { OffFood } from './openFoodFacts';
 import { supabase } from './supabase';
 import { refreshFoodReminders } from './reminders';
-import type { Food, FoodLogEntry, FoodServing, MealType, NutritionGoals } from '../types/domain';
+import type {
+  Food,
+  FoodLogEntry,
+  FoodServing,
+  MealType,
+  NutritionGoals,
+  SavedMeal,
+} from '../types/domain';
 
 function mapFoodRow(row: any): Food {
   return {
@@ -225,7 +232,7 @@ export function defaultMealForNow(): MealType {
 }
 
 // Nutrition on `foods` is stored per 100g; convert by quantity/unit.
-function entryNutrition(
+export function entryNutrition(
   food: Food,
   quantity: number,
   quantityUnit: 'g' | 'serving',
@@ -311,6 +318,139 @@ export async function copyEntriesToDate(
       carbs_g: e.carbsG,
       fat_g: e.fatG,
       fiber_g: e.fiberG,
+    }))
+  );
+
+  if (error) throw error;
+  refreshFoodReminders().catch(() => {});
+}
+
+type QuickEntryInput = {
+  name: string;
+  mealType: MealType;
+  caloriesKcal: number;
+  proteinG: number;
+  carbsG: number;
+  fatG: number;
+};
+
+// Quick add: no food behind the entry, just the numbers typed in.
+export async function logQuickEntry(
+  input: QuickEntryInput & { userId: string; loggedDate: string }
+): Promise<void> {
+  const { error } = await supabase.from('food_log_entries').insert({
+    user_id: input.userId,
+    food_id: null,
+    food_name: input.name,
+    logged_date: input.loggedDate,
+    meal_type: input.mealType,
+    quantity: 1,
+    quantity_unit: 'serving',
+    calories_kcal: input.caloriesKcal,
+    protein_g: input.proteinG,
+    carbs_g: input.carbsG,
+    fat_g: input.fatG,
+  });
+
+  if (error) throw error;
+  refreshFoodReminders().catch(() => {});
+}
+
+export async function updateQuickEntry(input: QuickEntryInput & { entryId: string }): Promise<void> {
+  const { error } = await supabase
+    .from('food_log_entries')
+    .update({
+      food_name: input.name,
+      meal_type: input.mealType,
+      calories_kcal: input.caloriesKcal,
+      protein_g: input.proteinG,
+      carbs_g: input.carbsG,
+      fat_g: input.fatG,
+    })
+    .eq('id', input.entryId);
+
+  if (error) throw error;
+}
+
+export async function getSavedMeals(userId: string): Promise<SavedMeal[]> {
+  const { data, error } = await supabase
+    .from('saved_meals')
+    .select('id, name, saved_meal_items(quantity, quantity_unit, serving_g, position, foods(*))')
+    .eq('user_id', userId)
+    .order('name', { ascending: true });
+
+  if (error) throw error;
+  return (data ?? []).map((row: any) => ({
+    id: row.id,
+    name: row.name,
+    items: [...row.saved_meal_items]
+      .sort((a, b) => a.position - b.position)
+      .map((item: any) => ({
+        food: mapFoodRow(item.foods),
+        quantity: Number(item.quantity),
+        quantityUnit: item.quantity_unit,
+        servingG: item.serving_g != null ? Number(item.serving_g) : null,
+      })),
+  }));
+}
+
+// Saves the foods of some diary entries as a meal. Quick-add entries have no
+// food, so they are left out.
+export async function saveMealFromEntries(
+  userId: string,
+  name: string,
+  entries: FoodLogEntry[]
+): Promise<void> {
+  const items = entries.filter((e) => e.foodId != null);
+  if (items.length === 0) return;
+
+  const { data: meal, error } = await supabase
+    .from('saved_meals')
+    .insert({ user_id: userId, name })
+    .select('id')
+    .single();
+  if (error) throw error;
+
+  const { error: itemsError } = await supabase.from('saved_meal_items').insert(
+    items.map((e, position) => ({
+      meal_id: meal.id,
+      food_id: e.foodId,
+      quantity: e.quantity,
+      quantity_unit: e.quantityUnit,
+      serving_g: e.servingG,
+      position,
+    }))
+  );
+  if (itemsError) {
+    await supabase.from('saved_meals').delete().eq('id', meal.id);
+    throw itemsError;
+  }
+}
+
+export async function deleteSavedMeal(id: string): Promise<void> {
+  const { error } = await supabase.from('saved_meals').delete().eq('id', id);
+  if (error) throw error;
+}
+
+// One diary entry per food, with nutrition worked out from the foods as they are now.
+export async function logSavedMeal(
+  userId: string,
+  meal: SavedMeal,
+  loggedDate: string,
+  mealType: MealType
+): Promise<void> {
+  if (meal.items.length === 0) return;
+  const { error } = await supabase.from('food_log_entries').insert(
+    meal.items.map((item) => ({
+      user_id: userId,
+      food_id: item.food.id,
+      food_name: item.food.name,
+      logged_date: loggedDate,
+      meal_type: mealType,
+      quantity: item.quantity,
+      quantity_unit: item.quantityUnit,
+      serving_g: item.quantityUnit === 'serving' ? item.servingG : null,
+      ...entryNutrition(item.food, item.quantity, item.quantityUnit, item.servingG),
     }))
   );
 

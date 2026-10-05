@@ -114,6 +114,15 @@ export default function FoodSearch() {
         <Text style={styles.scanButtonText}>Scan Barcode</Text>
       </Pressable>
 
+      <View style={styles.shortcutRow}>
+        <Pressable style={styles.shortcut} onPress={() => router.push('/(tabs)/food/saved-meals')}>
+          <Text style={styles.shortcutText}>Saved meals</Text>
+        </Pressable>
+        <Pressable style={styles.shortcut} onPress={() => router.push('/(tabs)/food/quick-add')}>
+          <Text style={styles.shortcutText}>Quick add</Text>
+        </Pressable>
+      </View>
+
       {error ? <Text style={styles.error}>{error}</Text> : null}
       {isSearching ? <ActivityIndicator style={styles.loader} /> : null}
 
@@ -176,6 +185,16 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   scanButtonText: { color: '#fff', fontSize: 15, fontWeight: '600' },
+  shortcutRow: { flexDirection: 'row', gap: 8, marginBottom: 12 },
+  shortcut: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: '#2563eb',
+    borderRadius: 8,
+    padding: 12,
+    alignItems: 'center',
+  },
+  shortcutText: { color: '#2563eb', fontSize: 15, fontWeight: '600' },
   loader: { marginBottom: 12 },
   error: { color: '#dc2626', marginBottom: 12 },
   sectionTitle: {

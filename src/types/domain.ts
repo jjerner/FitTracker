@@ -25,7 +25,8 @@ export type FoodServing = {
 
 export type FoodLogEntry = {
   id: string;
-  foodId: string;
+  // Null for quick-add entries (no food behind them).
+  foodId: string | null;
   foodName: string;
   loggedDate: string;
   mealType: MealType;
@@ -38,6 +39,19 @@ export type FoodLogEntry = {
   carbsG: number;
   fatG: number;
   fiberG: number | null;
+};
+
+export type SavedMealItem = {
+  food: Food;
+  quantity: number;
+  quantityUnit: 'g' | 'serving';
+  servingG: number | null;
+};
+
+export type SavedMeal = {
+  id: string;
+  name: string;
+  items: SavedMealItem[];
 };
 
 export type NutritionGoals = {
