@@ -315,6 +315,20 @@ function ExerciseCard({
     await onChanged();
   }
 
+  function handleDeleteSet(set: WorkoutSet, setNumber: number) {
+    Alert.alert(`Delete set ${setNumber}?`, 'This set will be removed from the workout.', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: async () => {
+          await deleteSet(set.id);
+          await onChanged();
+        },
+      },
+    ]);
+  }
+
   async function handleSwap(exercise: Exercise) {
     // No sets yet: replace in place. Sets logged: keep them and add the new exercise below.
     if (doneSets.length === 0) {
@@ -376,6 +390,7 @@ function ExerciseCard({
         <Text style={[styles.headerCell, styles.colInput]}>{labelA}</Text>
         <Text style={[styles.headerCell, styles.colInput]}>{labelB}</Text>
         <View style={styles.colCheck} />
+        <View style={styles.colRemove} />
       </View>
 
       {doneSets.map((set, index) => (
@@ -394,6 +409,9 @@ function ExerciseCard({
           </Text>
           <Pressable style={[styles.check, styles.checkDone]} onPress={() => handleUndo(set)}>
             <Text style={styles.checkDoneText}>✓</Text>
+          </Pressable>
+          <Pressable style={styles.colRemove} onPress={() => handleDeleteSet(set, index + 1)} hitSlop={6}>
+            <Text style={styles.removeSetText}>✕</Text>
           </Pressable>
         </View>
       ))}
@@ -431,6 +449,13 @@ function ExerciseCard({
               ) : (
                 <Text style={styles.checkText}>✓</Text>
               )}
+            </Pressable>
+            <Pressable
+              style={styles.colRemove}
+              onPress={() => setDrafts((prev) => prev.filter((d) => d.key !== draft.key))}
+              hitSlop={6}
+            >
+              <Text style={styles.removeSetText}>✕</Text>
             </Pressable>
           </View>
         );
@@ -493,6 +518,8 @@ const styles = StyleSheet.create({
   colPrev: { flex: 1.4, textAlign: 'center' },
   colInput: { flex: 1, textAlign: 'center' },
   colCheck: { width: 36 },
+  colRemove: { width: 28, height: 36, alignItems: 'center', justifyContent: 'center' },
+  removeSetText: { fontSize: 16, color: colors.muted },
   cell: { fontSize: 15, fontWeight: '600', color: colors.text },
   prevCell: { fontSize: 13, color: colors.muted },
   doneValue: { fontSize: 15, color: colors.text, paddingVertical: 8 },
