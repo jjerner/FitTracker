@@ -14,8 +14,11 @@ import {
 import { useSession } from '../../../../context/AuthProvider';
 import { useDiaryDate } from '../../../../context/DiaryDateProvider';
 import {
+  addFoodServing,
   defaultMealForNow,
+  deleteFoodServing,
   getFoodById,
+  getFoodServings,
   logFoodEntry,
   updateFoodLogEntry,
   updateFoodServing,
@@ -31,21 +34,26 @@ const MEAL_LABELS: Record<MealType, string> = {
   snack: 'Snack',
 };
 
+type ServingOption = { id: string; label: string; grams: number };
+
 export default function FoodDetail() {
-  // entryId/quantity/unit/meal are set only when editing a logged entry.
+  // entryId/quantity/unit/servingG/meal are set only when editing a logged entry.
   const params = useLocalSearchParams<{
     foodId: string;
     entryId?: string;
     quantity?: string;
     unit?: 'g' | 'serving';
+    servingG?: string;
     meal?: MealType;
   }>();
   const { foodId, entryId } = params;
   const { session } = useSession();
+  const userId = session?.user.id;
   const queryClient = useQueryClient();
   const { date: loggedDate } = useDiaryDate();
   const [amount, setAmount] = useState(params.quantity ?? '100');
-  const [unit, setUnit] = useState<'g' | 'serving'>(params.unit ?? 'g');
+  // 'g', a serving's id, or 'entry' (the serving the edited entry was logged in).
+  const [selectedId, setSelectedId] = useState(params.unit === 'serving' ? 'entry' : 'g');
   const [mealType, setMealType] = useState<MealType>(params.meal ?? defaultMealForNow());
   const [isSaving, setIsSaving] = useState(false);
 
@@ -55,33 +63,118 @@ export default function FoodDetail() {
     enabled: !!foodId,
   });
 
-  // Only the creator of a custom food can set its serving (the database enforces this too).
-  const [editingServing, setEditingServing] = useState(false);
+  // The user's own saved servings for this food.
+  const { data: myServings } = useQuery({
+    queryKey: ['foodServings', userId, foodId],
+    queryFn: () => getFoodServings(userId as string, foodId as string),
+    enabled: !!userId && !!foodId,
+  });
+
+  // The food's built-in serving first, then the user's own.
+  const options = useMemo<ServingOption[]>(() => {
+    if (!food) return [];
+    const list: ServingOption[] = [];
+    if (food.servingSizeG) {
+      list.push({
+        id: 'default',
+        grams: food.servingSizeG,
+        label: food.servingDescription ?? `Serving (${food.servingSizeG} g)`,
+      });
+    }
+    for (const serving of myServings ?? []) {
+      list.push({
+        id: serving.id,
+        grams: serving.grams,
+        label: `${serving.name} (${serving.grams} g)`,
+      });
+    }
+    return list;
+  }, [food, myServings]);
+
+  const entryGrams = Number(params.servingG) || null;
+  const selected = useMemo<ServingOption | null>(() => {
+    if (selectedId === 'g') return null;
+    if (selectedId === 'entry') {
+      const grams = entryGrams ?? food?.servingSizeG ?? 100;
+      return (
+        options.find((o) => o.grams === grams) ?? { id: 'entry', grams, label: `Serving (${grams} g)` }
+      );
+    }
+    return options.find((o) => o.id === selectedId) ?? null;
+  }, [selectedId, entryGrams, food, options]);
+  // A serving the entry used that no longer exists is still shown, so editing keeps it.
+  const chips =
+    selected && !options.some((o) => o.id === selected.id) ? [...options, selected] : options;
+  const unit: 'g' | 'serving' = selected ? 'serving' : 'g';
+
+  function selectOption(option: ServingOption | null) {
+    setAmount(option ? '1' : String(selected?.grams ?? 100));
+    setSelectedId(option ? option.id : 'g');
+  }
+
+  // 'add': a new personal serving (any food). 'default': the built-in serving of a custom
+  // food, only for its creator (the database enforces this too).
+  const [editor, setEditor] = useState<null | 'add' | 'default'>(null);
   const [servingSize, setServingSize] = useState('');
   const [servingName, setServingName] = useState('');
-  const canEditServing = !!food && !!session && food.createdBy === session.user.id;
+  const canEditDefault = !!food && !!food.servingSizeG && !!userId && food.createdBy === userId;
+  const canDeleteSelected = !!selected && selected.id !== 'default' && selected.id !== 'entry';
 
   async function handleSaveServing() {
-    if (!food) return;
+    if (!food || !userId) return;
     const size = Number(servingSize);
     try {
-      await updateFoodServing(
-        food.id,
-        size > 0 ? size : null,
-        size > 0 && servingName.trim() ? servingName.trim() : null
-      );
-      await queryClient.invalidateQueries({ queryKey: ['food', foodId] });
-      setUnit('g');
-      setEditingServing(false);
+      if (editor === 'add') {
+        if (!(size > 0)) return;
+        const created = await addFoodServing({
+          userId,
+          foodId: food.id,
+          name: servingName.trim() || 'Serving',
+          grams: size,
+        });
+        await queryClient.invalidateQueries({ queryKey: ['foodServings', userId, foodId] });
+        setSelectedId(created.id);
+        setAmount('1');
+      } else {
+        await updateFoodServing(
+          food.id,
+          size > 0 ? size : null,
+          size > 0 && servingName.trim() ? servingName.trim() : null
+        );
+        await queryClient.invalidateQueries({ queryKey: ['food', foodId] });
+        setSelectedId('g');
+        setAmount('100');
+      }
+      setEditor(null);
     } catch {
       Alert.alert('Could not save', 'Check your connection and try again.');
     }
   }
 
+  function handleDeleteServing() {
+    if (!selected || !canDeleteSelected) return;
+    Alert.alert('Delete serving?', selected.label, [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await deleteFoodServing(selected.id);
+            await queryClient.invalidateQueries({ queryKey: ['foodServings', userId, foodId] });
+            selectOption(null);
+          } catch {
+            Alert.alert('Could not delete', 'Check your connection and try again.');
+          }
+        },
+      },
+    ]);
+  }
+
   const amountNumber = Number(amount) || 0;
   const preview = useMemo(() => {
     if (!food) return null;
-    const grams = unit === 'g' ? amountNumber : amountNumber * (food.servingSizeG ?? 100);
+    const grams = selected ? amountNumber * selected.grams : amountNumber;
     const multiplier = grams / 100;
     return {
       calories: food.caloriesKcal * multiplier,
@@ -89,7 +182,7 @@ export default function FoodDetail() {
       carbs: food.carbsG * multiplier,
       fat: food.fatG * multiplier,
     };
-  }, [food, amountNumber, unit]);
+  }, [food, amountNumber, selected]);
 
   async function handleSave() {
     if (!food || !session) return;
@@ -102,6 +195,7 @@ export default function FoodDetail() {
           mealType,
           quantity: amountNumber,
           quantityUnit: unit,
+          servingG: selected?.grams ?? null,
         });
       } else {
         await logFoodEntry({
@@ -111,6 +205,7 @@ export default function FoodDetail() {
           mealType,
           quantity: amountNumber,
           quantityUnit: unit,
+          servingG: selected?.grams ?? null,
         });
       }
       await queryClient.invalidateQueries({ queryKey: ['foodDiary', session.user.id, loggedDate] });
@@ -133,61 +228,83 @@ export default function FoodDetail() {
       <Text style={styles.name}>{food.name}</Text>
       {food.brand ? <Text style={styles.brand}>{food.brand}</Text> : null}
 
-      {canEditServing ? (
-        editingServing ? (
-          <View>
-            <LabeledInput
-              label="Serving size (g)"
-              placeholder="e.g. 45"
-              keyboardType="numeric"
-              value={servingSize}
-              onChangeText={setServingSize}
-            />
-            <LabeledInput
-              label="Serving name — optional"
-              placeholder="e.g. 1 bar"
-              value={servingName}
-              onChangeText={setServingName}
-            />
-            <Pressable onPress={handleSaveServing}>
-              <Text style={styles.servingLink}>Save serving size</Text>
-            </Pressable>
-          </View>
-        ) : (
-          <Pressable
-            onPress={() => {
-              setServingSize(food.servingSizeG ? String(food.servingSizeG) : '');
-              setServingName(food.servingDescription ?? '');
-              setEditingServing(true);
-            }}
-          >
-            <Text style={styles.servingLink}>
-              {food.servingSizeG ? 'Edit serving size' : 'Add serving size'}
-            </Text>
-          </Pressable>
-        )
-      ) : null}
-
-      {food.servingSizeG ? (
+      {chips.length > 0 ? (
         <View style={styles.mealRow}>
-          {(['g', 'serving'] as const).map((u) => (
+          <Pressable
+            style={[styles.mealChip, !selected && styles.mealChipActive]}
+            onPress={() => selectOption(null)}
+          >
+            <Text style={!selected ? styles.mealChipTextActive : styles.mealChipText}>Grams</Text>
+          </Pressable>
+          {chips.map((option) => (
             <Pressable
-              key={u}
-              style={[styles.mealChip, unit === u && styles.mealChipActive]}
-              onPress={() => {
-                setUnit(u);
-                setAmount(u === 'g' ? String(food.servingSizeG) : '1');
-              }}
+              key={option.id}
+              style={[styles.mealChip, selected?.id === option.id && styles.mealChipActive]}
+              onPress={() => selectOption(option)}
             >
-              <Text style={unit === u ? styles.mealChipTextActive : styles.mealChipText}>
-                {u === 'g'
-                  ? 'Grams'
-                  : `Serving (${food.servingDescription ?? `${food.servingSizeG} g`})`}
+              <Text
+                style={selected?.id === option.id ? styles.mealChipTextActive : styles.mealChipText}
+              >
+                {option.label}
               </Text>
             </Pressable>
           ))}
         </View>
       ) : null}
+
+      {editor ? (
+        <View>
+          <LabeledInput
+            label="Serving size (g)"
+            placeholder="e.g. 45"
+            keyboardType="numeric"
+            value={servingSize}
+            onChangeText={setServingSize}
+          />
+          <LabeledInput
+            label={editor === 'add' ? 'Serving name' : 'Serving name — optional'}
+            placeholder="e.g. 1 slice"
+            value={servingName}
+            onChangeText={setServingName}
+          />
+          <View style={styles.linkRow}>
+            <Pressable onPress={handleSaveServing}>
+              <Text style={styles.servingLink}>Save serving size</Text>
+            </Pressable>
+            <Pressable onPress={() => setEditor(null)}>
+              <Text style={styles.servingLinkMuted}>Cancel</Text>
+            </Pressable>
+          </View>
+        </View>
+      ) : (
+        <View style={styles.linkRow}>
+          <Pressable
+            onPress={() => {
+              setServingSize('');
+              setServingName('');
+              setEditor('add');
+            }}
+          >
+            <Text style={styles.servingLink}>Add serving size</Text>
+          </Pressable>
+          {canEditDefault ? (
+            <Pressable
+              onPress={() => {
+                setServingSize(String(food.servingSizeG));
+                setServingName(food.servingDescription ?? '');
+                setEditor('default');
+              }}
+            >
+              <Text style={styles.servingLink}>Edit default serving</Text>
+            </Pressable>
+          ) : null}
+          {canDeleteSelected ? (
+            <Pressable onPress={handleDeleteServing}>
+              <Text style={styles.servingLinkMuted}>Delete this serving</Text>
+            </Pressable>
+          ) : null}
+        </View>
+      )}
 
       <Text style={styles.label}>{unit === 'g' ? 'Amount (grams)' : 'Number of servings'}</Text>
       <TextInput
@@ -239,7 +356,9 @@ const styles = StyleSheet.create({
   name: { fontSize: 20, fontWeight: '700' },
   brand: { fontSize: 14, color: '#888', marginTop: 2, marginBottom: 16 },
   label: { fontSize: 14, fontWeight: '600', marginTop: 16, marginBottom: 8 },
-  servingLink: { color: '#2563eb', fontSize: 14, marginBottom: 8 },
+  linkRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 16, marginTop: 12 },
+  servingLink: { color: '#2563eb', fontSize: 14 },
+  servingLinkMuted: { color: '#6b7280', fontSize: 14 },
   input: {
     borderWidth: 1,
     borderColor: '#ddd',

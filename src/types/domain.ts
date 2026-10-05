@@ -16,6 +16,13 @@ export type Food = {
   fiberG: number | null;
 };
 
+// A serving size the user saved for a food (e.g. "1 slice" = 30 g).
+export type FoodServing = {
+  id: string;
+  name: string;
+  grams: number;
+};
+
 export type FoodLogEntry = {
   id: string;
   foodId: string;
@@ -24,6 +31,8 @@ export type FoodLogEntry = {
   mealType: MealType;
   quantity: number;
   quantityUnit: 'g' | 'serving';
+  // Grams per serving when logged in servings; null for grams and older entries.
+  servingG: number | null;
   caloriesKcal: number;
   proteinG: number;
   carbsG: number;

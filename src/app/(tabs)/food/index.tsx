@@ -230,6 +230,7 @@ function EntryRow({ entry, onDelete }: { entry: FoodLogEntry; onDelete: () => vo
               entryId: entry.id,
               quantity: String(entry.quantity),
               unit: entry.quantityUnit,
+              servingG: entry.servingG != null ? String(entry.servingG) : undefined,
               meal: entry.mealType,
             },
           })

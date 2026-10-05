@@ -68,6 +68,7 @@ Migrations live in `supabase/migrations/*.sql`, applied manually by pasting into
 - `0006_archive_templates.sql` (workout_templates.archived_at)
 - `0007_movement_patterns.sql` (exercises.movement_pattern + 28 extra seeded exercises, e.g. Chest Press, Hack Squat)
 - `0008_slv_foods.sql` (foods.source may be `'slv'`, foods.slv_number; 2,606 Livsmedelsverket generic foods, per 100 g, fetched once from their open API)
+- `0009_food_servings.sql` (food_servings: personal named servings per food, RLS own rows; food_log_entries.serving_g = grams per serving the entry was logged in)
 
 For any new tables, write new numbered migration files and ask the user to run them the same way.
 

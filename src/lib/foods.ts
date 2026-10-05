@@ -1,7 +1,7 @@
 import type { OffFood } from './openFoodFacts';
 import { supabase } from './supabase';
 import { refreshFoodReminders } from './reminders';
-import type { Food, FoodLogEntry, MealType, NutritionGoals } from '../types/domain';
+import type { Food, FoodLogEntry, FoodServing, MealType, NutritionGoals } from '../types/domain';
 
 function mapFoodRow(row: any): Food {
   return {
@@ -30,6 +30,7 @@ function mapEntryRow(row: any): FoodLogEntry {
     mealType: row.meal_type,
     quantity: row.quantity,
     quantityUnit: row.quantity_unit,
+    servingG: row.serving_g,
     caloriesKcal: row.calories_kcal,
     proteinG: row.protein_g,
     carbsG: row.carbs_g,
@@ -177,6 +178,37 @@ export async function updateFoodServing(
   if (error) throw error;
 }
 
+export async function getFoodServings(userId: string, foodId: string): Promise<FoodServing[]> {
+  const { data, error } = await supabase
+    .from('food_servings')
+    .select('id, name, grams')
+    .eq('user_id', userId)
+    .eq('food_id', foodId)
+    .order('created_at', { ascending: true });
+  if (error) throw error;
+  return (data ?? []).map((row) => ({ id: row.id, name: row.name, grams: Number(row.grams) }));
+}
+
+export async function addFoodServing(input: {
+  userId: string;
+  foodId: string;
+  name: string;
+  grams: number;
+}): Promise<FoodServing> {
+  const { data, error } = await supabase
+    .from('food_servings')
+    .insert({ user_id: input.userId, food_id: input.foodId, name: input.name, grams: input.grams })
+    .select('id, name, grams')
+    .single();
+  if (error) throw error;
+  return { id: data.id, name: data.name, grams: Number(data.grams) };
+}
+
+export async function deleteFoodServing(id: string): Promise<void> {
+  const { error } = await supabase.from('food_servings').delete().eq('id', id);
+  if (error) throw error;
+}
+
 export async function getFoodById(id: string): Promise<Food> {
   const { data, error } = await supabase.from('foods').select('*').eq('id', id).single();
   if (error) throw error;
@@ -193,9 +225,14 @@ export function defaultMealForNow(): MealType {
 }
 
 // Nutrition on `foods` is stored per 100g; convert by quantity/unit.
-function entryNutrition(food: Food, quantity: number, quantityUnit: 'g' | 'serving') {
+function entryNutrition(
+  food: Food,
+  quantity: number,
+  quantityUnit: 'g' | 'serving',
+  servingG: number | null
+) {
   const multiplier =
-    quantityUnit === 'g' ? quantity / 100 : (food.servingSizeG ?? 100) * (quantity / 100);
+    quantityUnit === 'g' ? quantity / 100 : (servingG ?? food.servingSizeG ?? 100) * (quantity / 100);
   return {
     calories_kcal: food.caloriesKcal * multiplier,
     protein_g: food.proteinG * multiplier,
@@ -212,6 +249,7 @@ export async function logFoodEntry(input: {
   mealType: MealType;
   quantity: number;
   quantityUnit: 'g' | 'serving';
+  servingG: number | null;
 }): Promise<void> {
   const { error } = await supabase.from('food_log_entries').insert({
     user_id: input.userId,
@@ -221,7 +259,8 @@ export async function logFoodEntry(input: {
     meal_type: input.mealType,
     quantity: input.quantity,
     quantity_unit: input.quantityUnit,
-    ...entryNutrition(input.food, input.quantity, input.quantityUnit),
+    serving_g: input.quantityUnit === 'serving' ? input.servingG : null,
+    ...entryNutrition(input.food, input.quantity, input.quantityUnit, input.servingG),
   });
 
   if (error) throw error;
@@ -234,6 +273,7 @@ export async function updateFoodLogEntry(input: {
   mealType: MealType;
   quantity: number;
   quantityUnit: 'g' | 'serving';
+  servingG: number | null;
 }): Promise<void> {
   const { error } = await supabase
     .from('food_log_entries')
@@ -241,7 +281,8 @@ export async function updateFoodLogEntry(input: {
       meal_type: input.mealType,
       quantity: input.quantity,
       quantity_unit: input.quantityUnit,
-      ...entryNutrition(input.food, input.quantity, input.quantityUnit),
+      serving_g: input.quantityUnit === 'serving' ? input.servingG : null,
+      ...entryNutrition(input.food, input.quantity, input.quantityUnit, input.servingG),
     })
     .eq('id', input.entryId);
 
@@ -264,6 +305,7 @@ export async function copyEntriesToDate(
       meal_type: e.mealType,
       quantity: e.quantity,
       quantity_unit: e.quantityUnit,
+      serving_g: e.servingG,
       calories_kcal: e.caloriesKcal,
       protein_g: e.proteinG,
       carbs_g: e.carbsG,
