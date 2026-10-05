@@ -1,5 +1,5 @@
 import { CameraView, useCameraPermissions } from 'expo-camera';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 
@@ -7,6 +7,7 @@ import { upsertOffFood } from '../../../lib/foods';
 import { getByBarcode } from '../../../lib/openFoodFacts';
 
 export default function ScanBarcode() {
+  const { meal } = useLocalSearchParams<{ meal?: string }>();
   const [permission, requestPermission] = useCameraPermissions();
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -25,7 +26,7 @@ export default function ScanBarcode() {
       }
 
       const saved = await upsertOffFood(off);
-      router.replace(`/(tabs)/food/food/${saved.id}`);
+      router.replace(`/(tabs)/food/food/${saved.id}${meal ? `?meal=${meal}` : ''}`);
     } catch {
       setError('Lookup failed. Point the camera at the barcode again.');
       setIsProcessing(false);

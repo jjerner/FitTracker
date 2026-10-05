@@ -57,6 +57,24 @@ export async function searchCachedFoods(query: string): Promise<Food[]> {
   return (data ?? []).map(mapFoodRow);
 }
 
+// Foods the user logged most recently, newest first, without repeats.
+export async function getRecentFoods(userId: string): Promise<Food[]> {
+  const { data, error } = await supabase
+    .from('food_log_entries')
+    .select('food_id, foods(*)')
+    .eq('user_id', userId)
+    .not('food_id', 'is', null)
+    .order('logged_at', { ascending: false })
+    .limit(100);
+
+  if (error) throw error;
+  const byId = new Map<string, Food>();
+  for (const row of data ?? []) {
+    if (row.foods && !byId.has(row.food_id)) byId.set(row.food_id, mapFoodRow(row.foods));
+  }
+  return [...byId.values()].slice(0, 15);
+}
+
 // Foods this user has logged (most recent first), then their custom foods, matching the query.
 export async function searchMyFoods(userId: string, query: string): Promise<Food[]> {
   const pattern = `%${query}%`;

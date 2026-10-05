@@ -1,4 +1,5 @@
-import { Link, router } from 'expo-router';
+import { useQuery } from '@tanstack/react-query';
+import { Link, router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
@@ -11,15 +12,23 @@ import {
 } from 'react-native';
 
 import { useSession } from '../../../context/AuthProvider';
-import { searchBasicFoods, searchMyFoods, upsertOffFood } from '../../../lib/foods';
+import { getRecentFoods, searchBasicFoods, searchMyFoods, upsertOffFood } from '../../../lib/foods';
 import { searchByName, type OffFood } from '../../../lib/openFoodFacts';
-import type { Food } from '../../../types/domain';
+import type { Food, MealType } from '../../../types/domain';
 
 // My/basic foods are already in the database; OFF results get saved when picked.
 type Result = { kind: 'db'; food: Food } | { kind: 'off'; food: OffFood };
 
 export default function FoodSearch() {
   const { session } = useSession();
+  // Set when opened from a meal's "+" so the food page starts on that meal.
+  const { meal } = useLocalSearchParams<{ meal?: MealType }>();
+  const mealQuery = meal ? `?meal=${meal}` : '';
+  const { data: recentFoods } = useQuery({
+    queryKey: ['recentFoods', session?.user.id],
+    queryFn: () => getRecentFoods(session?.user.id as string),
+    enabled: !!session,
+  });
   const [query, setQuery] = useState('');
   const [myFoods, setMyFoods] = useState<Food[]>([]);
   const [basicFoods, setBasicFoods] = useState<Food[]>([]);
@@ -78,7 +87,12 @@ export default function FoodSearch() {
             .map((food): Result => ({ kind: 'off', food })),
         },
       ].filter((section) => section.data.length > 0)
-    : [];
+    : [
+        {
+          title: 'Recent',
+          data: (recentFoods ?? []).map((food): Result => ({ kind: 'db', food })),
+        },
+      ].filter((section) => section.data.length > 0);
 
   function resultKey(item: Result, index: number): string {
     return item.kind === 'db' ? item.food.id : (item.food.barcode ?? `${item.food.name}-${index}`);
@@ -86,13 +100,13 @@ export default function FoodSearch() {
 
   async function handleSelect(item: Result, key: string) {
     if (item.kind === 'db') {
-      router.push(`/(tabs)/food/food/${item.food.id}`);
+      router.push(`/(tabs)/food/food/${item.food.id}${mealQuery}`);
       return;
     }
     setSelectingKey(key);
     try {
       const saved = await upsertOffFood(item.food);
-      router.push(`/(tabs)/food/food/${saved.id}`);
+      router.push(`/(tabs)/food/food/${saved.id}${mealQuery}`);
     } catch {
       setError('Could not select this food. Try again.');
     } finally {
@@ -110,15 +124,24 @@ export default function FoodSearch() {
         autoFocus
       />
 
-      <Pressable style={styles.scanButton} onPress={() => router.push('/(tabs)/food/scan')}>
+      <Pressable
+        style={styles.scanButton}
+        onPress={() => router.push(`/(tabs)/food/scan${mealQuery}`)}
+      >
         <Text style={styles.scanButtonText}>Scan Barcode</Text>
       </Pressable>
 
       <View style={styles.shortcutRow}>
-        <Pressable style={styles.shortcut} onPress={() => router.push('/(tabs)/food/saved-meals')}>
+        <Pressable
+          style={styles.shortcut}
+          onPress={() => router.push(`/(tabs)/food/saved-meals${mealQuery}`)}
+        >
           <Text style={styles.shortcutText}>Saved meals</Text>
         </Pressable>
-        <Pressable style={styles.shortcut} onPress={() => router.push('/(tabs)/food/quick-add')}>
+        <Pressable
+          style={styles.shortcut}
+          onPress={() => router.push(`/(tabs)/food/quick-add${mealQuery}`)}
+        >
           <Text style={styles.shortcutText}>Quick add</Text>
         </Pressable>
       </View>

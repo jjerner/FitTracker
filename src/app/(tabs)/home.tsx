@@ -2,8 +2,8 @@ import { useQueryClient } from '@tanstack/react-query';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import Svg, { Circle } from 'react-native-svg';
 
+import { CalorieRing, MacroBar } from '../../components/CalorieRing';
 import { useDiaryDate } from '../../context/DiaryDateProvider';
 import { useDisplayName } from '../../hooks/useDisplayName';
 import { useFoodDiary } from '../../hooks/useFoodDiary';
@@ -58,7 +58,7 @@ export default function Home() {
 
   const activeWorkout = history?.find((log) => log.completedAt == null);
 
-  // This week (Mon–Sun) and how many weeks in a row had a workout.
+  // This week (Monâ€“Sun) and how many weeks in a row had a workout.
   const workoutDays = new Set(workoutDates ?? []);
   const thisMonday = mondayOf(today);
   const week = WEEKDAYS.map((label, i) => {
@@ -123,7 +123,7 @@ export default function Home() {
           <Text style={styles.cardTitle}>This week</Text>
           {streak > 0 ? (
             <Text style={styles.streak}>
-              🔥 {streak} {streak === 1 ? 'week' : 'weeks'} in a row
+              ðŸ”¥ {streak} {streak === 1 ? 'week' : 'weeks'} in a row
             </Text>
           ) : null}
         </View>
@@ -164,74 +164,6 @@ export default function Home() {
   );
 }
 
-const RING_SIZE = 120;
-const RING_STROKE = 12;
-
-function CalorieRing({ eaten, goal }: { eaten: number; goal: number | null }) {
-  const r = (RING_SIZE - RING_STROKE) / 2;
-  const circumference = 2 * Math.PI * r;
-  const share = goal ? Math.min(1, eaten / goal) : 0;
-  const over = goal != null && eaten > goal;
-  const left = goal != null ? Math.round(goal - eaten) : null;
-
-  return (
-    <View style={styles.ring}>
-      <Svg width={RING_SIZE} height={RING_SIZE}>
-        <Circle
-          cx={RING_SIZE / 2}
-          cy={RING_SIZE / 2}
-          r={r}
-          stroke={colors.border}
-          strokeWidth={RING_STROKE}
-          fill="none"
-        />
-        <Circle
-          cx={RING_SIZE / 2}
-          cy={RING_SIZE / 2}
-          r={r}
-          stroke={over ? colors.danger : colors.success}
-          strokeWidth={RING_STROKE}
-          fill="none"
-          strokeLinecap="round"
-          strokeDasharray={`${circumference} ${circumference}`}
-          strokeDashoffset={circumference * (1 - share)}
-          // Start at 12 o'clock instead of 3.
-          transform={`rotate(-90 ${RING_SIZE / 2} ${RING_SIZE / 2})`}
-        />
-      </Svg>
-      <View style={styles.ringCenter}>
-        {left != null ? (
-          <>
-            <Text style={styles.ringNumber}>{Math.abs(left)}</Text>
-            <Text style={styles.muted}>{over ? 'kcal over' : 'kcal left'}</Text>
-          </>
-        ) : (
-          <>
-            <Text style={styles.ringNumber}>{Math.round(eaten)}</Text>
-            <Text style={styles.muted}>kcal</Text>
-          </>
-        )}
-      </View>
-    </View>
-  );
-}
-
-function MacroBar({ label, value, goal }: { label: string; value: number; goal?: number }) {
-  const share = goal ? Math.min(1, value / goal) : 0;
-  return (
-    <View>
-      <Text style={styles.macroText}>
-        {label} <Text style={styles.muted}>{Math.round(value)}{goal ? `/${goal}` : ''}g</Text>
-      </Text>
-      {goal ? (
-        <View style={styles.barTrack}>
-          <View style={[styles.barFill, { width: `${share * 100}%` }]} />
-        </View>
-      ) : null}
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.surface },
   content: { padding: spacing.lg, gap: spacing.lg },
@@ -246,21 +178,7 @@ const styles = StyleSheet.create({
   cardTitle: { fontSize: 16, fontWeight: '600', color: colors.text },
   muted: { fontSize: 13, color: colors.muted },
   foodRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.lg },
-  ring: { width: RING_SIZE, height: RING_SIZE },
-  ringCenter: {
-    position: 'absolute',
-    top: 0,
-    right: 0,
-    bottom: 0,
-    left: 0,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  ringNumber: { fontSize: 22, fontWeight: '700', color: colors.text },
   macroList: { flex: 1, gap: spacing.md },
-  macroText: { fontSize: 14, fontWeight: '600', color: colors.text, marginBottom: spacing.xs },
-  barTrack: { height: 6, borderRadius: 3, backgroundColor: colors.border, overflow: 'hidden' },
-  barFill: { height: 6, backgroundColor: colors.primary },
   streak: { fontSize: 13, fontWeight: '600', color: '#ea580c' },
   weekRow: { flexDirection: 'row', justifyContent: 'space-between' },
   weekDay: { alignItems: 'center', gap: spacing.xs },

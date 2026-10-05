@@ -13,6 +13,7 @@ import {
   View,
 } from 'react-native';
 
+import { CalorieRing, MacroBar } from '../../../components/CalorieRing';
 import { MonthCalendar } from '../../../components/MonthCalendar';
 import { useSession } from '../../../context/AuthProvider';
 import { useDiaryDate } from '../../../context/DiaryDateProvider';
@@ -201,13 +202,6 @@ export default function FoodDiary() {
           onSaveMeal={setSavingMeal}
         />
       )}
-
-      <Pressable
-        style={styles.logButton}
-        onPress={() => router.push('/(tabs)/food/search')}
-      >
-        <Text style={styles.logButtonText}>+ Log Food</Text>
-      </Pressable>
     </ScrollView>
   );
 }
@@ -234,16 +228,12 @@ function DiaryContent({
   return (
     <>
       <View style={styles.totalsCard}>
-        <Text style={styles.totalsCalories}>
-          {Math.round(totals.calories)}
-          {goals ? ` / ${goals.caloriesKcal}` : ''} kcal
-        </Text>
-        <Text style={styles.totalsMacros}>
-          P {Math.round(totals.protein)}
-          {goals ? `/${goals.proteinG}` : ''}g · C {Math.round(totals.carbs)}
-          {goals ? `/${goals.carbsG}` : ''}g · F {Math.round(totals.fat)}
-          {goals ? `/${goals.fatG}` : ''}g
-        </Text>
+        <CalorieRing eaten={totals.calories} goal={goals?.caloriesKcal ?? null} />
+        <View style={styles.macroList}>
+          <MacroBar label="Protein" value={totals.protein} goal={goals?.proteinG} />
+          <MacroBar label="Carbs" value={totals.carbs} goal={goals?.carbsG} />
+          <MacroBar label="Fat" value={totals.fat} goal={goals?.fatG} />
+        </View>
       </View>
 
       {MEAL_TYPES.map((mealType) => {
@@ -255,20 +245,31 @@ function DiaryContent({
           <View key={mealType} style={styles.mealSection}>
             <View style={styles.mealHeader}>
               <Text style={styles.mealTitle}>{MEAL_LABELS[mealType]}</Text>
-              {mealEntries.length > 0 ? (
-                <View style={styles.mealHeaderRight}>
-                  {mealEntries.some((e) => e.foodId != null) && (
-                    <Pressable onPress={() => onSaveMeal(mealType)} hitSlop={8}>
-                      <Text style={styles.copyText}>Save as meal</Text>
-                    </Pressable>
-                  )}
-                  <Text style={styles.mealCalories}>{Math.round(mealCalories)} kcal</Text>
-                </View>
-              ) : canCopy ? (
-                <Pressable onPress={() => onCopyMeal(mealType)} disabled={isCopying} hitSlop={8}>
-                  <Text style={styles.copyText}>Copy from previous day</Text>
+              <View style={styles.mealHeaderRight}>
+                {mealEntries.length > 0 ? (
+                  <>
+                    {mealEntries.some((e) => e.foodId != null) && (
+                      <Pressable onPress={() => onSaveMeal(mealType)} hitSlop={8}>
+                        <Text style={styles.copyText}>Save as meal</Text>
+                      </Pressable>
+                    )}
+                    <Text style={styles.mealCalories}>{Math.round(mealCalories)} kcal</Text>
+                  </>
+                ) : canCopy ? (
+                  <Pressable onPress={() => onCopyMeal(mealType)} disabled={isCopying} hitSlop={8}>
+                    <Text style={styles.copyText}>Copy from previous day</Text>
+                  </Pressable>
+                ) : null}
+                <Pressable
+                  style={styles.addButton}
+                  onPress={() =>
+                    router.push({ pathname: '/(tabs)/food/search', params: { meal: mealType } })
+                  }
+                  hitSlop={8}
+                >
+                  <Text style={styles.addButtonText}>+</Text>
                 </Pressable>
-              ) : null}
+              </View>
             </View>
             {mealEntries.length === 0 ? (
               <Text style={styles.emptyText}>Nothing logged</Text>
@@ -371,10 +372,20 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 16,
     marginBottom: 20,
+    flexDirection: 'row',
     alignItems: 'center',
+    gap: 16,
   },
-  totalsCalories: { fontSize: 24, fontWeight: '700' },
-  totalsMacros: { fontSize: 14, color: '#555', marginTop: 4 },
+  macroList: { flex: 1, gap: 12 },
+  addButton: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#2563eb',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  addButtonText: { color: '#fff', fontSize: 20, lineHeight: 22, fontWeight: '600' },
   mealSection: { marginBottom: 20 },
   mealHeader: {
     flexDirection: 'row',

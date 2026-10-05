@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import {
   ActivityIndicator,
@@ -43,7 +43,8 @@ export default function SavedMeals() {
   const userId = session?.user.id;
   const { date } = useDiaryDate();
   const queryClient = useQueryClient();
-  const [mealType, setMealType] = useState<MealType>(defaultMealForNow());
+  const params = useLocalSearchParams<{ meal?: MealType }>();
+  const [mealType, setMealType] = useState<MealType>(params.meal ?? defaultMealForNow());
   const [busyId, setBusyId] = useState<string | null>(null);
 
   const { data: meals, isLoading } = useQuery({
