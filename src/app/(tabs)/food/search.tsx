@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { Link, router, useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
@@ -140,9 +140,9 @@ export default function FoodSearch() {
         </Pressable>
         <Pressable
           style={styles.shortcut}
-          onPress={() => router.push(`/(tabs)/food/quick-add${mealQuery}`)}
+          onPress={() => router.push(`/(tabs)/food/custom-food/new${mealQuery}`)}
         >
-          <Text style={styles.shortcutText}>Quick add</Text>
+          <Text style={styles.shortcutText}>Custom food</Text>
         </Pressable>
       </View>
 
@@ -182,10 +182,6 @@ export default function FoodSearch() {
           );
         }}
       />
-
-      <Link href="/(tabs)/food/custom-food/new" style={styles.customLink}>
-        <Text>Can&apos;t find it? Add a custom food</Text>
-      </Link>
     </View>
   );
 }
@@ -239,6 +235,4 @@ const styles = StyleSheet.create({
   resultInfo: { flex: 1, marginRight: 8 },
   resultName: { fontSize: 15, fontWeight: '500' },
   resultBrand: { fontSize: 13, color: '#888' },
-  resultCalories: { fontSize: 13, color: '#555' },
-  customLink: { marginTop: 16, textAlign: 'center' },
-});
+  resultCalories: { fontSize: 13, color: '#555' },});
