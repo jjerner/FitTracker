@@ -1,5 +1,5 @@
 import { useQueryClient } from '@tanstack/react-query';
-import { useFocusEffect } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
@@ -14,8 +14,16 @@ import {
 import { LineChart } from 'react-native-gifted-charts';
 
 import { MonthCalendar } from '../../components/MonthCalendar';
-import { useBodyWeights, useDailyNutrition, useWorkoutDates } from '../../hooks/useProgress';
+import { ExercisePicker } from '../../components/workouts/ExercisePicker';
+import {
+  useBodyWeights,
+  useDailyNutrition,
+  useTrackedExercises,
+  useWorkoutDates,
+} from '../../hooks/useProgress';
+import { useExerciseHistory, useExercises } from '../../hooks/useWorkouts';
 import { localDateDaysAgo, todayLocalDate } from '../../lib/dateUtils';
+import { trackedStats } from '../../lib/records';
 
 // "2026-09-24" -> "24/9"
 function shortDate(date: string): string {
@@ -40,6 +48,7 @@ export default function Progress() {
     useCallback(() => {
       queryClient.invalidateQueries({ queryKey: ['dailyNutrition'] });
       queryClient.invalidateQueries({ queryKey: ['workoutDates'] });
+      queryClient.invalidateQueries({ queryKey: ['exerciseHistory'] });
     }, [queryClient])
   );
 
@@ -48,6 +57,7 @@ export default function Progress() {
       <WeightCard chartWidth={chartWidth} />
       <NutritionAveragesCard />
       <WorkoutsCard />
+      <TrackedExercisesCard />
     </ScrollView>
   );
 }
@@ -252,6 +262,94 @@ function WorkoutsCard() {
   );
 }
 
+function formatChange(change: number | null): string {
+  if (change === null) return '–';
+  if (change === 0) return '±0 kg';
+  return `${change > 0 ? '▲' : '▼'} ${Math.abs(Math.round(change * 10) / 10)} kg`;
+}
+
+function TrackedExercisesCard() {
+  const { data: ids, isLoading, add, remove } = useTrackedExercises();
+  const { data: exercises } = useExercises();
+  const [pickerOpen, setPickerOpen] = useState(false);
+
+  return (
+    <View style={styles.card}>
+      <Text style={styles.cardTitle}>Tracked exercises</Text>
+      <Text style={styles.cardSubtitle}>Heaviest weight you have logged</Text>
+
+      {isLoading ? (
+        <ActivityIndicator />
+      ) : (ids ?? []).length === 0 ? (
+        <Text style={styles.empty}>Add an exercise to follow your strength.</Text>
+      ) : (
+        (ids ?? []).map((id) => (
+          <TrackedRow
+            key={id}
+            exerciseId={id}
+            name={exercises?.find((e) => e.id === id)?.name ?? '…'}
+            onRemove={() => remove(id)}
+          />
+        ))
+      )}
+
+      <Pressable style={styles.button} onPress={() => setPickerOpen(true)}>
+        <Text style={styles.buttonText}>+ Add exercise</Text>
+      </Pressable>
+      <ExercisePicker
+        visible={pickerOpen}
+        title="Track Exercise"
+        onClose={() => setPickerOpen(false)}
+        onSelect={(exercise) => add(exercise.id)}
+      />
+    </View>
+  );
+}
+
+function TrackedRow({
+  exerciseId,
+  name,
+  onRemove,
+}: {
+  exerciseId: string;
+  name: string;
+  onRemove: () => void;
+}) {
+  const { data: sessions, isLoading } = useExerciseHistory(exerciseId);
+  const stats = trackedStats(sessions ?? []);
+
+  return (
+    <Pressable
+      style={styles.trackedRow}
+      onPress={() => router.push(`/(tabs)/workouts/exercises/${exerciseId}`)}
+    >
+      <View style={styles.trackedMain}>
+        <Text style={styles.trackedName}>{name}</Text>
+        {isLoading ? (
+          <ActivityIndicator />
+        ) : !stats.current || !stats.pr ? (
+          <Text style={styles.cardSubtitle}>Nothing logged yet</Text>
+        ) : (
+          <>
+            <Text style={styles.trackedValue}>
+              {stats.current.weightKg} kg × {stats.current.reps}
+            </Text>
+            <Text style={styles.cardSubtitle}>
+              🏆 {stats.pr.weightKg} kg × {stats.pr.reps} ({shortDate(stats.pr.date)})
+            </Text>
+            <Text style={styles.cardSubtitle}>
+              30d {formatChange(stats.change30)} · 90d {formatChange(stats.change90)}
+            </Text>
+          </>
+        )}
+      </View>
+      <Pressable onPress={onRemove} hitSlop={12}>
+        <Text style={styles.trackedRemove}>✕</Text>
+      </Pressable>
+    </Pressable>
+  );
+}
+
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f3f4f6' },
   content: { padding: 16, gap: 16 },
@@ -280,6 +378,17 @@ const styles = StyleSheet.create({
   rangeOption: { paddingHorizontal: 14, paddingVertical: 10 },
   rangeOptionText: { fontSize: 14, color: '#374151' },
   rangeOptionActive: { color: '#2563eb', fontWeight: '600' },
+  trackedRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    paddingVertical: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#f3f4f6',
+  },
+  trackedMain: { flex: 1, gap: 2 },
+  trackedName: { fontSize: 15, fontWeight: '600' },
+  trackedValue: { fontSize: 20, fontWeight: '700' },
+  trackedRemove: { fontSize: 16, color: '#9ca3af', paddingHorizontal: 4 },
   inputRow: { flexDirection: 'row', gap: 8, marginBottom: 8 },
   input: {
     flex: 1,

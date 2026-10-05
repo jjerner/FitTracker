@@ -3,9 +3,12 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSession } from '../context/AuthProvider';
 import { localDateDaysAgo } from '../lib/dateUtils';
 import {
+  addTrackedExercise,
   getBodyWeights,
   getDailyNutrition,
+  getTrackedExerciseIds,
   getWorkoutDates,
+  removeTrackedExercise,
   upsertBodyWeight,
 } from '../lib/progress';
 
@@ -45,6 +48,32 @@ export function useDailyNutrition() {
     queryFn: () => getDailyNutrition(userId as string, localDateDaysAgo(365)),
     enabled: !!userId,
   });
+}
+
+export function useTrackedExercises() {
+  const { session } = useSession();
+  const userId = session?.user.id;
+  const queryClient = useQueryClient();
+
+  const query = useQuery({
+    queryKey: ['trackedExercises', userId],
+    queryFn: () => getTrackedExerciseIds(userId as string),
+    enabled: !!userId,
+  });
+
+  const onSuccess = () => {
+    queryClient.invalidateQueries({ queryKey: ['trackedExercises', userId] });
+  };
+  const addMutation = useMutation({
+    mutationFn: (exerciseId: string) => addTrackedExercise(userId as string, exerciseId),
+    onSuccess,
+  });
+  const removeMutation = useMutation({
+    mutationFn: (exerciseId: string) => removeTrackedExercise(userId as string, exerciseId),
+    onSuccess,
+  });
+
+  return { ...query, add: addMutation.mutate, remove: removeMutation.mutate };
 }
 
 export function useWorkoutDates() {

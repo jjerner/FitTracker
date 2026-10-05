@@ -28,6 +28,36 @@ export async function upsertBodyWeight(input: {
   if (error) throw error;
 }
 
+export async function getTrackedExerciseIds(userId: string): Promise<string[]> {
+  const { data, error } = await supabase
+    .from('tracked_exercises')
+    .select('exercise_id')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: true });
+
+  if (error) throw error;
+  return (data ?? []).map((row) => row.exercise_id);
+}
+
+export async function addTrackedExercise(userId: string, exerciseId: string): Promise<void> {
+  const { error } = await supabase
+    .from('tracked_exercises')
+    .upsert(
+      { user_id: userId, exercise_id: exerciseId },
+      { onConflict: 'user_id,exercise_id', ignoreDuplicates: true }
+    );
+  if (error) throw error;
+}
+
+export async function removeTrackedExercise(userId: string, exerciseId: string): Promise<void> {
+  const { error } = await supabase
+    .from('tracked_exercises')
+    .delete()
+    .eq('user_id', userId)
+    .eq('exercise_id', exerciseId);
+  if (error) throw error;
+}
+
 // Sums diary entries per day. Days with nothing logged are left out.
 export async function getDailyNutrition(
   userId: string,

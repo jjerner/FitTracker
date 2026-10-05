@@ -8,16 +8,18 @@ export function ExercisePicker({
   visible,
   onClose,
   onSelect,
+  title = 'Add Exercise',
 }: {
   visible: boolean;
   onClose: () => void;
   onSelect: (exercise: Exercise) => void;
+  title?: string;
 }) {
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
-          <Text style={styles.title}>Add Exercise</Text>
+          <Text style={styles.title}>{title}</Text>
           <Pressable onPress={onClose}>
             <Text style={styles.close}>Cancel</Text>
           </Pressable>
