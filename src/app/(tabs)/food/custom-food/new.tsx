@@ -23,6 +23,8 @@ export default function NewCustomFood() {
   const [carbs, setCarbs] = useState('');
   const [fat, setFat] = useState('');
   const [fiber, setFiber] = useState('');
+  const [servingSize, setServingSize] = useState('');
+  const [servingName, setServingName] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -40,6 +42,8 @@ export default function NewCustomFood() {
         carbsG: Number(carbs),
         fatG: Number(fat),
         fiberG: fiber !== '' ? Number(fiber) : null,
+        servingSizeG: Number(servingSize) > 0 ? Number(servingSize) : null,
+        servingDescription: Number(servingSize) > 0 && servingName.trim() ? servingName.trim() : null,
         userId: session.user.id,
         barcode,
       });
@@ -95,6 +99,19 @@ export default function NewCustomFood() {
           keyboardType="numeric"
           value={fiber}
           onChangeText={setFiber}
+        />
+        <LabeledInput
+          label="Serving size (g) — optional"
+          placeholder="e.g. 45"
+          keyboardType="numeric"
+          value={servingSize}
+          onChangeText={setServingSize}
+        />
+        <LabeledInput
+          label="Serving name — optional"
+          placeholder="e.g. 1 bar"
+          value={servingName}
+          onChangeText={setServingName}
         />
 
         {error ? <Text style={styles.error}>{error}</Text> : null}

@@ -8,6 +8,7 @@ export type Food = {
   brand: string | null;
   servingSizeG: number | null;
   servingDescription: string | null;
+  createdBy: string | null;
   caloriesKcal: number;
   proteinG: number;
   carbsG: number;

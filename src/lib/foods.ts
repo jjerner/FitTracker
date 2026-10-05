@@ -12,6 +12,7 @@ function mapFoodRow(row: any): Food {
     brand: row.brand,
     servingSizeG: row.serving_size_g,
     servingDescription: row.serving_description,
+    createdBy: row.created_by,
     caloriesKcal: row.calories_kcal,
     proteinG: row.protein_g,
     carbsG: row.carbs_g,
@@ -137,6 +138,8 @@ export async function createCustomFood(input: {
   carbsG: number;
   fatG: number;
   fiberG: number | null;
+  servingSizeG: number | null;
+  servingDescription: string | null;
   userId: string;
   barcode?: string;
 }): Promise<Food> {
@@ -151,6 +154,8 @@ export async function createCustomFood(input: {
       carbs_g: input.carbsG,
       fat_g: input.fatG,
       fiber_g: input.fiberG,
+      serving_size_g: input.servingSizeG,
+      serving_description: input.servingDescription,
       created_by: input.userId,
     })
     .select()
@@ -158,6 +163,18 @@ export async function createCustomFood(input: {
 
   if (error) throw error;
   return mapFoodRow(data);
+}
+
+export async function updateFoodServing(
+  foodId: string,
+  servingSizeG: number | null,
+  servingDescription: string | null
+): Promise<void> {
+  const { error } = await supabase
+    .from('foods')
+    .update({ serving_size_g: servingSizeG, serving_description: servingDescription })
+    .eq('id', foodId);
+  if (error) throw error;
 }
 
 export async function getFoodById(id: string): Promise<Food> {

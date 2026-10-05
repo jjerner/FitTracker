@@ -3,6 +3,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useMemo, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   Pressable,
   StyleSheet,
   Text,
@@ -17,7 +18,9 @@ import {
   getFoodById,
   logFoodEntry,
   updateFoodLogEntry,
+  updateFoodServing,
 } from '../../../../lib/foods';
+import { LabeledInput } from '../../../../components/LabeledInput';
 import type { MealType } from '../../../../types/domain';
 
 const MEAL_TYPES: MealType[] = ['breakfast', 'lunch', 'dinner', 'snack'];
@@ -51,6 +54,29 @@ export default function FoodDetail() {
     queryFn: () => getFoodById(foodId as string),
     enabled: !!foodId,
   });
+
+  // Only the creator of a custom food can set its serving (the database enforces this too).
+  const [editingServing, setEditingServing] = useState(false);
+  const [servingSize, setServingSize] = useState('');
+  const [servingName, setServingName] = useState('');
+  const canEditServing = !!food && !!session && food.createdBy === session.user.id;
+
+  async function handleSaveServing() {
+    if (!food) return;
+    const size = Number(servingSize);
+    try {
+      await updateFoodServing(
+        food.id,
+        size > 0 ? size : null,
+        size > 0 && servingName.trim() ? servingName.trim() : null
+      );
+      await queryClient.invalidateQueries({ queryKey: ['food', foodId] });
+      setUnit('g');
+      setEditingServing(false);
+    } catch {
+      Alert.alert('Could not save', 'Check your connection and try again.');
+    }
+  }
 
   const amountNumber = Number(amount) || 0;
   const preview = useMemo(() => {
@@ -106,6 +132,41 @@ export default function FoodDetail() {
     <View style={styles.container}>
       <Text style={styles.name}>{food.name}</Text>
       {food.brand ? <Text style={styles.brand}>{food.brand}</Text> : null}
+
+      {canEditServing ? (
+        editingServing ? (
+          <View>
+            <LabeledInput
+              label="Serving size (g)"
+              placeholder="e.g. 45"
+              keyboardType="numeric"
+              value={servingSize}
+              onChangeText={setServingSize}
+            />
+            <LabeledInput
+              label="Serving name — optional"
+              placeholder="e.g. 1 bar"
+              value={servingName}
+              onChangeText={setServingName}
+            />
+            <Pressable onPress={handleSaveServing}>
+              <Text style={styles.servingLink}>Save serving size</Text>
+            </Pressable>
+          </View>
+        ) : (
+          <Pressable
+            onPress={() => {
+              setServingSize(food.servingSizeG ? String(food.servingSizeG) : '');
+              setServingName(food.servingDescription ?? '');
+              setEditingServing(true);
+            }}
+          >
+            <Text style={styles.servingLink}>
+              {food.servingSizeG ? 'Edit serving size' : 'Add serving size'}
+            </Text>
+          </Pressable>
+        )
+      ) : null}
 
       {food.servingSizeG ? (
         <View style={styles.mealRow}>
@@ -178,6 +239,7 @@ const styles = StyleSheet.create({
   name: { fontSize: 20, fontWeight: '700' },
   brand: { fontSize: 14, color: '#888', marginTop: 2, marginBottom: 16 },
   label: { fontSize: 14, fontWeight: '600', marginTop: 16, marginBottom: 8 },
+  servingLink: { color: '#2563eb', fontSize: 14, marginBottom: 8 },
   input: {
     borderWidth: 1,
     borderColor: '#ddd',
