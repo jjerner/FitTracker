@@ -1,6 +1,6 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -32,6 +32,15 @@ import {
   removeExerciseFromLog,
   swapLogExercise,
 } from '../../../lib/workouts';
+import {
+  flushPendingSets,
+  newSetId,
+  queueSet,
+  removePending,
+  usePendingSets,
+  usePendingSync,
+} from '../../../lib/pendingSets';
+import { bestOf, findNewRecords } from '../../../lib/records';
 import { colors, radius, spacing } from '../../../theme';
 import type {
   Exercise,
@@ -70,10 +79,26 @@ export default function ActiveWorkout() {
     return queryClient.invalidateQueries({ queryKey: ['workoutLog', logId] });
   }
 
+  // Sets saved on the phone while offline, sent as soon as there is signal.
+  const pendingSets = usePendingSets(logId);
+  const savedSetIds = useMemo(
+    () => new Set(log?.exercises.flatMap((e) => e.sets.map((set) => set.id)) ?? []),
+    [log]
+  );
+  usePendingSync(logId, savedSetIds, refresh);
+
   async function handleFinish() {
     if (!log) return;
     setIsFinishing(true);
     try {
+      const { allSent } = await flushPendingSets();
+      if (!allSent) {
+        Alert.alert(
+          'No connection',
+          'Some sets are saved on your phone but not sent yet. Try finishing again when you have signal.'
+        );
+        return;
+      }
       await finishWorkout(log.id);
       await queryClient.invalidateQueries({ queryKey: ['workoutHistory', session?.user.id] });
       // So the "Previous" column shows this workout next time.
@@ -109,18 +134,38 @@ export default function ActiveWorkout() {
     );
   }
 
+  // Saved sets plus the ones still waiting for signal.
+  const pendingIds = new Set(pendingSets.map((p) => p.id));
+  const exercises = log.exercises.map((le) => ({
+    ...le,
+    sets: [
+      ...le.sets,
+      ...pendingSets
+        .filter((p) => p.logExerciseId === le.id && !savedSetIds.has(p.id))
+        .map((p) => ({
+          id: p.id,
+          setNumber: p.setNumber,
+          weightKg: p.weightKg,
+          reps: p.reps,
+          durationS: p.durationS,
+          distanceM: p.distanceM,
+        })),
+    ],
+  }));
+
   return (
     <View style={styles.container}>
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <Text style={styles.title}>{log.name}</Text>
         <ElapsedClock startedAt={log.startedAt} />
 
-        {log.exercises.map((logExercise) => (
+        {exercises.map((logExercise) => (
           <ExerciseCard
             // Includes the exercise so a swap resets the card's local rows.
             key={`${logExercise.id}-${logExercise.exercise.id}`}
             logId={log.id}
             logExercise={logExercise}
+            pendingIds={pendingIds}
             target={template?.exercises.find((te) => te.exercise.id === logExercise.exercise.id)}
             onChanged={refresh}
             onSetDone={() => setRestEndsAt(Date.now() + DEFAULT_REST_S * 1000)}
@@ -233,12 +278,14 @@ function newRow(a = '', b = ''): DraftRow {
 function ExerciseCard({
   logId,
   logExercise,
+  pendingIds,
   target,
   onChanged,
   onSetDone,
 }: {
   logId: string;
   logExercise: WorkoutLogExercise;
+  pendingIds: Set<string>;
   target: WorkoutTemplateExercise | undefined;
   onChanged: () => Promise<void>;
   onSetDone: () => void;
@@ -286,19 +333,44 @@ function ExerciseCard({
 
     setSavingKey(draft.key);
     try {
-      await addSet({
+      const payload = {
+        id: newSetId(),
         logExerciseId: logExercise.id,
         setNumber: (lastDone?.setNumber ?? 0) + 1,
         weightKg: isCardio ? null : a,
         reps: isCardio ? null : b,
         durationS: isCardio && a != null ? Math.round(a * 60) : null,
         distanceM: isCardio && b != null ? b * 1000 : null,
-      });
+      };
+      // No answer within 8 seconds counts as no signal. If the save did go through, sending
+      // it again later is harmless (same id).
+      let saved = true;
+      try {
+        await Promise.race([
+          addSet(payload),
+          new Promise<never>((_, reject) => setTimeout(() => reject(new Error('timeout')), 8000)),
+        ]);
+      } catch {
+        saved = false;
+        await queueSet({ ...payload, logId });
+      }
       setDrafts((prev) => prev.filter((d) => d.key !== draft.key));
-      await onChanged();
+      if (saved) await onChanged();
       if (!isCardio) onSetDone();
     } finally {
       setSavingKey(null);
+    }
+  }
+
+  // A set still waiting for signal is dropped from the phone; if it already reached the
+  // database in the meantime, the delete below removes it there too.
+  async function deleteSetEverywhere(set: WorkoutSet) {
+    const wasPending = pendingIds.has(set.id);
+    if (wasPending) await removePending(set.id);
+    try {
+      await deleteSet(set.id);
+    } catch (e) {
+      if (!wasPending) throw e;
     }
   }
 
@@ -310,7 +382,7 @@ function ExerciseCard({
     const b = isCardio
       ? set.distanceM != null ? String(set.distanceM / 1000) : ''
       : set.reps?.toString() ?? '';
-    await deleteSet(set.id);
+    await deleteSetEverywhere(set);
     setDrafts((prev) => [newRow(a, b), ...prev]);
     await onChanged();
   }
@@ -322,7 +394,7 @@ function ExerciseCard({
         text: 'Delete',
         style: 'destructive',
         onPress: async () => {
-          await deleteSet(set.id);
+          await deleteSetEverywhere(set);
           await onChanged();
         },
       },
@@ -367,6 +439,17 @@ function ExerciseCard({
         }`
       : null;
 
+  const waitingCount = doneSets.filter((set) => pendingIds.has(set.id)).length;
+
+  // 🏆 when a set so far beats everything from earlier workouts.
+  const records = isCardio ? null : findNewRecords(doneSets, history ?? []);
+  const nowBest = bestOf(doneSets);
+  const recordText = records?.weight
+    ? `🏆 New personal record: ${nowBest.weightKg} kg`
+    : records?.oneRM
+      ? `🏆 New estimated 1RM: ${Math.round(nowBest.oneRM)} kg`
+      : null;
+
   const [labelA, labelB] = isCardio ? ['min', 'km'] : ['kg', 'reps'];
 
   return (
@@ -383,6 +466,13 @@ function ExerciseCard({
         ) : null}
       </View>
       {targetText ? <Text style={styles.targetText}>{targetText}</Text> : null}
+      {waitingCount > 0 ? (
+        <Text style={styles.waitingText}>
+          {waitingCount} set{waitingCount === 1 ? '' : 's'} saved on your phone, sending when
+          there is signal
+        </Text>
+      ) : null}
+      {recordText ? <Text style={styles.recordText}>{recordText}</Text> : null}
 
       <View style={styles.tableHeader}>
         <Text style={[styles.headerCell, styles.colSet]}>Set</Text>
@@ -497,6 +587,8 @@ const styles = StyleSheet.create({
   cardTitle: { fontSize: 16, fontWeight: '600', flex: 1, color: colors.text },
   swapText: { color: colors.primary, fontSize: 15 },
   removeText: { color: colors.danger, fontSize: 15 },
+  waitingText: { fontSize: 12, color: '#b45309', marginBottom: 6 },
+  recordText: { fontSize: 13, fontWeight: '600', color: '#b45309', marginBottom: 6 },
   targetText: { fontSize: 13, color: colors.muted, marginTop: 2 },
   tableHeader: {
     flexDirection: 'row',

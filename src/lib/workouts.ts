@@ -352,6 +352,8 @@ export async function removeExerciseFromLog(logExerciseId: string): Promise<void
 }
 
 export async function addSet(input: {
+  // Made on the phone so a retry after a lost connection can't save the set twice.
+  id: string;
   logExerciseId: string;
   setNumber: number;
   weightKg: number | null;
@@ -359,14 +361,18 @@ export async function addSet(input: {
   durationS: number | null;
   distanceM: number | null;
 }): Promise<void> {
-  const { error } = await supabase.from('workout_log_sets').insert({
-    log_exercise_id: input.logExerciseId,
-    set_number: input.setNumber,
-    weight_kg: input.weightKg,
-    reps: input.reps,
-    duration_s: input.durationS,
-    distance_m: input.distanceM,
-  });
+  const { error } = await supabase.from('workout_log_sets').upsert(
+    {
+      id: input.id,
+      log_exercise_id: input.logExerciseId,
+      set_number: input.setNumber,
+      weight_kg: input.weightKg,
+      reps: input.reps,
+      duration_s: input.durationS,
+      distance_m: input.distanceM,
+    },
+    { onConflict: 'id', ignoreDuplicates: true }
+  );
   if (error) throw error;
 }
 

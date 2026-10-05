@@ -1,4 +1,5 @@
 import { Stack, router, useLocalSearchParams } from 'expo-router';
+import { useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -11,6 +12,7 @@ import {
 import { LineChart } from 'react-native-gifted-charts';
 
 import { useExerciseHistory, useExercises } from '../../../../hooks/useWorkouts';
+import { bestOf } from '../../../../lib/records';
 import { formatSet } from '../../../../lib/workouts';
 import type { ExerciseSession } from '../../../../types/domain';
 
@@ -24,8 +26,16 @@ function formatDate(iso: string): string {
 
 // The number we chart per session: heaviest set for strength,
 // total distance (or minutes if no distance) for cardio.
-function sessionValue(session: ExerciseSession, isCardio: boolean, useDistance: boolean): number {
-  if (!isCardio) return Math.max(...session.sets.map((s) => Number(s.weightKg ?? 0)));
+function sessionValue(
+  session: ExerciseSession,
+  isCardio: boolean,
+  useDistance: boolean,
+  metric: 'weight' | 'oneRM'
+): number {
+  if (!isCardio) {
+    const best = bestOf(session.sets);
+    return metric === 'oneRM' ? best.oneRM : best.weightKg;
+  }
   if (useDistance) {
     return session.sets.reduce((sum, s) => sum + Number(s.distanceM ?? 0), 0) / 1000;
   }
@@ -37,6 +47,7 @@ export default function ExerciseDetail() {
   const { width } = useWindowDimensions();
   const { data: exercises } = useExercises();
   const { data: sessions, isLoading } = useExerciseHistory(exerciseId);
+  const [metric, setMetric] = useState<'weight' | 'oneRM'>('weight');
 
   const exercise = exercises?.find((e) => e.id === exerciseId);
   const isCardio = exercise?.category === 'cardio';
@@ -44,16 +55,19 @@ export default function ExerciseDetail() {
   const useDistance = history.some((s) => s.sets.some((set) => set.distanceM != null));
   const unit = !isCardio ? 'kg' : useDistance ? 'km' : 'min';
   const chartLabel = !isCardio
-    ? 'Heaviest set per workout (kg)'
+    ? metric === 'oneRM'
+      ? 'Estimated 1RM per workout (kg)'
+      : 'Heaviest set per workout (kg)'
     : useDistance
       ? 'Total distance per workout (km)'
       : 'Total time per workout (min)';
 
   // Chart runs oldest -> newest, the list newest -> oldest.
   const values = [...history].reverse().map((s) => ({
-    value: Math.round(sessionValue(s, isCardio, useDistance) * 10) / 10,
+    value: Math.round(sessionValue(s, isCardio, useDistance, metric) * 10) / 10,
     date: s.startedAt,
   }));
+  const records = bestOf(history.flatMap((s) => s.sets));
   const best = values.length > 0 ? Math.max(...values.map((v) => v.value)) : null;
 
   if (isLoading) {
@@ -73,6 +87,33 @@ export default function ExerciseDetail() {
         contentContainerStyle={styles.content}
         ListHeaderComponent={
           <View style={styles.card}>
+            {!isCardio && history.length > 0 ? (
+              <View style={styles.recordsRow}>
+                <View style={styles.record}>
+                  <Text style={styles.recordValue}>🏆 {records.weightKg} kg</Text>
+                  <Text style={styles.recordLabel}>Heaviest weight</Text>
+                </View>
+                <View style={styles.record}>
+                  <Text style={styles.recordValue}>🏆 {Math.round(records.oneRM)} kg</Text>
+                  <Text style={styles.recordLabel}>Best est. 1RM</Text>
+                </View>
+              </View>
+            ) : null}
+            {!isCardio ? (
+              <View style={styles.toggleRow}>
+                {(['weight', 'oneRM'] as const).map((m) => (
+                  <Pressable
+                    key={m}
+                    style={[styles.toggle, metric === m && styles.toggleActive]}
+                    onPress={() => setMetric(m)}
+                  >
+                    <Text style={metric === m ? styles.toggleTextActive : styles.toggleText}>
+                      {m === 'weight' ? 'Weight' : 'Est. 1RM'}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+            ) : null}
             <Text style={styles.cardTitle}>{chartLabel}</Text>
             {best != null && (
               <Text style={styles.cardSubtitle}>
@@ -135,6 +176,21 @@ const styles = StyleSheet.create({
   card: { backgroundColor: '#fff', borderRadius: 12, padding: 16, gap: 8, marginBottom: 4 },
   cardTitle: { fontSize: 16, fontWeight: '600' },
   cardSubtitle: { fontSize: 13, color: '#6b7280' },
+  recordsRow: { flexDirection: 'row', gap: 12 },
+  record: { flex: 1, backgroundColor: '#f3f4f6', borderRadius: 8, padding: 12 },
+  recordValue: { fontSize: 16, fontWeight: '700' },
+  recordLabel: { fontSize: 12, color: '#6b7280', marginTop: 2 },
+  toggleRow: { flexDirection: 'row', gap: 8 },
+  toggle: {
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 16,
+    paddingVertical: 6,
+    paddingHorizontal: 14,
+  },
+  toggleActive: { backgroundColor: '#2563eb', borderColor: '#2563eb' },
+  toggleText: { color: '#333', fontSize: 13 },
+  toggleTextActive: { color: '#fff', fontSize: 13 },
   empty: { fontSize: 14, color: '#6b7280', paddingVertical: 16 },
   axisLabel: { fontSize: 10, color: '#6b7280' },
   session: { backgroundColor: '#fff', borderRadius: 12, padding: 16, gap: 4 },

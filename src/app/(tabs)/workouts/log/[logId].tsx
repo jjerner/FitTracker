@@ -1,16 +1,47 @@
-import { useQueryClient } from '@tanstack/react-query';
+import { useQueries, useQueryClient } from '@tanstack/react-query';
 import { router, useLocalSearchParams } from 'expo-router';
 import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { useSession } from '../../../../context/AuthProvider';
-import { useWorkoutLog } from '../../../../hooks/useWorkouts';
-import { deleteWorkoutLog, formatSet } from '../../../../lib/workouts';
+import { useWorkoutHistory, useWorkoutLog } from '../../../../hooks/useWorkouts';
+import { bestOf, bestOfSessions, findNewRecords } from '../../../../lib/records';
+import { deleteWorkoutLog, formatSet, getExerciseHistory } from '../../../../lib/workouts';
+
+function logVolume(exercises: { sets: { weightKg: number | null; reps: number | null }[] }[]) {
+  return exercises.reduce(
+    (sum, e) => sum + e.sets.reduce((s, set) => s + (set.weightKg ?? 0) * (set.reps ?? 0), 0),
+    0
+  );
+}
 
 export default function WorkoutSummary() {
   const { logId } = useLocalSearchParams<{ logId: string }>();
   const { session } = useSession();
   const queryClient = useQueryClient();
   const { data: log, isLoading } = useWorkoutLog(logId);
+  const userId = session?.user.id;
+
+  // Earlier completed workouts of each exercise, to find new records.
+  const histories = useQueries({
+    queries: (log?.exercises ?? []).map((e) => ({
+      queryKey: ['exerciseHistory', userId, e.exercise.id],
+      queryFn: () => getExerciseHistory(userId as string, e.exercise.id),
+      enabled: !!userId,
+    })),
+  });
+
+  // The workout before this one from the same routine (or with the same name).
+  const { data: history } = useWorkoutHistory();
+  const previousId = log
+    ? history?.find(
+        (h) =>
+          h.id !== log.id &&
+          h.completedAt &&
+          h.startedAt < log.startedAt &&
+          h.name === log.name
+      )?.id
+    : undefined;
+  const { data: previousLog } = useWorkoutLog(previousId);
 
   if (isLoading || !log) {
     return (
@@ -24,10 +55,24 @@ export default function WorkoutSummary() {
     ? Math.round((new Date(log.completedAt).getTime() - new Date(log.startedAt).getTime()) / 60_000)
     : null;
   const totalSets = log.exercises.reduce((sum, e) => sum + e.sets.length, 0);
-  const volumeKg = log.exercises.reduce(
-    (sum, e) => sum + e.sets.reduce((s, set) => s + (set.weightKg ?? 0) * (set.reps ?? 0), 0),
-    0
-  );
+  const volumeKg = logVolume(log.exercises);
+  const volumeDiff = previousLog ? Math.round(volumeKg - logVolume(previousLog.exercises)) : null;
+
+  const highlights = log.exercises.flatMap((e, i) => {
+    if (e.exercise.category === 'cardio') return [];
+    const earlier = (histories[i]?.data ?? []).filter(
+      (h) => h.logId !== log.id && h.startedAt < log.startedAt
+    );
+    const records = findNewRecords(e.sets, earlier);
+    if (!records.weight && !records.oneRM) return [];
+    const now = bestOf(e.sets);
+    const before = bestOfSessions(earlier);
+    return [
+      records.weight
+        ? `${e.exercise.name}: ${now.weightKg} kg (was ${before.weightKg} kg)`
+        : `${e.exercise.name}: est. 1RM ${Math.round(now.oneRM)} kg (was ${Math.round(before.oneRM)} kg)`,
+    ];
+  });
 
   function handleDelete() {
     if (!log) return;
@@ -55,6 +100,24 @@ export default function WorkoutSummary() {
         <Stat label="Sets" value={String(totalSets)} />
         <Stat label="Volume (kg)" value={String(Math.round(volumeKg))} />
       </View>
+
+      {volumeDiff != null ? (
+        <Text style={styles.compareText}>
+          Volume {volumeDiff >= 0 ? '+' : '−'}
+          {Math.abs(volumeDiff)} kg vs last time
+        </Text>
+      ) : null}
+
+      {highlights.length > 0 ? (
+        <View style={styles.highlights}>
+          <Text style={styles.highlightsTitle}>🏆 New records</Text>
+          {highlights.map((h) => (
+            <Text key={h} style={styles.highlightText}>
+              {h}
+            </Text>
+          ))}
+        </View>
+      ) : null}
 
       {log.exercises.map((e) => (
         <View key={e.id} style={styles.exercise}>
@@ -104,6 +167,10 @@ const styles = StyleSheet.create({
     padding: 16,
     marginVertical: 20,
   },
+  compareText: { fontSize: 14, color: '#555', textAlign: 'center', marginBottom: 16 },
+  highlights: { backgroundColor: '#fef3c7', borderRadius: 12, padding: 16, marginBottom: 20 },
+  highlightsTitle: { fontSize: 16, fontWeight: '700', marginBottom: 6 },
+  highlightText: { fontSize: 14, color: '#92400e', paddingVertical: 2 },
   stat: { flex: 1, alignItems: 'center' },
   statValue: { fontSize: 20, fontWeight: '700' },
   statLabel: { fontSize: 12, color: '#555', marginTop: 2 },
