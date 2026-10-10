@@ -13,6 +13,13 @@ Full plan: `C:\Users\jerne\.claude\plans\help-me-plan-what-mellow-sketch.md`
 **UX pass + exercise swap — done** (plan: `C:\Users\jerne\.claude\plans\lets-explore-the-ux-ui-indexed-lynx.md`). All steps tested on-device by the user. See "UX pass features" below.
 **Food search improvements — done.** My foods first + Livsmedelsverket basic foods. Tested on-device by the user. See "Food search" below.
 
+**Session 2026-10-10 (NOT yet tested on the phone — user will test over time):**
+- **Bundle D (C1–C6)** shipped via `eas update` (preview channel): `hitSlop` on small text links, food search fixes (word-based "my foods" match, higher limits), shared `LabeledInput` in new `CreateExerciseForm` (also in `ExercisePicker` → create custom exercise mid-workout), default rest time setting (Profile, `useDefaultRest`), "+" removed from Log Food / New Routine.
+- **C7** shipped: meal cards in the food diary (tap to expand), saved meals logged as one group row (`group_id`/`group_name`, migration `0012` **applied**), `deleteFoodLogGroup`.
+- **C11 done:** app renamed **Plucky**, new mascot icon (chicken with broccoli hat on yellow; chosen after a simulated 8-persona A/B panel). Icons regenerated in `assets/`, `app.json` name + adaptive background `#ffd23f`. `slug` and package id `com.jjerner.fittrack` kept on purpose. New APK built (EAS build 8517256c-4cae-4515-a4c8-047dfdad47ff, preview profile, finished) — **user installs it manually**; check adaptive/monochrome icon and the notification icon on the phone.
+- **To test:** see the list in the session's last messages: rest-time setting, create exercise from picker, search multi-word, tap targets, meal cards, saved-meal groups, new name/icon.
+- **Next:** C8 (missing-meal reminder 20:30, needs the new build already installed), then C9/C10 research, C12 later.
+
 **Session 2026-10-05 (all shipped via `eas update`, all confirmed on the phone):**
 - **Tracked exercises** card on Progress (migration 0010, `tracked_exercises`). Shows only *logged* values, never an estimated 1RM (user's call): current best (heaviest set of the latest session, kg × reps), all-time PR + date, change vs 30/90 days ago. Stats in `trackedStats` (`src/lib/records.ts`); data in `src/lib/progress.ts` + `useTrackedExercises`; reuses `ExercisePicker` (new `title` prop) and `useExerciseHistory`. Commit ed405a9.
 - **Saved meals + quick add** (migration 0011: `food_log_entries.food_id` now nullable, `saved_meals`, `saved_meal_items`). "Save as meal" link on each diary meal (name modal) → Log Food → "Saved meals" logs one entry per food, recalculated from the foods as they are now (quick-add entries are skipped when saving). Quick-add screen (`food/quick-add.tsx`) still exists but has **no button leading to it** any more (user found it pointless); it only serves editing old quick-add entries (tap an entry with `foodId == null`). Commit b21aa32.
@@ -78,7 +85,7 @@ Migrations live in `supabase/migrations/*.sql`, applied manually by pasting into
 
 - `0010_tracked_exercises.sql` (tracked_exercises: user_id + exercise_id, RLS own rows)
 - `0011_saved_meals_quick_add.sql` (food_log_entries.food_id nullable for quick-add; saved_meals + saved_meal_items, RLS own rows / via parent meal)
-- `0012_food_entry_groups.sql` (food_log_entries.group_id + group_name; saved meals log as one diary group) — **written, NOT yet applied**; run it BEFORE sending the C7 JS update
+- `0012_food_entry_groups.sql` (food_log_entries.group_id + group_name; saved meals log as one diary group) — applied 2026-10-10
 
 For any new tables, write new numbered migration files and ask the user to run them the same way.
 
@@ -165,7 +172,7 @@ Bundles: **A** (JS-only, one `eas update`): B1 + B2 + B3 + B4 — do first. **B*
 | C4 | **Default rest time** | Setting replaces the fixed 90 s. = 5.1; per-exercise stays 3.6. | ✅ done |
 | C5 | **Remove redundant "+"** | In the "Log food" and "New routine" buttons. | ✅ done |
 | C6 | **Create custom exercise from "Add exercise"** | During an ongoing workout; extends `ExercisePicker`. | ✅ done |
-| C7 | **Saved meal as one row + meal cards** | **Decided: per-meal card** with kcal + macros highlights, tap expands inline; saved meals logged as a group row (the accordion idea is dropped). Likely 🗄 `0012` (group id on `food_log_entries`). Extends 2.2 / 2.4. | M — ✅ coded, waits for migration 0012 + eas update |
+| C7 | **Saved meal as one row + meal cards** | **Decided: per-meal card** with kcal + macros highlights, tap expands inline; saved meals logged as a group row (the accordion idea is dropped). Likely 🗄 `0012` (group id on `food_log_entries`). Extends 2.2 / 2.4. | M — ✅ coded, shipped 2026-10-10 |
 | C8 | **Missing-meal reminder** | **Decided: 20:30.** One notification if any of breakfast / lunch / dinner has nothing logged for today (names the missing ones); snacks ignored. Extends B6 / 5.4 (same schedule-ahead + reschedule-on-log approach). 🔁 | M |
 | C9 | **Unilateral vs bilateral exercises** | **Research + plan first.** 🗄 | M–L |
 | C10 | **Default gallery of training programs** | **Research UX + which programs first.** 🗄 | L |
