@@ -39,6 +39,9 @@ export type FoodLogEntry = {
   carbsG: number;
   fatG: number;
   fiberG: number | null;
+  // Set when the entry came from a saved meal; entries of one logging share both.
+  groupId: string | null;
+  groupName: string | null;
 };
 
 export type SavedMealItem = {

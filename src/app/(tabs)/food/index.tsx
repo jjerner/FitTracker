@@ -54,7 +54,7 @@ export default function FoodDiary() {
   const [calendarOpen, setCalendarOpen] = useState(false);
   const isToday = date === today;
   const dayLabel = isToday ? 'Today' : date === addDays(today, -1) ? 'Yesterday' : formatDay(date);
-  const { data: entries, isLoading, deleteEntry } = useFoodDiary(date);
+  const { data: entries, isLoading, deleteEntry, deleteGroup } = useFoodDiary(date);
   const { data: goals } = useNutritionGoals();
   const { session } = useSession();
   const queryClient = useQueryClient();
@@ -197,6 +197,7 @@ export default function FoodDiary() {
           totals={totals}
           goals={goals}
           onDelete={deleteEntry}
+          onDeleteGroup={deleteGroup}
           previousEntries={previousEntries ?? []}
           onCopyMeal={copyMeal}
           isCopying={isCopying}
@@ -212,6 +213,7 @@ function DiaryContent({
   totals,
   goals,
   onDelete,
+  onDeleteGroup,
   previousEntries,
   onCopyMeal,
   isCopying,
@@ -221,11 +223,22 @@ function DiaryContent({
   totals: { calories: number; protein: number; carbs: number; fat: number };
   goals: NutritionGoals | null | undefined;
   onDelete: (id: string) => void;
+  onDeleteGroup: (groupId: string) => void;
   previousEntries: FoodLogEntry[];
   onCopyMeal: (mealType: MealType) => void;
   isCopying: boolean;
   onSaveMeal: (mealType: MealType) => void;
 }) {
+  // Meals and saved-meal groups the user has tapped open (collapsed by default).
+  const [open, setOpen] = useState<Set<string>>(new Set());
+  function toggle(key: string) {
+    setOpen((prev) => {
+      const next = new Set(prev);
+      if (!next.delete(key)) next.add(key);
+      return next;
+    });
+  }
+
   return (
     <>
       <View style={styles.totalsCard}>
@@ -239,50 +252,165 @@ function DiaryContent({
 
       {MEAL_TYPES.map((mealType) => {
         const mealEntries = entries.filter((e) => e.mealType === mealType);
-        const mealCalories = mealEntries.reduce((sum, e) => sum + e.caloriesKcal, 0);
+        const sums = mealEntries.reduce(
+          (acc, e) => ({
+            calories: acc.calories + e.caloriesKcal,
+            protein: acc.protein + e.proteinG,
+            carbs: acc.carbs + e.carbsG,
+            fat: acc.fat + e.fatG,
+          }),
+          { calories: 0, protein: 0, carbs: 0, fat: 0 }
+        );
         const canCopy =
           mealEntries.length === 0 && previousEntries.some((e) => e.mealType === mealType);
+        const isOpen = open.has(mealType);
         return (
-          <View key={mealType} style={styles.mealSection}>
+          <View key={mealType} style={styles.mealCard}>
             <View style={styles.mealHeader}>
-              <Text style={styles.mealTitle}>{MEAL_LABELS[mealType]}</Text>
-              <View style={styles.mealHeaderRight}>
+              <Pressable
+                style={styles.mealHeaderTap}
+                onPress={() => toggle(mealType)}
+                disabled={mealEntries.length === 0}
+              >
+                <View style={styles.mealTitleRow}>
+                  <Text style={styles.mealTitle}>{MEAL_LABELS[mealType]}</Text>
+                  {mealEntries.length > 0 ? (
+                    <Text style={styles.mealCalories}>{Math.round(sums.calories)} kcal</Text>
+                  ) : null}
+                </View>
                 {mealEntries.length > 0 ? (
-                  <>
-                    {mealEntries.some((e) => e.foodId != null) && (
-                      <Pressable onPress={() => onSaveMeal(mealType)} hitSlop={8}>
-                        <Text style={styles.copyText}>Save as meal</Text>
-                      </Pressable>
-                    )}
-                    <Text style={styles.mealCalories}>{Math.round(mealCalories)} kcal</Text>
-                  </>
-                ) : canCopy ? (
-                  <Pressable onPress={() => onCopyMeal(mealType)} disabled={isCopying} hitSlop={8}>
-                    <Text style={styles.copyText}>Copy from previous day</Text>
+                  <Text style={styles.mealMacros}>
+                    P {Math.round(sums.protein)} g · C {Math.round(sums.carbs)} g · F{' '}
+                    {Math.round(sums.fat)} g
+                  </Text>
+                ) : (
+                  <Text style={styles.emptyText}>Nothing logged</Text>
+                )}
+              </Pressable>
+              {canCopy ? (
+                <Pressable onPress={() => onCopyMeal(mealType)} disabled={isCopying} hitSlop={8}>
+                  <Text style={styles.copyText}>Copy previous day</Text>
+                </Pressable>
+              ) : null}
+              <Pressable
+                style={styles.addButton}
+                onPress={() =>
+                  router.push({ pathname: '/(tabs)/food/search', params: { meal: mealType } })
+                }
+                hitSlop={8}
+              >
+                <Text style={styles.addButtonText}>+</Text>
+              </Pressable>
+            </View>
+            {isOpen && mealEntries.length > 0 ? (
+              <View style={styles.mealBody}>
+                {groupEntries(mealEntries).map((item) =>
+                  item.kind === 'entry' ? (
+                    <EntryRow
+                      key={item.entry.id}
+                      entry={item.entry}
+                      onDelete={() => onDelete(item.entry.id)}
+                    />
+                  ) : (
+                    <GroupRow
+                      key={item.groupId}
+                      name={item.name}
+                      entries={item.entries}
+                      isOpen={open.has(item.groupId)}
+                      onToggle={() => toggle(item.groupId)}
+                      onDelete={() => onDeleteGroup(item.groupId)}
+                      onDeleteEntry={onDelete}
+                    />
+                  )
+                )}
+                {mealEntries.some((e) => e.foodId != null) ? (
+                  <Pressable onPress={() => onSaveMeal(mealType)} hitSlop={8}>
+                    <Text style={styles.saveMealText}>Save as meal</Text>
                   </Pressable>
                 ) : null}
-                <Pressable
-                  style={styles.addButton}
-                  onPress={() =>
-                    router.push({ pathname: '/(tabs)/food/search', params: { meal: mealType } })
-                  }
-                  hitSlop={8}
-                >
-                  <Text style={styles.addButtonText}>+</Text>
-                </Pressable>
               </View>
-            </View>
-            {mealEntries.length === 0 ? (
-              <Text style={styles.emptyText}>Nothing logged</Text>
-            ) : (
-              mealEntries.map((entry) => (
-                <EntryRow key={entry.id} entry={entry} onDelete={() => onDelete(entry.id)} />
-              ))
-            )}
+            ) : null}
           </View>
         );
       })}
     </>
+  );
+}
+
+type MealItem =
+  | { kind: 'entry'; entry: FoodLogEntry }
+  | { kind: 'group'; groupId: string; name: string; entries: FoodLogEntry[] };
+
+// Entries from the same saved meal collapse into one item, placed where the first one was.
+function groupEntries(entries: FoodLogEntry[]): MealItem[] {
+  const items: MealItem[] = [];
+  const groups = new Map<string, Extract<MealItem, { kind: 'group' }>>();
+  for (const entry of entries) {
+    if (!entry.groupId) {
+      items.push({ kind: 'entry', entry });
+      continue;
+    }
+    let group = groups.get(entry.groupId);
+    if (!group) {
+      group = {
+        kind: 'group',
+        groupId: entry.groupId,
+        name: entry.groupName ?? 'Saved meal',
+        entries: [],
+      };
+      groups.set(entry.groupId, group);
+      items.push(group);
+    }
+    group.entries.push(entry);
+  }
+  return items;
+}
+
+function GroupRow({
+  name,
+  entries,
+  isOpen,
+  onToggle,
+  onDelete,
+  onDeleteEntry,
+}: {
+  name: string;
+  entries: FoodLogEntry[];
+  isOpen: boolean;
+  onToggle: () => void;
+  onDelete: () => void;
+  onDeleteEntry: (id: string) => void;
+}) {
+  const calories = entries.reduce((sum, e) => sum + e.caloriesKcal, 0);
+  return (
+    <View>
+      <View style={styles.entryRow}>
+        <Pressable style={styles.entryTap} onPress={onToggle}>
+          <Text style={styles.entryName}>
+            {isOpen ? '▾' : '▸'} {name}
+          </Text>
+          <Text style={styles.entryCalories}>{Math.round(calories)} kcal</Text>
+        </Pressable>
+        <Pressable
+          onPress={() =>
+            Alert.alert('Delete meal?', `${name} (${entries.length} foods)`, [
+              { text: 'Cancel', style: 'cancel' },
+              { text: 'Delete', style: 'destructive', onPress: onDelete },
+            ])
+          }
+          hitSlop={10}
+        >
+          <Text style={styles.entryDelete}>✕</Text>
+        </Pressable>
+      </View>
+      {isOpen ? (
+        <View style={styles.groupItems}>
+          {entries.map((entry) => (
+            <EntryRow key={entry.id} entry={entry} onDelete={() => onDeleteEntry(entry.id)} />
+          ))}
+        </View>
+      ) : null}
+    </View>
   );
 }
 
@@ -387,15 +515,20 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   addButtonText: { color: colors.onPrimary, fontSize: 20, lineHeight: 22, fontWeight: '600' },
-  mealSection: { marginBottom: 20 },
-  mealHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
+  mealCard: {
+    backgroundColor: colors.surface,
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 12,
   },
-  mealHeaderRight: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  mealTitle: { fontSize: 16, fontWeight: '600' },
+  mealHeader: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  mealHeaderTap: { flex: 1 },
+  mealTitleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' },
+  mealMacros: { fontSize: 13, color: colors.textSecondary, marginTop: 2 },
+  mealBody: { marginTop: 8 },
+  groupItems: { paddingLeft: 16 },
+  saveMealText: { fontSize: 14, color: colors.primary, paddingTop: 10 },
+  mealTitle: { fontSize: 16, fontWeight: '600', color: colors.text },
   mealCalories: { fontSize: 14, color: colors.textSecondary },
   copyText: { fontSize: 14, color: colors.primary },
   emptyText: { color: colors.subtle, fontSize: 14 },

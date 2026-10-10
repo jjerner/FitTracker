@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { useSession } from '../context/AuthProvider';
-import { deleteFoodLogEntry, getDiaryForDate } from '../lib/foods';
+import { deleteFoodLogEntry, deleteFoodLogGroup, getDiaryForDate } from '../lib/foods';
 
 export function useFoodDiary(date: string) {
   const { session } = useSession();
@@ -21,5 +21,16 @@ export function useFoodDiary(date: string) {
     },
   });
 
-  return { ...query, deleteEntry: deleteMutation.mutate };
+  const deleteGroupMutation = useMutation({
+    mutationFn: deleteFoodLogGroup,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['foodDiary', userId, date] });
+    },
+  });
+
+  return {
+    ...query,
+    deleteEntry: deleteMutation.mutate,
+    deleteGroup: deleteGroupMutation.mutate,
+  };
 }

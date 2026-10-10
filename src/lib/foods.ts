@@ -1,6 +1,7 @@
 import type { OffFood } from './openFoodFacts';
 import { supabase } from './supabase';
 import { refreshFoodReminders } from './reminders';
+import { newSetId } from './pendingSets';
 import type {
   Food,
   FoodLogEntry,
@@ -43,6 +44,8 @@ function mapEntryRow(row: any): FoodLogEntry {
     carbsG: row.carbs_g,
     fatG: row.fat_g,
     fiberG: row.fiber_g,
+    groupId: row.group_id ?? null,
+    groupName: row.group_name ?? null,
   };
 }
 
@@ -325,8 +328,15 @@ export async function copyEntriesToDate(
   loggedDate: string
 ): Promise<void> {
   if (entries.length === 0) return;
+  // Copied groups get fresh ids so deleting one copy leaves the other alone.
+  const newGroupIds = new Map<string, string>();
+  for (const e of entries) {
+    if (e.groupId && !newGroupIds.has(e.groupId)) newGroupIds.set(e.groupId, newSetId());
+  }
   const { error } = await supabase.from('food_log_entries').insert(
     entries.map((e) => ({
+      group_id: e.groupId ? newGroupIds.get(e.groupId) : null,
+      group_name: e.groupName,
       user_id: userId,
       food_id: e.foodId,
       food_name: e.foodName,
@@ -462,8 +472,11 @@ export async function logSavedMeal(
   mealType: MealType
 ): Promise<void> {
   if (meal.items.length === 0) return;
+  const groupId = newSetId();
   const { error } = await supabase.from('food_log_entries').insert(
     meal.items.map((item) => ({
+      group_id: groupId,
+      group_name: meal.name,
       user_id: userId,
       food_id: item.food.id,
       food_name: item.food.name,
@@ -494,6 +507,12 @@ export async function getDiaryForDate(userId: string, date: string): Promise<Foo
 
 export async function deleteFoodLogEntry(id: string): Promise<void> {
   const { error } = await supabase.from('food_log_entries').delete().eq('id', id);
+  if (error) throw error;
+  refreshFoodReminders().catch(() => {});
+}
+
+export async function deleteFoodLogGroup(groupId: string): Promise<void> {
+  const { error } = await supabase.from('food_log_entries').delete().eq('group_id', groupId);
   if (error) throw error;
   refreshFoodReminders().catch(() => {});
 }

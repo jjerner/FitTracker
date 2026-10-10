@@ -78,6 +78,7 @@ Migrations live in `supabase/migrations/*.sql`, applied manually by pasting into
 
 - `0010_tracked_exercises.sql` (tracked_exercises: user_id + exercise_id, RLS own rows)
 - `0011_saved_meals_quick_add.sql` (food_log_entries.food_id nullable for quick-add; saved_meals + saved_meal_items, RLS own rows / via parent meal)
+- `0012_food_entry_groups.sql` (food_log_entries.group_id + group_name; saved meals log as one diary group) — **written, NOT yet applied**; run it BEFORE sending the C7 JS update
 
 For any new tables, write new numbered migration files and ask the user to run them the same way.
 
@@ -164,7 +165,7 @@ Bundles: **A** (JS-only, one `eas update`): B1 + B2 + B3 + B4 — do first. **B*
 | C4 | **Default rest time** | Setting replaces the fixed 90 s. = 5.1; per-exercise stays 3.6. | ✅ done |
 | C5 | **Remove redundant "+"** | In the "Log food" and "New routine" buttons. | ✅ done |
 | C6 | **Create custom exercise from "Add exercise"** | During an ongoing workout; extends `ExercisePicker`. | ✅ done |
-| C7 | **Saved meal as one row + meal cards** | **Decided: per-meal card** with kcal + macros highlights, tap expands inline; saved meals logged as a group row (the accordion idea is dropped). Likely 🗄 `0012` (group id on `food_log_entries`). Extends 2.2 / 2.4. | M |
+| C7 | **Saved meal as one row + meal cards** | **Decided: per-meal card** with kcal + macros highlights, tap expands inline; saved meals logged as a group row (the accordion idea is dropped). Likely 🗄 `0012` (group id on `food_log_entries`). Extends 2.2 / 2.4. | M — ✅ coded, waits for migration 0012 + eas update |
 | C8 | **Missing-meal reminder** | **Decided: 20:30.** One notification if any of breakfast / lunch / dinner has nothing logged for today (names the missing ones); snacks ignored. Extends B6 / 5.4 (same schedule-ahead + reschedule-on-log approach). 🔁 | M |
 | C9 | **Unilateral vs bilateral exercises** | **Research + plan first.** 🗄 | M–L |
 | C10 | **Default gallery of training programs** | **Research UX + which programs first.** 🗄 | L |
