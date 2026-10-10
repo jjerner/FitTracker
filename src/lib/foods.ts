@@ -77,16 +77,20 @@ export async function getRecentFoods(userId: string): Promise<Food[]> {
 
 // Foods this user has logged (most recent first), then their custom foods, matching the query.
 export async function searchMyFoods(userId: string, query: string): Promise<Food[]> {
-  const pattern = `%${query}%`;
+  // Every word must match, in any order ("kyckling ris" finds "Kyckling med ris").
+  const words = query.split(/\s+/).filter(Boolean);
+  let loggedRequest = supabase
+    .from('food_log_entries')
+    .select('food_id, foods(*)')
+    .eq('user_id', userId);
+  let customRequest = supabase.from('foods').select('*').eq('created_by', userId);
+  for (const word of words) {
+    loggedRequest = loggedRequest.ilike('food_name', `%${word}%`);
+    customRequest = customRequest.ilike('name', `%${word}%`);
+  }
   const [logged, custom] = await Promise.all([
-    supabase
-      .from('food_log_entries')
-      .select('food_id, foods(*)')
-      .eq('user_id', userId)
-      .ilike('food_name', pattern)
-      .order('logged_at', { ascending: false })
-      .limit(200),
-    supabase.from('foods').select('*').eq('created_by', userId).ilike('name', pattern).limit(20),
+    loggedRequest.order('logged_at', { ascending: false }).limit(500),
+    customRequest.limit(100),
   ]);
   if (logged.error) throw logged.error;
   if (custom.error) throw custom.error;
@@ -98,7 +102,7 @@ export async function searchMyFoods(userId: string, query: string): Promise<Food
   for (const row of custom.data ?? []) {
     if (!byId.has(row.id)) byId.set(row.id, mapFoodRow(row));
   }
-  return [...byId.values()].slice(0, 20);
+  return [...byId.values()].slice(0, 30);
 }
 
 // Generic Livsmedelsverket foods. Every word must match; closest names first,
@@ -126,7 +130,7 @@ export async function searchBasicFoods(query: string): Promise<Food[]> {
   return (data ?? [])
     .map(mapFoodRow)
     .sort((a, b) => rank(a.name) - rank(b.name) || a.name.length - b.name.length)
-    .slice(0, 15);
+    .slice(0, 30);
 }
 
 export async function upsertOffFood(off: OffFood): Promise<Food> {

@@ -279,10 +279,10 @@ export default function FoodDetail() {
             onChangeText={setServingName}
           />
           <View style={styles.linkRow}>
-            <Pressable onPress={handleSaveServing}>
+            <Pressable onPress={handleSaveServing} hitSlop={8}>
               <Text style={styles.servingLink}>Save serving size</Text>
             </Pressable>
-            <Pressable onPress={() => setEditor(null)}>
+            <Pressable onPress={() => setEditor(null)} hitSlop={8}>
               <Text style={styles.servingLinkMuted}>Cancel</Text>
             </Pressable>
           </View>
@@ -310,7 +310,7 @@ export default function FoodDetail() {
             </Pressable>
           ) : null}
           {canDeleteSelected ? (
-            <Pressable onPress={handleDeleteServing}>
+            <Pressable onPress={handleDeleteServing} hitSlop={8}>
               <Text style={styles.servingLinkMuted}>Delete this serving</Text>
             </Pressable>
           ) : null}

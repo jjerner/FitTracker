@@ -118,7 +118,7 @@ export default function ForgotPassword() {
       </Pressable>
 
       {codeSent && (
-        <Pressable onPress={handleSendCode} disabled={isSubmitting}>
+        <Pressable onPress={handleSendCode} disabled={isSubmitting} hitSlop={12}>
           <Text style={styles.link}>Didn&apos;t get it? Send again</Text>
         </Pressable>
       )}

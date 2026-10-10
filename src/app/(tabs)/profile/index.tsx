@@ -15,6 +15,7 @@ import {
 
 import { useSession } from '../../../context/AuthProvider';
 import { useDisplayName } from '../../../hooks/useDisplayName';
+import { useDefaultRest } from '../../../hooks/useDefaultRest';
 import { useFoodReminder } from '../../../hooks/useFoodReminder';
 import { useRestVibration } from '../../../hooks/useRestVibration';
 import { supabase } from '../../../lib/supabase';
@@ -25,6 +26,7 @@ export default function Profile() {
   const { data: savedName, isLoading, saveName, isSaving } = useDisplayName();
   const restVibration = useRestVibration();
   const foodReminder = useFoodReminder();
+  const defaultRest = useDefaultRest();
 
   async function handleReminderToggle(enabled: boolean) {
     const allowed = await foodReminder.setEnabled(enabled);
@@ -69,6 +71,22 @@ export default function Profile() {
         <Switch value={restVibration.enabled} onValueChange={restVibration.setEnabled} />
       </View>
       <View style={[styles.row, styles.rowSpaced]}>
+        <Text style={styles.rowText}>Default rest time</Text>
+        <Pressable
+          style={styles.stepButton}
+          onPress={() => defaultRest.setSeconds(Math.max(15, defaultRest.seconds - 15))}
+        >
+          <Text style={styles.stepButtonText}>−</Text>
+        </Pressable>
+        <Text style={styles.timeText}>{formatRest(defaultRest.seconds)}</Text>
+        <Pressable
+          style={styles.stepButton}
+          onPress={() => defaultRest.setSeconds(Math.min(600, defaultRest.seconds + 15))}
+        >
+          <Text style={styles.stepButtonText}>+</Text>
+        </Pressable>
+      </View>
+      <View style={[styles.row, styles.rowSpaced]}>
         <SymbolView
           name={{ ios: 'bell.fill', android: 'notifications' }}
           tintColor={colors.primary}
@@ -107,6 +125,10 @@ function formatMinutes(minutes: number): string {
   const h = String(Math.floor(minutes / 60)).padStart(2, '0');
   const m = String(minutes % 60).padStart(2, '0');
   return `${h}:${m}`;
+}
+
+function formatRest(seconds: number): string {
+  return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
 }
 
 function NameEditor({

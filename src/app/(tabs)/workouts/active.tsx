@@ -16,6 +16,7 @@ import {
 import { ExercisePicker } from '../../../components/workouts/ExercisePicker';
 import { SwapExercisePicker } from '../../../components/workouts/SwapExercisePicker';
 import { useSession } from '../../../context/AuthProvider';
+import { useDefaultRest } from '../../../hooks/useDefaultRest';
 import { useRestVibration } from '../../../hooks/useRestVibration';
 import {
   useExerciseHistory,
@@ -49,8 +50,6 @@ import type {
   WorkoutTemplateExercise,
 } from '../../../types/domain';
 
-const DEFAULT_REST_S = 90;
-
 function toNumberOrNull(value: string): number | null {
   const n = Number(value.replace(',', '.'));
   return value.trim() === '' || Number.isNaN(n) ? null : n;
@@ -68,6 +67,7 @@ export default function ActiveWorkout() {
   const { logId } = useLocalSearchParams<{ logId: string }>();
   const { session } = useSession();
   const queryClient = useQueryClient();
+  const defaultRest = useDefaultRest();
   const { data: log, isLoading } = useWorkoutLog(logId);
   const { data: template } = useWorkoutTemplate(log?.templateId ?? null);
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -168,7 +168,7 @@ export default function ActiveWorkout() {
             pendingIds={pendingIds}
             target={template?.exercises.find((te) => te.exercise.id === logExercise.exercise.id)}
             onChanged={refresh}
-            onSetDone={() => setRestEndsAt(Date.now() + DEFAULT_REST_S * 1000)}
+            onSetDone={() => setRestEndsAt(Date.now() + defaultRest.seconds * 1000)}
           />
         ))}
 

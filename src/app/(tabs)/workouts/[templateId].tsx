@@ -212,6 +212,7 @@ function TemplateForm({ template }: { template: WorkoutTemplate | null }) {
             </Pressable>
             <Pressable
               onPress={() => setExercises((prev) => prev.filter((_, i) => i !== index))}
+              hitSlop={8}
             >
               <Text style={styles.removeText}>Remove</Text>
             </Pressable>

@@ -125,7 +125,7 @@ export default function WorkoutsHome() {
         style={styles.secondaryButton}
         onPress={() => router.push('/(tabs)/workouts/new')}
       >
-        <Text style={styles.secondaryButtonText}>+ New Routine</Text>
+        <Text style={styles.secondaryButtonText}>New Routine</Text>
       </Pressable>
 
       <Pressable

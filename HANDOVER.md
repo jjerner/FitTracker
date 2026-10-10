@@ -158,12 +158,12 @@ Bundles: **A** (JS-only, one `eas update`): B1 + B2 + B3 + B4 — do first. **B*
 ### 0b. Beta-test feedback, round 2 (collected 2026-10-08, source: `beta_test_feedback.md`)
 | # | Item | Details | Effort |
 |---|---|---|---|
-| C1 | **Whole button tappable** | Some buttons only react when the text is tapped. Audit Pressables where padding/style sits on the inner Text instead of the Pressable. | S |
-| C2 | **Food search may miss matches** | Check result limits / Supabase 1000-row cap in `searchMyFoods` / `searchBasicFoods` (`src/lib/foods.ts`) and OFF 503s. Related to 1.9. | S–M |
-| C3 | **Create-exercise inputs unreadable** | Text/placeholders not visible. Same fix as B3 / B2+B3: labels + explicit placeholder colour, ideally one shared labelled-input component. | S–M |
-| C4 | **Default rest time** | Setting replaces the fixed 90 s. = 5.1; per-exercise stays 3.6. | S |
-| C5 | **Remove redundant "+"** | In the "Log food" and "New routine" buttons. | S |
-| C6 | **Create custom exercise from "Add exercise"** | During an ongoing workout; extends `ExercisePicker`. | S–M |
+| C1 | **Whole button tappable** | Some buttons only react when the text is tapped. Audit Pressables where padding/style sits on the inner Text instead of the Pressable. | ✅ done |
+| C2 | **Food search may miss matches** | Check result limits / Supabase 1000-row cap in `searchMyFoods` / `searchBasicFoods` (`src/lib/foods.ts`) and OFF 503s. Related to 1.9. | ✅ done |
+| C3 | **Create-exercise inputs unreadable** | Text/placeholders not visible. Same fix as B3 / B2+B3: labels + explicit placeholder colour, ideally one shared labelled-input component. | ✅ done |
+| C4 | **Default rest time** | Setting replaces the fixed 90 s. = 5.1; per-exercise stays 3.6. | ✅ done |
+| C5 | **Remove redundant "+"** | In the "Log food" and "New routine" buttons. | ✅ done |
+| C6 | **Create custom exercise from "Add exercise"** | During an ongoing workout; extends `ExercisePicker`. | ✅ done |
 | C7 | **Saved meal as one row + meal cards** | **Decided: per-meal card** with kcal + macros highlights, tap expands inline; saved meals logged as a group row (the accordion idea is dropped). Likely 🗄 `0012` (group id on `food_log_entries`). Extends 2.2 / 2.4. | M |
 | C8 | **Missing-meal reminder** | **Decided: 20:30.** One notification if any of breakfast / lunch / dinner has nothing logged for today (names the missing ones); snacks ignored. Extends B6 / 5.4 (same schedule-ahead + reschedule-on-log approach). 🔁 | M |
 | C9 | **Unilateral vs bilateral exercises** | **Research + plan first.** 🗄 | M–L |
@@ -243,7 +243,7 @@ Social feed/friends (Hevy), diet-pattern scores (Lifesum), 80+ micronutrients (C
 3. ~~Gym safety + motivation: 1.6, 3.1, 3.2, 3.8~~ (done) →
 4. ~~Saved meals (2.2) + quick add (2.3)~~ (done) →
 5. ~~Look & feel: 1.8 theme, 2.4 Lifesum diary~~ (done; 1.7 icon already built) →
-6. Beta round 2, bundle D (C1–C6) → then C7, C8, C11, research C9/C10 (section 0b) →
+6. ~~Beta round 2, bundle D (C1–C6)~~ (done) → then C7, C8, C11, research C9/C10 (section 0b) →
 7. Bigger bets to discuss: 5.2 goal helper / 2.9 adaptive goal, 2.8 AI logging.
 
 Sources: MyFitnessPal (Meal Scan, Quick Add, My Meals), MacroFactor (adaptive targets), Cronometer (micronutrients), Lifesum (diet patterns, water/habits), Strong (plate calculator, PRs, 1RM, CSV export), Hevy (social, set types), StrengthLog (programs) — 2026 comparison articles.

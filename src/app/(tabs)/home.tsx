@@ -149,7 +149,7 @@ export default function Home() {
 
       <View style={styles.buttonRow}>
         <Pressable style={styles.button} onPress={logFood}>
-          <Text style={styles.buttonText}>+ Log Food</Text>
+          <Text style={styles.buttonText}>Log Food</Text>
         </Pressable>
         <Pressable
           style={[styles.button, activeWorkout && styles.resumeButton]}

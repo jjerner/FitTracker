@@ -47,7 +47,7 @@ export function SwapExercisePicker({
           <Text style={styles.title} numberOfLines={1}>
             Swap {current.name}
           </Text>
-          <Pressable onPress={close}>
+          <Pressable onPress={close} hitSlop={12}>
             <Text style={styles.link}>Cancel</Text>
           </Pressable>
         </View>

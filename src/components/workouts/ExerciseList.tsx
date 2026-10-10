@@ -30,6 +30,7 @@ export function ExerciseList({ onSelect }: { onSelect?: (exercise: Exercise) => 
       <TextInput
         style={styles.input}
         placeholder="Search exercises..."
+        placeholderTextColor={colors.muted}
         value={query}
         onChangeText={setQuery}
       />
@@ -65,6 +66,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 14,
     fontSize: 16,
+    color: colors.text,
     marginBottom: 12,
   },
   row: { paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.border },
