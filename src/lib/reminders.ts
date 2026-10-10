@@ -63,7 +63,7 @@ export async function refreshFoodReminders(): Promise<void> {
     if (when <= now) continue;
     await Notifications.scheduleNotificationAsync({
       identifier: `${ID_PREFIX}${i}`,
-      content: { title: 'FitTrack', body: "You haven't logged any food today." },
+      content: { title: 'Plucky', body: "You haven't logged any food today." },
       trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: when, channelId: CHANNEL_ID },
     });
   }

@@ -169,7 +169,7 @@ Bundles: **A** (JS-only, one `eas update`): B1 + B2 + B3 + B4 — do first. **B*
 | C8 | **Missing-meal reminder** | **Decided: 20:30.** One notification if any of breakfast / lunch / dinner has nothing logged for today (names the missing ones); snacks ignored. Extends B6 / 5.4 (same schedule-ahead + reschedule-on-log approach). 🔁 | M |
 | C9 | **Unilateral vs bilateral exercises** | **Research + plan first.** 🗄 | M–L |
 | C10 | **Default gallery of training programs** | **Research UX + which programs first.** 🗄 | L |
-| C11 | **Rename app + new logo** | Dumbbell with a chicken on one side, broccoli on the other. 🔁 new build; extends 1.7. | S–M |
+| C11 | **Rename app + new logo** | Dumbbell with a chicken on one side, broccoli on the other. 🔁 new build; extends 1.7. | S–M — ✅ decided: name **Plucky**, mascot logo (chicken with broccoli hat); assets + app.json done, needs next APK build (slug and package id unchanged on purpose) |
 | C12 | **Usage dashboard (admin)** | For the owner only, to see how friends use the app once shared: sign-ups, daily/weekly active users, food entries and workouts logged per day, last seen per user, retention. Needs a decision: Supabase SQL views + an admin-only screen (admin flag/RLS) vs an external dashboard. Friends should be told what is counted (aggregates, not their food/workout contents). 🗄 | M–L |
 
 Bundle **D** (JS-only, one `eas update`): C1, C2, C3, C4, C5, C6. Later: C7 (after the pattern decision + migration), C8 + C11 (next native build), C12 (after sharing plans are clear). C9/C10 start as research, no code.

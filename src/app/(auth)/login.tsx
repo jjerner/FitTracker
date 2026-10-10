@@ -38,7 +38,7 @@ export default function Login() {
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <Text style={styles.title}>FitTrack</Text>
+      <Text style={styles.title}>Plucky</Text>
 
       <LabeledInput
         label="Email address"

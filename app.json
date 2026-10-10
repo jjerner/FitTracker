@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "FitTrack",
+    "name": "Plucky",
     "slug": "FitTrack",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -12,7 +12,7 @@
     "android": {
       "package": "com.jjerner.fittrack",
       "adaptiveIcon": {
-        "backgroundColor": "#2563eb",
+        "backgroundColor": "#ffd23f",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
@@ -27,7 +27,7 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "FitTrack uses the camera to scan food barcodes.",
+          "cameraPermission": "Plucky uses the camera to scan food barcodes.",
           "recordAudioAndroid": false
         }
       ],

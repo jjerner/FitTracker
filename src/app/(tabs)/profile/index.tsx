@@ -31,7 +31,7 @@ export default function Profile() {
   async function handleReminderToggle(enabled: boolean) {
     const allowed = await foodReminder.setEnabled(enabled);
     if (!allowed) {
-      Alert.alert('Notifications are off', 'Allow notifications for FitTrack in your phone settings.');
+      Alert.alert('Notifications are off', 'Allow notifications for Plucky in your phone settings.');
     }
   }
 
