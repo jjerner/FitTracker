@@ -128,7 +128,7 @@ For any new tables, write new numbered migration files and ask the user to run t
 ## Next session should
 
 1. Everything up to and including the theme cleanup is sent via `eas update` and **confirmed working on the phone** (see the 2026-10-05 session list under Status). Last commit before this handover: 8055033. Ask the user if anything new came up.
-2. Roadmap steps 1–5 are done. What's left: step 6 "bigger bets to discuss" (5.2 goal helper / 2.9 adaptive goal, 2.8 AI logging), plus smaller items: 1.5 edit past workouts, 1.9 OFF search endpoint, 1.10 email-verification code, 2.5 water, 2.6 favourites, 2.7 fiber/sugar display, 4.1 weight moving average, 5.6 dark mode (the theme groundwork is done). B5 Withings is deliberately later. Remember the migration workflow for 🗄 items: write `0012_*.sql`, ask the user to paste it into Supabase **before** shipping the JS.
+2. Roadmap steps 1–5 are done. Next up: beta round 2 (section 0b, bundle D first). After that: step 7 "bigger bets to discuss" (5.2 goal helper / 2.9 adaptive goal, 2.8 AI logging), plus smaller items: 1.5 edit past workouts, 1.9 OFF search endpoint, 1.10 email-verification code, 2.5 water, 2.6 favourites, 2.7 fiber/sugar display, 4.1 weight moving average, 5.6 dark mode (the theme groundwork is done). B5 Withings is deliberately later. Remember the migration workflow for 🗄 items: write `0012_*.sql`, ask the user to paste it into Supabase **before** shipping the JS.
 3. Don't touch the "On hold" items above unless the user brings them up.
 4. Remember: JS-only changes reach the phone with `eas update` (see Status → Go live); 🔁 items need a new APK build.
 5. Run it as `npx eas-cli@latest update --channel preview --environment preview --message "..." --non-interactive` (`--environment` is required in non-interactive mode). `runtimeVersion` (policy `appVersion`, so `1.0.0`) now lives at the top level of `app.json`; before, it sat under `android` and `eas update` rewrote `app.json` (duplicate CAMERA permission + a second `runtimeVersion`). Fixed in 9d522d2 and verified: no more rewrites. If `app.json` shows as modified after an update, `git checkout app.json`.
@@ -154,6 +154,24 @@ From the user's own use of the installed APK, collected 2026-10-04.
 | B7 | **Easier set removal in an active workout** — **done, sent via `eas update` (preview, 2026-10-05), commit 8b11a93; needs on-device test.** | A ✕ button at the right of every set row in `workouts/active.tsx`. Logged (green) sets ask "Delete set N?" (Cancel / Delete); unfinished rows are removed instantly with no popup. Before, you had to un-tick a set (which left an empty row) and unfinished rows couldn't be removed at all. | S |
 
 Bundles: **A** (JS-only, one `eas update`): B1 + B2 + B3 + B4 — do first. **B** (next native build): B6 + 1.7 icon, optionally 3.9. **C** (moved back — a new feature no competitor seems to have, so it comes after the polish and gym-safety items): B5.
+
+### 0b. Beta-test feedback, round 2 (collected 2026-10-08, source: `beta_test_feedback.md`)
+| # | Item | Details | Effort |
+|---|---|---|---|
+| C1 | **Whole button tappable** | Some buttons only react when the text is tapped. Audit Pressables where padding/style sits on the inner Text instead of the Pressable. | S |
+| C2 | **Food search may miss matches** | Check result limits / Supabase 1000-row cap in `searchMyFoods` / `searchBasicFoods` (`src/lib/foods.ts`) and OFF 503s. Related to 1.9. | S–M |
+| C3 | **Create-exercise inputs unreadable** | Text/placeholders not visible. Same fix as B3 / B2+B3: labels + explicit placeholder colour, ideally one shared labelled-input component. | S–M |
+| C4 | **Default rest time** | Setting replaces the fixed 90 s. = 5.1; per-exercise stays 3.6. | S |
+| C5 | **Remove redundant "+"** | In the "Log food" and "New routine" buttons. | S |
+| C6 | **Create custom exercise from "Add exercise"** | During an ongoing workout; extends `ExercisePicker`. | S–M |
+| C7 | **Saved meal as one row + meal cards** | **Decided: per-meal card** with kcal + macros highlights, tap expands inline; saved meals logged as a group row (the accordion idea is dropped). Likely 🗄 `0012` (group id on `food_log_entries`). Extends 2.2 / 2.4. | M |
+| C8 | **Missing-meal reminder** | **Decided: 20:30.** One notification if any of breakfast / lunch / dinner has nothing logged for today (names the missing ones); snacks ignored. Extends B6 / 5.4 (same schedule-ahead + reschedule-on-log approach). 🔁 | M |
+| C9 | **Unilateral vs bilateral exercises** | **Research + plan first.** 🗄 | M–L |
+| C10 | **Default gallery of training programs** | **Research UX + which programs first.** 🗄 | L |
+| C11 | **Rename app + new logo** | Dumbbell with a chicken on one side, broccoli on the other. 🔁 new build; extends 1.7. | S–M |
+| C12 | **Usage dashboard (admin)** | For the owner only, to see how friends use the app once shared: sign-ups, daily/weekly active users, food entries and workouts logged per day, last seen per user, retention. Needs a decision: Supabase SQL views + an admin-only screen (admin flag/RLS) vs an external dashboard. Friends should be told what is counted (aggregates, not their food/workout contents). 🗄 | M–L |
+
+Bundle **D** (JS-only, one `eas update`): C1, C2, C3, C4, C5, C6. Later: C7 (after the pattern decision + migration), C8 + C11 (next native build), C12 (after sharing plans are clear). C9/C10 start as research, no code.
 
 ### 1. Known gaps in our own app (quick wins, high value)
 | # | Improvement | Why | Effort |
@@ -225,6 +243,7 @@ Social feed/friends (Hevy), diet-pattern scores (Lifesum), 80+ micronutrients (C
 3. ~~Gym safety + motivation: 1.6, 3.1, 3.2, 3.8~~ (done) →
 4. ~~Saved meals (2.2) + quick add (2.3)~~ (done) →
 5. ~~Look & feel: 1.8 theme, 2.4 Lifesum diary~~ (done; 1.7 icon already built) →
-6. Bigger bets to discuss: 5.2 goal helper / 2.9 adaptive goal, 2.8 AI logging.
+6. Beta round 2, bundle D (C1–C6) → then C7, C8, C11, research C9/C10 (section 0b) →
+7. Bigger bets to discuss: 5.2 goal helper / 2.9 adaptive goal, 2.8 AI logging.
 
 Sources: MyFitnessPal (Meal Scan, Quick Add, My Meals), MacroFactor (adaptive targets), Cronometer (micronutrients), Lifesum (diet patterns, water/habits), Strong (plate calculator, PRs, 1RM, CSV export), Hevy (social, set types), StrengthLog (programs) — 2026 comparison articles.
