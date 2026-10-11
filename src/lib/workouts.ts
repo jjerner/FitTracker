@@ -226,7 +226,11 @@ export async function startWorkout(input: {
         position: index,
       }))
     );
-    if (exError) throw exError;
+    if (exError) {
+      // Don't leave an empty in-progress workout behind.
+      await supabase.from('workout_logs').delete().eq('id', logId);
+      throw exError;
+    }
   }
 
   return logId;

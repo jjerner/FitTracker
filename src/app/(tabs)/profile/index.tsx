@@ -18,7 +18,7 @@ import { useDisplayName } from '../../../hooks/useDisplayName';
 import { useDefaultRest } from '../../../hooks/useDefaultRest';
 import { useFoodReminder } from '../../../hooks/useFoodReminder';
 import { useRestVibration } from '../../../hooks/useRestVibration';
-import { supabase } from '../../../lib/supabase';
+import { signOut } from '../../../lib/profile';
 import { colors, radius, spacing } from '../../../theme';
 
 export default function Profile() {
@@ -32,6 +32,14 @@ export default function Profile() {
     const allowed = await foodReminder.setEnabled(enabled);
     if (!allowed) {
       Alert.alert('Notifications are off', 'Allow notifications for Plucky in your phone settings.');
+    }
+  }
+
+  async function handleSignOut() {
+    try {
+      await signOut();
+    } catch {
+      Alert.alert('Sign out failed', 'Check your connection and try again.');
     }
   }
 
@@ -114,7 +122,7 @@ export default function Profile() {
         </View>
       ) : null}
 
-      <Pressable style={styles.signOutButton} onPress={() => supabase.auth.signOut()}>
+      <Pressable style={styles.signOutButton} onPress={handleSignOut}>
         <Text style={styles.signOutButtonText}>Sign Out</Text>
       </Pressable>
     </ScrollView>
