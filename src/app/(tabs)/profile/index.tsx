@@ -18,6 +18,7 @@ import { useDisplayName } from '../../../hooks/useDisplayName';
 import { useDefaultRest } from '../../../hooks/useDefaultRest';
 import { useFoodReminder } from '../../../hooks/useFoodReminder';
 import { useMealReminder } from '../../../hooks/useMealReminder';
+import { cancelFoodReminders, MEAL_REMINDER_MINUTES } from '../../../lib/reminders';
 import { useRestVibration } from '../../../hooks/useRestVibration';
 import { supabase } from '../../../lib/supabase';
 import { colors, radius, spacing } from '../../../theme';
@@ -31,10 +32,21 @@ export default function Profile() {
   const defaultRest = useDefaultRest();
 
   async function handleReminderToggle(setEnabled: (enabled: boolean) => Promise<boolean>, enabled: boolean) {
-    const allowed = await setEnabled(enabled);
+    let allowed: boolean;
+    try {
+      allowed = await setEnabled(enabled);
+    } catch {
+      Alert.alert('Could not update reminder', 'Please try again.');
+      return;
+    }
     if (!allowed) {
       Alert.alert('Notifications are off', 'Allow notifications for Plucky in your phone settings.');
     }
+  }
+
+  async function signOut() {
+    await cancelFoodReminders().catch(() => {});
+    await supabase.auth.signOut();
   }
 
   return (
@@ -121,14 +133,14 @@ export default function Profile() {
           tintColor={colors.primary}
           size={22}
         />
-        <Text style={styles.rowText}>Remind me of missed meals (20:30)</Text>
+        <Text style={styles.rowText}>Remind me of missed meals ({formatMinutes(MEAL_REMINDER_MINUTES)})</Text>
         <Switch
           value={mealReminder.enabled}
           onValueChange={(on) => handleReminderToggle(mealReminder.setEnabled, on)}
         />
       </View>
 
-      <Pressable style={styles.signOutButton} onPress={() => supabase.auth.signOut()}>
+      <Pressable style={styles.signOutButton} onPress={signOut}>
         <Text style={styles.signOutButtonText}>Sign Out</Text>
       </Pressable>
     </ScrollView>
