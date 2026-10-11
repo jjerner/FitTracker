@@ -104,9 +104,10 @@ export default function FoodSearch() {
       router.push(`/(tabs)/food/food/${item.food.id}${mealQuery}`);
       return;
     }
+    if (!session) return;
     setSelectingKey(key);
     try {
-      const saved = await upsertOffFood(item.food);
+      const saved = await upsertOffFood(session.user.id, item.food);
       router.push(`/(tabs)/food/food/${saved.id}${mealQuery}`);
     } catch {
       setError('Could not select this food. Try again.');

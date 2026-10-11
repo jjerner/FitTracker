@@ -118,7 +118,8 @@ export default function FoodDetail() {
   const [editor, setEditor] = useState<null | 'add' | 'default'>(null);
   const [servingSize, setServingSize] = useState('');
   const [servingName, setServingName] = useState('');
-  const canEditDefault = !!food && !!food.servingSizeG && !!userId && food.createdBy === userId;
+  const canEditDefault =
+    !!food && food.source === 'custom' && !!food.servingSizeG && !!userId && food.createdBy === userId;
   // Your own servings, and the built-in one on a custom food you made. Servings that come
   // with other foods (e.g. from a barcode) can't be removed.
   const canDeleteSelected =

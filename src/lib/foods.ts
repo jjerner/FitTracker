@@ -75,7 +75,11 @@ export async function searchMyFoods(userId: string, query: string): Promise<Food
     .from('food_log_entries')
     .select('food_id, foods(*)')
     .eq('user_id', userId);
-  let customRequest = supabase.from('foods').select('*').eq('created_by', userId);
+  let customRequest = supabase
+    .from('foods')
+    .select('*')
+    .eq('created_by', userId)
+    .eq('source', 'custom');
   for (const word of words) {
     loggedRequest = loggedRequest.ilike('food_name', `%${word}%`);
     customRequest = customRequest.ilike('name', `%${word}%`);
@@ -125,7 +129,31 @@ export async function searchBasicFoods(query: string): Promise<Food[]> {
     .slice(0, 30);
 }
 
-export async function upsertOffFood(off: OffFood): Promise<Food> {
+// The food this user already has for a barcode: their own row, or else an older shared row
+// they've logged (from before foods were per user), so their history and servings stay on it.
+export async function findMyBarcodeFood(userId: string, barcode: string): Promise<Food | null> {
+  const { data, error } = await supabase
+    .from('foods')
+    .select('*')
+    .eq('barcode', barcode)
+    .or(`created_by.eq.${userId},created_by.is.null`);
+  if (error) throw error;
+  const own = data?.find((row) => row.created_by === userId);
+  if (own) return mapFoodRow(own);
+  const shared = data?.find((row) => row.created_by === null);
+  if (!shared) return null;
+
+  const { count, error: logError } = await supabase
+    .from('food_log_entries')
+    .select('id', { count: 'exact', head: true })
+    .eq('user_id', userId)
+    .eq('food_id', shared.id);
+  if (logError) throw logError;
+  return (count ?? 0) > 0 ? mapFoodRow(shared) : null;
+}
+
+// Saves the user's own copy of an OFF food, so nobody else's edits or bad data reach it.
+export async function upsertOffFood(userId: string, off: OffFood): Promise<Food> {
   const row = {
     source: 'off',
     barcode: off.barcode,
@@ -140,6 +168,7 @@ export async function upsertOffFood(off: OffFood): Promise<Food> {
     fiber_g: off.fiberG,
     sugar_g: off.sugarG,
     sodium_mg: off.sodiumMg,
+    created_by: userId,
   };
 
   if (off.barcode == null) {
@@ -148,17 +177,20 @@ export async function upsertOffFood(off: OffFood): Promise<Food> {
     return mapFoodRow(data);
   }
 
-  // Skip if the barcode is already saved: the database only lets people update their own
-  // foods, and these shared rows have no owner, so an update would be refused.
+  const existing = await findMyBarcodeFood(userId, off.barcode);
+  if (existing) return existing;
+
+  // ignoreDuplicates: a double tap may already have inserted it.
   const { error } = await supabase
     .from('foods')
-    .upsert(row, { onConflict: 'barcode', ignoreDuplicates: true });
+    .upsert(row, { onConflict: 'barcode,created_by', ignoreDuplicates: true });
   if (error) throw error;
 
   const { data, error: readError } = await supabase
     .from('foods')
     .select('*')
     .eq('barcode', off.barcode)
+    .eq('created_by', userId)
     .single();
   if (readError) throw readError;
   return mapFoodRow(data);

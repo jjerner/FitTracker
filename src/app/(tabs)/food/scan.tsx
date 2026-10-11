@@ -3,22 +3,31 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { upsertOffFood } from '../../../lib/foods';
+import { useSession } from '../../../context/AuthProvider';
+import { findMyBarcodeFood, upsertOffFood } from '../../../lib/foods';
 import { getByBarcode } from '../../../lib/openFoodFacts';
 import { colors } from '../../../theme';
 
 export default function ScanBarcode() {
   const { meal } = useLocalSearchParams<{ meal?: string }>();
+  const { session } = useSession();
   const [permission, requestPermission] = useCameraPermissions();
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   async function handleScanned(barcode: string) {
-    if (isProcessing) return;
+    if (isProcessing || !session) return;
     setIsProcessing(true);
     setError(null);
 
     try {
+      // A food you already have (including a custom one for an unknown barcode) opens directly.
+      const mine = await findMyBarcodeFood(session.user.id, barcode);
+      if (mine) {
+        router.replace(`/(tabs)/food/food/${mine.id}${meal ? `?meal=${meal}` : ''}`);
+        return;
+      }
+
       const off = await getByBarcode(barcode);
 
       if (!off) {
@@ -26,7 +35,7 @@ export default function ScanBarcode() {
         return;
       }
 
-      const saved = await upsertOffFood(off);
+      const saved = await upsertOffFood(session.user.id, off);
       router.replace(`/(tabs)/food/food/${saved.id}${meal ? `?meal=${meal}` : ''}`);
     } catch {
       setError('Lookup failed. Point the camera at the barcode again.');

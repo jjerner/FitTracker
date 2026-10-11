@@ -26,15 +26,20 @@ create policy "Users can read shared foods, their own, and foods they logged"
     )
   );
 
--- The old insert check let OFF rows carry any created_by, so a user could plant a food that
--- shows up as someone else's own. OFF rows must now be ownerless and custom rows the caller's.
+-- Any user could insert an ownerless OFF row with made-up nutrition, and everyone scanning that
+-- barcode got it. Each user now keeps their own copy of the OFF foods they pick, so a bad row
+-- only affects the user who wrote it. Existing ownerless OFF rows stay readable (diary entries
+-- point at them) but nobody can add new ones.
 
 drop policy "Users can insert OFF-sourced foods" on public.foods;
 
-create policy "Users can insert OFF foods and their own custom foods"
+create policy "Users can insert their own OFF and custom foods"
   on public.foods for insert
   to authenticated
-  with check (
-    (source = 'off' and created_by is null)
-    or (source = 'custom' and created_by = auth.uid())
-  );
+  with check (source in ('off', 'custom') and created_by = auth.uid());
+
+-- One row per barcode per owner instead of per barcode overall, so another user's private
+-- custom food no longer blocks the barcode. A plain (non-partial) constraint so it can be an
+-- upsert target; NULL barcodes and the old ownerless rows don't collide.
+alter table public.foods drop constraint foods_barcode_key;
+alter table public.foods add constraint foods_barcode_owner_key unique (barcode, created_by);
