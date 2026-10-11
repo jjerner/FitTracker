@@ -139,11 +139,12 @@ For any new tables, write new numbered migration files and ask the user to run t
 
 ## Next session should
 
+0. **Do the audit follow-ups first (section 0c below).** The app is now shared with a few people and at least one other user is active, so the sharing-related items (A1, A2) are no longer "if we ever share". Check the new APK (build 52094a9e) was installed and the three on-device checks passed before starting.
 1. Everything up to and including the theme cleanup is sent via `eas update` and **confirmed working on the phone** (see the 2026-10-05 session list under Status). Last commit before this handover: 8055033. Ask the user if anything new came up.
 2. Roadmap steps 1–5 are done. Next up: beta round 2 (section 0b, bundle D first). After that: step 7 "bigger bets to discuss" (5.2 goal helper / 2.9 adaptive goal, 2.8 AI logging), plus smaller items: 1.5 edit past workouts, 1.9 OFF search endpoint, 1.10 email-verification code, 2.5 water, 2.6 favourites, 2.7 fiber/sugar display, 4.1 weight moving average, 5.6 dark mode (the theme groundwork is done). B5 Withings is deliberately later. Remember the migration workflow for 🗄 items: write `0012_*.sql`, ask the user to paste it into Supabase **before** shipping the JS.
 3. Don't touch the "On hold" items above unless the user brings them up.
 4. Remember: JS-only changes reach the phone with `eas update` (see Status → Go live); 🔁 items need a new APK build.
-5. Run it as `npx eas-cli@latest update --channel preview --environment preview --message "..." --non-interactive` (`--environment` is required in non-interactive mode). `runtimeVersion` (policy `appVersion`, so `1.0.0`) now lives at the top level of `app.json`; before, it sat under `android` and `eas update` rewrote `app.json` (duplicate CAMERA permission + a second `runtimeVersion`). Fixed in 9d522d2 and verified: no more rewrites. If `app.json` shows as modified after an update, `git checkout app.json`.
+5. Run it as `npx eas-cli@latest update --channel preview --environment preview --message "..." --non-interactive` (`--environment` is required in non-interactive mode). `runtimeVersion` (policy `fingerprint` since 2026-10-11; it was `appVersion`/`1.0.0`) now lives at the top level of `app.json`; before, it sat under `android` and `eas update` rewrote `app.json` (duplicate CAMERA permission + a second `runtimeVersion`). Fixed in 9d522d2 and verified: no more rewrites. If `app.json` shows as modified after an update, `git checkout app.json`.
 
 ## Proposed roadmap (for review — not approved yet)
 
@@ -184,6 +185,16 @@ Bundles: **A** (JS-only, one `eas update`): B1 + B2 + B3 + B4 — do first. **B*
 | C12 | **Usage dashboard (admin)** | For the owner only, to see how friends use the app once shared: sign-ups, daily/weekly active users, food entries and workouts logged per day, last seen per user, retention. Needs a decision: Supabase SQL views + an admin-only screen (admin flag/RLS) vs an external dashboard. Friends should be told what is counted (aggregates, not their food/workout contents). 🗄 | M–L |
 
 Bundle **D** (JS-only, one `eas update`): C1, C2, C3, C4, C5, C6. Later: C7 (after the pattern decision + migration), C8 + C11 (next native build), C12 (after sharing plans are clear). C9/C10 start as research, no code.
+
+### 0c. Audit follow-ups (code audit + review 2026-10-11, **do next session**)
+Left over from `/ponytail-audit` and `/ponytail-review`; the three must-fix items and the tests/runtime/dead-code items already shipped (commit e635209). The app is shared with a few people, so these now matter.
+| # | Item | Details | Effort |
+|---|---|---|---|
+| A1 | **Foods are visible and writable across users** 🗄 | `foods` select policy is `using (true)` (0002), so every user reads every other user's custom foods. Change to `created_by is null or created_by = auth.uid()` (check the SLV and OFF rows have `created_by` null so they stay visible). Needs `0014`. Check `getFoodById` and saved meals/log entries still resolve foods that another user created (a saved meal item's `foods(*)` join). | S–M |
+| A2 | **Any user can insert fake shared food rows** 🗄 | Insert policy allows `source = 'off'` with any numbers and no owner, so one user can poison the shared barcode cache for everyone (the first insert wins now that `upsertOffFood` skips existing barcodes). Options: only allow `source = 'custom'` inserts from the app and cache OFF foods through an Edge Function, or accept the risk and re-fetch from OFF at log time. Decide with the user. Same migration as A1. | M |
+| A3 | **`startWorkout` is two requests** | `lib/workouts.ts:startWorkout` creates the `workout_logs` row, then inserts the exercises. A failure between leaves an empty in-progress workout (discard fixes it). Fix: delete the log row if the second insert fails, like `saveMealFromEntries` does. | S |
+| A4 | **Workout date filter is a few hours off** | `getWorkoutDates` (`lib/progress.ts`) uses `started_at >= 'YYYY-MM-DD'`, which is UTC midnight, not local. No effect with the 365-day window; fix only if the window is ever shortened. | S |
+| A5 | **Tests for the two data fixes** | `upsertOffFood` and `saveTemplate` have no automated test (a mock would only echo the code). Do a manual check instead after each APK: pick/scan the same branded food twice, edit a routine and save it offline. Or add a test against a real Supabase test project. | S |
 
 ### 1. Known gaps in our own app (quick wins, high value)
 | # | Improvement | Why | Effort |
