@@ -49,17 +49,6 @@ function mapEntryRow(row: any): FoodLogEntry {
   };
 }
 
-export async function searchCachedFoods(query: string): Promise<Food[]> {
-  const { data, error } = await supabase
-    .from('foods')
-    .select('*')
-    .ilike('name', `%${query}%`)
-    .limit(20);
-
-  if (error) throw error;
-  return (data ?? []).map(mapFoodRow);
-}
-
 // Foods the user logged most recently, newest first, without repeats.
 export async function getRecentFoods(userId: string): Promise<Food[]> {
   const { data, error } = await supabase
@@ -137,30 +126,41 @@ export async function searchBasicFoods(query: string): Promise<Food[]> {
 }
 
 export async function upsertOffFood(off: OffFood): Promise<Food> {
-  const { data, error } = await supabase
-    .from('foods')
-    .upsert(
-      {
-        source: 'off',
-        barcode: off.barcode,
-        name: off.name,
-        brand: off.brand,
-        serving_size_g: off.servingSizeG,
-        serving_description: off.servingDescription,
-        calories_kcal: off.caloriesKcal,
-        protein_g: off.proteinG,
-        carbs_g: off.carbsG,
-        fat_g: off.fatG,
-        fiber_g: off.fiberG,
-        sugar_g: off.sugarG,
-        sodium_mg: off.sodiumMg,
-      },
-      { onConflict: 'barcode' }
-    )
-    .select()
-    .single();
+  const row = {
+    source: 'off',
+    barcode: off.barcode,
+    name: off.name,
+    brand: off.brand,
+    serving_size_g: off.servingSizeG,
+    serving_description: off.servingDescription,
+    calories_kcal: off.caloriesKcal,
+    protein_g: off.proteinG,
+    carbs_g: off.carbsG,
+    fat_g: off.fatG,
+    fiber_g: off.fiberG,
+    sugar_g: off.sugarG,
+    sodium_mg: off.sodiumMg,
+  };
 
+  if (off.barcode == null) {
+    const { data, error } = await supabase.from('foods').insert(row).select().single();
+    if (error) throw error;
+    return mapFoodRow(data);
+  }
+
+  // Skip if the barcode is already saved: the database only lets people update their own
+  // foods, and these shared rows have no owner, so an update would be refused.
+  const { error } = await supabase
+    .from('foods')
+    .upsert(row, { onConflict: 'barcode', ignoreDuplicates: true });
   if (error) throw error;
+
+  const { data, error: readError } = await supabase
+    .from('foods')
+    .select('*')
+    .eq('barcode', off.barcode)
+    .single();
+  if (readError) throw readError;
   return mapFoodRow(data);
 }
 

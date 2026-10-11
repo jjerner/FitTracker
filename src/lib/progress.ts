@@ -58,35 +58,27 @@ export async function removeTrackedExercise(userId: string, exerciseId: string):
   if (error) throw error;
 }
 
-// Sums diary entries per day. Days with nothing logged are left out.
+// Daily totals from the `daily_nutrition` view (migration 0013): one row per day, so the
+// 1000-row limit on a request is never reached. Days with nothing logged are left out.
 export async function getDailyNutrition(
   userId: string,
   sinceDate: string
 ): Promise<DailyNutrition[]> {
   const { data, error } = await supabase
-    .from('food_log_entries')
+    .from('daily_nutrition')
     .select('logged_date, calories_kcal, protein_g, carbs_g, fat_g')
     .eq('user_id', userId)
-    .gte('logged_date', sinceDate);
+    .gte('logged_date', sinceDate)
+    .order('logged_date', { ascending: true });
 
   if (error) throw error;
-
-  const totals = new Map<string, DailyNutrition>();
-  for (const row of data ?? []) {
-    const day = totals.get(row.logged_date) ?? {
-      date: row.logged_date,
-      caloriesKcal: 0,
-      proteinG: 0,
-      carbsG: 0,
-      fatG: 0,
-    };
-    day.caloriesKcal += Number(row.calories_kcal);
-    day.proteinG += Number(row.protein_g);
-    day.carbsG += Number(row.carbs_g);
-    day.fatG += Number(row.fat_g);
-    totals.set(row.logged_date, day);
-  }
-  return [...totals.values()].sort((a, b) => a.date.localeCompare(b.date));
+  return (data ?? []).map((row) => ({
+    date: row.logged_date,
+    caloriesKcal: Number(row.calories_kcal),
+    proteinG: Number(row.protein_g),
+    carbsG: Number(row.carbs_g),
+    fatG: Number(row.fat_g),
+  }));
 }
 
 // Local dates ("YYYY-MM-DD") of completed workouts, oldest first. One entry

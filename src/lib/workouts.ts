@@ -125,7 +125,8 @@ function mapTemplateRow(row: any): WorkoutTemplate {
 }
 
 // Creates the template if `id` is null, otherwise updates it. Exercises are
-// replaced wholesale — simpler than diffing, and templates are small.
+// replaced wholesale — simpler than diffing, and templates are small. The new rows are
+// inserted before the old ones are deleted, so a lost connection never leaves it empty.
 export async function saveTemplate(input: {
   id: string | null;
   userId: string;
@@ -133,6 +134,7 @@ export async function saveTemplate(input: {
   exercises: WorkoutTemplateExercise[];
 }): Promise<string> {
   let templateId = input.id;
+  let oldRowIds: string[] = [];
 
   if (templateId) {
     const { error } = await supabase
@@ -141,11 +143,12 @@ export async function saveTemplate(input: {
       .eq('id', templateId);
     if (error) throw error;
 
-    const { error: deleteError } = await supabase
+    const { data: oldRows, error: oldError } = await supabase
       .from('workout_template_exercises')
-      .delete()
+      .select('id')
       .eq('template_id', templateId);
-    if (deleteError) throw deleteError;
+    if (oldError) throw oldError;
+    oldRowIds = (oldRows ?? []).map((row) => row.id);
   } else {
     const { data, error } = await supabase
       .from('workout_templates')
@@ -167,6 +170,14 @@ export async function saveTemplate(input: {
         target_weight_kg: te.targetWeightKg,
       }))
     );
+    if (error) throw error;
+  }
+
+  if (oldRowIds.length > 0) {
+    const { error } = await supabase
+      .from('workout_template_exercises')
+      .delete()
+      .in('id', oldRowIds);
     if (error) throw error;
   }
 
