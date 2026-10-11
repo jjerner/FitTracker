@@ -15,6 +15,11 @@ const nutella = {
   },
 };
 
+const realFetch = globalThis.fetch;
+afterEach(() => {
+  globalThis.fetch = realFetch;
+});
+
 function mockFetch(body: unknown, ok = true) {
   const fetchMock = jest.fn().mockResolvedValue({ ok, json: async () => body });
   globalThis.fetch = fetchMock as unknown as typeof fetch;
@@ -22,16 +27,17 @@ function mockFetch(body: unknown, ok = true) {
 }
 
 describe('searchByName', () => {
-  it('queries the search service with the same fields and page size', async () => {
+  it('queries the search service in Swedish and English', async () => {
     const fetchMock = mockFetch({ hits: [] });
     await searchByName('peanut butter');
 
     const url = new URL(fetchMock.mock.calls[0][0]);
     expect(url.origin + url.pathname).toBe('https://search.openfoodfacts.org/search');
     expect(url.searchParams.get('q')).toBe('peanut butter');
+    expect(url.searchParams.get('langs')).toBe('sv,en');
     expect(url.searchParams.get('page_size')).toBe('20');
     expect(url.searchParams.get('fields')).toBe(
-      'code,product_name,generic_name,brands,serving_size,nutriments'
+      'code,product_name,product_name_sv,product_name_en,generic_name,generic_name_sv,generic_name_en,brands,serving_size,nutriments'
     );
   });
 
@@ -41,6 +47,14 @@ describe('searchByName', () => {
 
     const url = new URL(fetchMock.mock.calls[0][0]);
     expect(url.searchParams.get('q')).toBe('coca\\-cola\\: zero\\!');
+  });
+
+  it('keeps AND/OR/NOT from acting as operators', async () => {
+    const fetchMock = mockFetch({ hits: [] });
+    await searchByName('Fish AND Chips');
+
+    const url = new URL(fetchMock.mock.calls[0][0]);
+    expect(url.searchParams.get('q')).toBe('fish and chips');
   });
 
   it('maps hits to foods', async () => {
@@ -80,11 +94,12 @@ describe('searchByName', () => {
       hits: [
         { ...nutella, nutriments: {} },
         { ...nutella, product_name: '', generic_name: 'Hazelnut spread' },
+        { ...nutella, product_name: undefined, product_name_sv: 'Nötkräm' },
         { ...nutella, product_name: undefined, generic_name: undefined },
       ],
     });
     const names = (await searchByName('spread')).map((f) => f.name);
-    expect(names).toEqual(['Hazelnut spread', 'Unknown food']);
+    expect(names).toEqual(['Hazelnut spread', 'Nötkräm', 'Unknown food']);
   });
 
   it('throws on an HTTP failure or an error response', async () => {

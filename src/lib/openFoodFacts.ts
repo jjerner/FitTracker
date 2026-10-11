@@ -16,7 +16,18 @@ export type OffFood = {
 const BASE_URL = 'https://world.openfoodfacts.org';
 // Search-a-licious, the newer Open Food Facts search service.
 const SEARCH_URL = 'https://search.openfoodfacts.org/search';
-const SEARCH_FIELDS = 'code,product_name,generic_name,brands,serving_size,nutriments';
+// Names come back per language: product_name is the product's main language,
+// product_name_<lang> the others. Match Swedish and English names, like the old
+// search that matched every language.
+const SEARCH_LANGS = ['sv', 'en'];
+const NAME_FIELDS = ['product_name', 'generic_name'];
+const SEARCH_FIELDS = [
+  'code',
+  ...NAME_FIELDS.flatMap((f) => [f, ...SEARCH_LANGS.map((l) => `${f}_${l}`)]),
+  'brands',
+  'serving_size',
+  'nutriments',
+].join(',');
 
 function parseServingSizeG(servingSize: string | undefined): number | null {
   if (!servingSize) return null;
@@ -32,9 +43,21 @@ function parseBrands(brands: unknown): string | null {
 }
 
 // The search service parses q as Lucene, so escape its operators to search the
-// typed text literally, like the old full-text search did.
+// typed text literally, like the old full-text search did. Lowercasing keeps
+// AND/OR/NOT from acting as operators; matching ignores case anyway.
 function escapeLucene(text: string): string {
-  return text.replace(/[+\-!(){}[\]^"~*?:\\/&|]/g, '\\$&');
+  return text.toLowerCase().replace(/[+\-!(){}[\]^"~*?:\\/&|]/g, '\\$&');
+}
+
+// First non-empty name, main language first, then the search languages.
+function pickName(product: any): string {
+  for (const field of NAME_FIELDS) {
+    for (const key of [field, ...SEARCH_LANGS.map((l) => `${field}_${l}`)]) {
+      const value = product[key];
+      if (typeof value === 'string' && value.trim() !== '') return value;
+    }
+  }
+  return 'Unknown food';
 }
 
 function mapProduct(product: any): OffFood | null {
@@ -43,7 +66,7 @@ function mapProduct(product: any): OffFood | null {
 
   return {
     barcode: product.code ?? null,
-    name: product.product_name || product.generic_name || 'Unknown food',
+    name: pickName(product),
     brand: parseBrands(product.brands),
     servingSizeG: parseServingSizeG(product.serving_size),
     servingDescription: product.serving_size ?? null,
@@ -60,7 +83,7 @@ function mapProduct(product: any): OffFood | null {
 export async function searchByName(query: string): Promise<OffFood[]> {
   const url = `${SEARCH_URL}?q=${encodeURIComponent(
     escapeLucene(query.trim())
-  )}&page_size=20&fields=${SEARCH_FIELDS}`;
+  )}&langs=${SEARCH_LANGS.join(',')}&page_size=20&fields=${SEARCH_FIELDS}`;
 
   const response = await fetch(url);
   if (!response.ok) throw new Error('Open Food Facts search failed');
