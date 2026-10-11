@@ -1,6 +1,7 @@
 import type { Session } from '@supabase/supabase-js';
 import { createContext, useContext, useEffect, useState, type PropsWithChildren } from 'react';
 
+import { cancelFoodReminders } from '../lib/reminders';
 import { supabase } from '../lib/supabase';
 
 type AuthContextValue = {
@@ -20,8 +21,10 @@ export function AuthProvider({ children }: PropsWithChildren) {
       setIsLoading(false);
     });
 
-    const { data: subscription } = supabase.auth.onAuthStateChange((_event, newSession) => {
+    const { data: subscription } = supabase.auth.onAuthStateChange((event, newSession) => {
       setSession(newSession);
+      // Covers every sign-out (button, expired or revoked session), and only once it has happened.
+      if (event === 'SIGNED_OUT') cancelFoodReminders().catch(() => {});
     });
 
     return () => subscription.subscription.unsubscribe();

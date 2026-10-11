@@ -53,6 +53,8 @@ export async function refreshFoodReminders(): Promise<void> {
   if (!enabled || !(await Notifications.getPermissionsAsync()).granted) return;
 
   const loggedToday = await hasLoggedFoodToday(userId);
+  // Signed out while this was running: don't schedule after the sign-out cancelled everything.
+  if (!(await supabase.auth.getSession()).data.session) return;
   const now = new Date();
   for (let i = 0; i < DAYS_AHEAD; i++) {
     if (i === 0 && loggedToday) continue;

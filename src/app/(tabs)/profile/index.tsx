@@ -18,7 +18,7 @@ import { useDisplayName } from '../../../hooks/useDisplayName';
 import { useDefaultRest } from '../../../hooks/useDefaultRest';
 import { useFoodReminder } from '../../../hooks/useFoodReminder';
 import { useRestVibration } from '../../../hooks/useRestVibration';
-import { signOut } from '../../../lib/profile';
+import { supabase } from '../../../lib/supabase';
 import { colors, radius, spacing } from '../../../theme';
 
 export default function Profile() {
@@ -27,6 +27,7 @@ export default function Profile() {
   const restVibration = useRestVibration();
   const foodReminder = useFoodReminder();
   const defaultRest = useDefaultRest();
+  const [signingOut, setSigningOut] = useState(false);
 
   async function handleReminderToggle(enabled: boolean) {
     const allowed = await foodReminder.setEnabled(enabled);
@@ -36,9 +37,11 @@ export default function Profile() {
   }
 
   async function handleSignOut() {
-    try {
-      await signOut();
-    } catch {
+    setSigningOut(true);
+    const { error } = await supabase.auth.signOut();
+    // On success this screen unmounts, so only reset on failure.
+    if (error) {
+      setSigningOut(false);
       Alert.alert('Sign out failed', 'Check your connection and try again.');
     }
   }
@@ -122,7 +125,7 @@ export default function Profile() {
         </View>
       ) : null}
 
-      <Pressable style={styles.signOutButton} onPress={handleSignOut}>
+      <Pressable style={styles.signOutButton} onPress={handleSignOut} disabled={signingOut}>
         <Text style={styles.signOutButtonText}>Sign Out</Text>
       </Pressable>
     </ScrollView>
