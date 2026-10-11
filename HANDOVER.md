@@ -178,7 +178,7 @@ Bundles: **A** (JS-only, one `eas update`): B1 + B2 + B3 + B4 — do first. **B*
 | C5 | **Remove redundant "+"** | In the "Log food" and "New routine" buttons. | ✅ done |
 | C6 | **Create custom exercise from "Add exercise"** | During an ongoing workout; extends `ExercisePicker`. | ✅ done |
 | C7 | **Saved meal as one row + meal cards** | **Decided: per-meal card** with kcal + macros highlights, tap expands inline; saved meals logged as a group row (the accordion idea is dropped). Likely 🗄 `0012` (group id on `food_log_entries`). Extends 2.2 / 2.4. | M — ✅ coded, shipped 2026-10-10 |
-| C8 | **Missing-meal reminder** | **Decided: 20:30.** One notification if any of breakfast / lunch / dinner has nothing logged for today (names the missing ones); snacks ignored. Extends B6 / 5.4 (same schedule-ahead + reschedule-on-log approach). 🔁 | M |
+| C8 | **Missing-meal reminder** | **Decided: 20:30.** One notification if any of breakfast / lunch / dinner has nothing logged for today (names the missing ones); snacks ignored. Extends B6 / 5.4 (same schedule-ahead + reschedule-on-log approach). 🔁 | M — ✅ coded: own Profile toggle (off by default), `meal-reminder-*` notifications in `src/lib/reminders.ts`, text from `src/lib/missingMeals.ts`. Ships via `eas update` once the new APK is installed. |
 | C9 | **Unilateral vs bilateral exercises** | **Research + plan first.** 🗄 | M–L |
 | C10 | **Default gallery of training programs** | **Research UX + which programs first.** 🗄 | L |
 | C11 | **Rename app + new logo** | Dumbbell with a chicken on one side, broccoli on the other. 🔁 new build; extends 1.7. | S–M — ✅ decided: name **Plucky**, mascot logo (chicken with broccoli hat); assets + app.json done, needs next APK build (slug and package id unchanged on purpose) |

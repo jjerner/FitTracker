@@ -48,3 +48,14 @@ export async function setFoodReminder(settings: FoodReminderSettings): Promise<v
     [FOOD_REMINDER_MINUTES_KEY, String(settings.minutes)],
   ]);
 }
+
+// 20:30 reminder naming any of breakfast / lunch / dinner not logged today.
+const MEAL_REMINDER_KEY = 'settings.mealReminderEnabled';
+
+export async function getMealReminder(): Promise<boolean> {
+  return (await AsyncStorage.getItem(MEAL_REMINDER_KEY)) === 'on';
+}
+
+export async function setMealReminder(enabled: boolean): Promise<void> {
+  await AsyncStorage.setItem(MEAL_REMINDER_KEY, enabled ? 'on' : 'off');
+}
