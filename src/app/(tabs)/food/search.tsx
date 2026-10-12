@@ -12,7 +12,13 @@ import {
 } from 'react-native';
 
 import { useSession } from '../../../context/AuthProvider';
-import { getRecentFoods, searchBasicFoods, searchMyFoods, upsertOffFood } from '../../../lib/foods';
+import {
+  getFavouriteFoods,
+  getRecentFoods,
+  searchBasicFoods,
+  searchMyFoods,
+  upsertOffFood,
+} from '../../../lib/foods';
 import { searchByName, type OffFood } from '../../../lib/openFoodFacts';
 import type { Food, MealType } from '../../../types/domain';
 import { colors } from '../../../theme';
@@ -28,6 +34,11 @@ export default function FoodSearch() {
   const { data: recentFoods } = useQuery({
     queryKey: ['recentFoods', session?.user.id],
     queryFn: () => getRecentFoods(session?.user.id as string),
+    enabled: !!session,
+  });
+  const { data: favouriteFoods } = useQuery({
+    queryKey: ['favouriteFoods', session?.user.id],
+    queryFn: () => getFavouriteFoods(session?.user.id as string),
     enabled: !!session,
   });
   const [query, setQuery] = useState('');
@@ -67,13 +78,25 @@ export default function FoodSearch() {
   }, [query, session]);
 
   const hasQuery = query.trim().length >= 2;
-  const myBarcodes = new Set(myFoods.map((f) => f.barcode).filter(Boolean));
-  const myIds = new Set(myFoods.map((f) => f.id));
+  // Same rule as the database search: every word somewhere in the name.
+  const words = query.toLowerCase().split(/\s+/).filter(Boolean);
+  const favourites = (favouriteFoods ?? []).filter((f) =>
+    words.every((w) => f.name.toLowerCase().includes(w))
+  );
+  const favouriteIds = new Set(favourites.map((f) => f.id));
+  const shownMyFoods = myFoods.filter((f) => !favouriteIds.has(f.id));
+  const myBarcodes = new Set([...favourites, ...myFoods].map((f) => f.barcode).filter(Boolean));
+  const myIds = new Set([...favouriteIds, ...myFoods.map((f) => f.id)]);
+  const favouritesSection = {
+    title: 'Favourites',
+    data: favourites.map((food): Result => ({ kind: 'db', food })),
+  };
   const sections = hasQuery
     ? [
+        favouritesSection,
         {
           title: 'My foods',
-          data: myFoods.map((food): Result => ({ kind: 'db', food })),
+          data: shownMyFoods.map((food): Result => ({ kind: 'db', food })),
         },
         {
           title: 'Basic foods',
@@ -89,9 +112,12 @@ export default function FoodSearch() {
         },
       ].filter((section) => section.data.length > 0)
     : [
+        favouritesSection,
         {
           title: 'Recent',
-          data: (recentFoods ?? []).map((food): Result => ({ kind: 'db', food })),
+          data: (recentFoods ?? [])
+            .filter((f) => !favouriteIds.has(f.id))
+            .map((food): Result => ({ kind: 'db', food })),
         },
       ].filter((section) => section.data.length > 0);
 

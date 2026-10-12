@@ -18,8 +18,10 @@ import {
   defaultMealForNow,
   deleteFoodServing,
   getFoodById,
+  getFavouriteFoods,
   getFoodServings,
   logFoodEntry,
+  setFavouriteFood,
   updateFoodLogEntry,
   updateFoodServing,
 } from '../../../../lib/foods';
@@ -65,6 +67,23 @@ export default function FoodDetail() {
   });
 
   // The user's own saved servings for this food.
+  const { data: favourites } = useQuery({
+    queryKey: ['favouriteFoods', userId],
+    queryFn: () => getFavouriteFoods(userId as string),
+    enabled: !!userId,
+  });
+  const isFavourite = !!favourites?.some((f) => f.id === foodId);
+
+  async function toggleFavourite() {
+    try {
+      await setFavouriteFood(userId as string, foodId as string, !isFavourite);
+    } catch {
+      Alert.alert('Could not save', 'Check your connection and try again.');
+      return;
+    }
+    await queryClient.invalidateQueries({ queryKey: ['favouriteFoods', userId] });
+  }
+
   const { data: myServings } = useQuery({
     queryKey: ['foodServings', userId, foodId],
     queryFn: () => getFoodServings(userId as string, foodId as string),
@@ -236,7 +255,17 @@ export default function FoodDetail() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.name}>{food.name}</Text>
+      <View style={styles.nameRow}>
+        <Text style={[styles.name, styles.nameText]}>{food.name}</Text>
+        <Pressable
+          onPress={toggleFavourite}
+          hitSlop={12}
+          accessibilityRole="button"
+          accessibilityLabel={isFavourite ? 'Remove from favourites' : 'Add to favourites'}
+        >
+          <Text style={[styles.star, isFavourite && styles.starOn]}>{isFavourite ? '★' : '☆'}</Text>
+        </Pressable>
+      </View>
       {food.brand ? <Text style={styles.brand}>{food.brand}</Text> : null}
 
       {chips.length > 0 ? (
@@ -365,6 +394,10 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background, padding: 16 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   name: { fontSize: 20, fontWeight: '700' },
+  nameRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
+  nameText: { flex: 1 },
+  star: { fontSize: 26, color: colors.subtle },
+  starOn: { color: colors.streak },
   brand: { fontSize: 14, color: colors.muted, marginTop: 2, marginBottom: 16 },
   label: { fontSize: 14, fontWeight: '600', marginTop: 16, marginBottom: 8 },
   linkRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 16, marginTop: 12 },

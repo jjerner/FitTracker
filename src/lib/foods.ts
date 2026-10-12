@@ -67,7 +67,28 @@ export async function getRecentFoods(userId: string): Promise<Food[]> {
   return [...byId.values()].slice(0, 15);
 }
 
-// Foods this user has logged (most recent first), then their custom foods, matching the query.
+// Foods this user has starred, oldest star first (migration 0015).
+export async function getFavouriteFoods(userId: string): Promise<Food[]> {
+  const { data, error } = await supabase
+    .from('favourite_foods')
+    .select('food_id, foods(*)')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: true });
+
+  if (error) throw error;
+  return (data ?? []).flatMap((row) => (row.foods ? [mapFoodRow(row.foods)] : []));
+}
+
+export async function setFavouriteFood(userId: string, foodId: string, favourite: boolean) {
+  const { error } = favourite
+    ? await supabase
+        .from('favourite_foods')
+        .upsert({ user_id: userId, food_id: foodId }, { ignoreDuplicates: true })
+    : await supabase.from('favourite_foods').delete().eq('user_id', userId).eq('food_id', foodId);
+  if (error) throw error;
+}
+
+// Foods this user has logged (most logged first), then their custom foods, matching the query.
 export async function searchMyFoods(userId: string, query: string): Promise<Food[]> {
   // Every word must match, in any order ("kyckling ris" finds "Kyckling med ris").
   const words = query.split(/\s+/).filter(Boolean);
