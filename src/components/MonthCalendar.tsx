@@ -110,7 +110,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginTop: 8,
   },
-  monthTitle: { fontSize: 15, fontWeight: '600' },
+  monthTitle: { fontSize: 15, fontWeight: '600', color: colors.text },
   monthArrow: { fontSize: 24, color: colors.primary, paddingHorizontal: 8 },
   monthArrowDisabled: { color: colors.disabled },
   grid: { flexDirection: 'row', flexWrap: 'wrap' },

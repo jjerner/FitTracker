@@ -156,13 +156,14 @@ export default function QuickAdd() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   content: { padding: 16 },
-  label: { fontSize: 14, fontWeight: '600', marginTop: 16, marginBottom: 8 },
+  label: { fontSize: 14, fontWeight: '600', marginTop: 16, marginBottom: 8, color: colors.text },
   input: {
     borderWidth: 1,
     borderColor: colors.borderStrong,
     borderRadius: 8,
     padding: 14,
     fontSize: 16,
+    color: colors.text,
   },
   macroRow: { flexDirection: 'row', gap: 8 },
   macro: { flex: 1 },

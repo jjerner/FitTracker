@@ -70,6 +70,6 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   row: { paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.border },
-  name: { fontSize: 15, fontWeight: '500' },
+  name: { fontSize: 15, fontWeight: '500', color: colors.text },
   meta: { fontSize: 13, color: colors.muted, marginTop: 2 },
 });

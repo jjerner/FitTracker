@@ -78,7 +78,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.black },
   camera: { flex: 1 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24, gap: 16 },
-  permissionText: { textAlign: 'center', fontSize: 16 },
+  permissionText: { textAlign: 'center', fontSize: 16, color: colors.text },
   permissionButton: {
     backgroundColor: colors.primary,
     borderRadius: 8,

@@ -45,7 +45,7 @@ export default function Signup() {
     return (
       <View style={styles.container}>
         <Text style={styles.title}>Check your email</Text>
-        <Text>We sent a confirmation link to {email}. Confirm it, then log in.</Text>
+        <Text style={styles.message}>We sent a confirmation link to {email}. Confirm it, then log in.</Text>
         <Link href="/(auth)/login" style={styles.link}>
           <Text>Back to log in</Text>
         </Link>
@@ -105,6 +105,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     marginBottom: 24,
     textAlign: 'center',
+    color: colors.text,
   },
   button: {
     backgroundColor: colors.primary,
@@ -125,5 +126,7 @@ const styles = StyleSheet.create({
   link: {
     marginTop: 20,
     textAlign: 'center',
+    color: colors.text,
   },
+  message: { color: colors.text },
 });

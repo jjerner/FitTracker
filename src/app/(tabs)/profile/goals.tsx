@@ -114,15 +114,16 @@ function GoalsForm({
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background, padding: 16 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  label: { fontSize: 14, fontWeight: '600', marginTop: 12, marginBottom: 8 },
+  label: { fontSize: 14, fontWeight: '600', marginTop: 12, marginBottom: 8, color: colors.text },
   input: {
     borderWidth: 1,
     borderColor: colors.borderStrong,
     borderRadius: 8,
     padding: 14,
     fontSize: 16,
+    color: colors.text,
   },
-  calories: { fontSize: 20, fontWeight: '700' },
+  calories: { fontSize: 20, fontWeight: '700', color: colors.text },
   hint: { fontSize: 13, color: colors.muted, marginTop: 4 },
   saveButton: {
     backgroundColor: colors.primary,

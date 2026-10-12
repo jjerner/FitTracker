@@ -314,13 +314,14 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   content: { padding: 16, paddingBottom: 40 },
-  label: { fontSize: 14, fontWeight: '600', marginTop: 16, marginBottom: 8 },
+  label: { fontSize: 14, fontWeight: '600', marginTop: 16, marginBottom: 8, color: colors.text },
   input: {
     borderWidth: 1,
     borderColor: colors.borderStrong,
     borderRadius: 8,
     padding: 14,
     fontSize: 16,
+    color: colors.text,
   },
   emptyText: { color: colors.subtle, fontSize: 14 },
   exerciseCard: {
@@ -330,7 +331,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   exerciseHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  exerciseName: { fontSize: 15, fontWeight: '600', flex: 1 },
+  exerciseName: { fontSize: 15, fontWeight: '600', flex: 1, color: colors.text },
   removeText: { color: colors.danger, marginLeft: 8 },
   moveButton: { paddingHorizontal: 8, paddingVertical: 2 },
   moveText: { fontSize: 18, color: colors.primary },
@@ -346,6 +347,7 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     padding: 8,
     fontSize: 15,
+    color: colors.text,
   },
   secondaryButton: {
     backgroundColor: colors.surface,
@@ -354,7 +356,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 8,
   },
-  secondaryButtonText: { fontSize: 15, fontWeight: '600' },
+  secondaryButtonText: { fontSize: 15, fontWeight: '600', color: colors.text },
   error: { color: colors.danger, marginTop: 12 },
   saveButton: {
     backgroundColor: colors.primary,

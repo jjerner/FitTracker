@@ -138,7 +138,7 @@ export default function SavedMeals() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background, padding: 16 },
-  label: { fontSize: 14, fontWeight: '600', marginBottom: 8 },
+  label: { fontSize: 14, fontWeight: '600', marginBottom: 8, color: colors.text },
   loading: { paddingVertical: 40 },
   empty: { color: colors.muted, fontSize: 14, paddingVertical: 24 },
   mealRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 12 },
@@ -162,7 +162,7 @@ const styles = StyleSheet.create({
   },
   rowTap: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 12 },
   rowInfo: { flex: 1 },
-  rowName: { fontSize: 15, fontWeight: '500' },
+  rowName: { fontSize: 15, fontWeight: '500', color: colors.text },
   rowSub: { fontSize: 13, color: colors.muted },
   add: { fontSize: 15, color: colors.primary, fontWeight: '600' },
   delete: { fontSize: 16, color: colors.subtle, paddingHorizontal: 4 },

@@ -175,11 +175,11 @@ const styles = StyleSheet.create({
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   content: { padding: 16, gap: 12 },
   card: { backgroundColor: colors.background, borderRadius: 12, padding: 16, gap: 8, marginBottom: 4 },
-  cardTitle: { fontSize: 16, fontWeight: '600' },
+  cardTitle: { fontSize: 16, fontWeight: '600', color: colors.text },
   cardSubtitle: { fontSize: 13, color: colors.muted },
   recordsRow: { flexDirection: 'row', gap: 12 },
   record: { flex: 1, backgroundColor: colors.surface, borderRadius: 8, padding: 12 },
-  recordValue: { fontSize: 16, fontWeight: '700' },
+  recordValue: { fontSize: 16, fontWeight: '700', color: colors.text },
   recordLabel: { fontSize: 12, color: colors.muted, marginTop: 2 },
   toggleRow: { flexDirection: 'row', gap: 8 },
   toggle: {
@@ -195,6 +195,6 @@ const styles = StyleSheet.create({
   empty: { fontSize: 14, color: colors.muted, paddingVertical: 16 },
   axisLabel: { fontSize: 10, color: colors.muted },
   session: { backgroundColor: colors.background, borderRadius: 12, padding: 16, gap: 4 },
-  sessionDate: { fontSize: 15, fontWeight: '600', marginBottom: 4 },
+  sessionDate: { fontSize: 15, fontWeight: '600', marginBottom: 4, color: colors.text },
   setText: { fontSize: 14, color: colors.textSecondary },
 });

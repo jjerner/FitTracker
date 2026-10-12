@@ -142,6 +142,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     marginBottom: 16,
     textAlign: 'center',
+    color: colors.text,
   },
   info: {
     fontSize: 15,
@@ -168,5 +169,6 @@ const styles = StyleSheet.create({
   link: {
     marginTop: 20,
     textAlign: 'center',
+    color: colors.text,
   },
 });

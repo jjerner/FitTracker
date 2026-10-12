@@ -394,13 +394,13 @@ export default function FoodDetail() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background, padding: 16 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  name: { fontSize: 20, fontWeight: '700' },
+  name: { fontSize: 20, fontWeight: '700', color: colors.text },
   nameRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
   nameText: { flex: 1 },
   star: { fontSize: 26, color: colors.subtle },
   starOn: { color: colors.streak },
   brand: { fontSize: 14, color: colors.muted, marginTop: 2, marginBottom: 16 },
-  label: { fontSize: 14, fontWeight: '600', marginTop: 16, marginBottom: 8 },
+  label: { fontSize: 14, fontWeight: '600', marginTop: 16, marginBottom: 8, color: colors.text },
   linkRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 16, marginTop: 12 },
   servingLink: { color: colors.primary, fontSize: 14 },
   servingLinkMuted: { color: colors.muted, fontSize: 14 },
@@ -410,6 +410,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 14,
     fontSize: 16,
+    color: colors.text,
   },
   mealRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   mealChip: {
@@ -429,7 +430,7 @@ const styles = StyleSheet.create({
     marginTop: 24,
     alignItems: 'center',
   },
-  previewCalories: { fontSize: 20, fontWeight: '700' },
+  previewCalories: { fontSize: 20, fontWeight: '700', color: colors.text },
   previewMacros: { fontSize: 14, color: colors.textSecondary, marginTop: 4 },
   saveButton: {
     backgroundColor: colors.primary,

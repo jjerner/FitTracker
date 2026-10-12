@@ -87,10 +87,10 @@ const styles = StyleSheet.create({
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   content: { padding: 16, paddingBottom: 40, gap: 16 },
   card: { backgroundColor: colors.surface, borderRadius: 8, padding: 16 },
-  title: { fontSize: 17, fontWeight: '600' },
+  title: { fontSize: 17, fontWeight: '600', color: colors.text },
   meta: { fontSize: 13, color: colors.muted, marginTop: 2 },
   routine: { marginTop: 12 },
-  routineName: { fontSize: 15, fontWeight: '600', marginBottom: 2 },
+  routineName: { fontSize: 15, fontWeight: '600', marginBottom: 2, color: colors.text },
   exercise: { fontSize: 14, color: colors.textSecondary },
   addButton: {
     backgroundColor: colors.primary,

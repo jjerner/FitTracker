@@ -89,6 +89,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     marginBottom: 32,
     textAlign: 'center',
+    color: colors.text,
   },
   button: {
     backgroundColor: colors.primary,
@@ -109,5 +110,6 @@ const styles = StyleSheet.create({
   link: {
     marginTop: 20,
     textAlign: 'center',
+    color: colors.text,
   },
 });

@@ -88,11 +88,11 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     gap: 12,
   },
-  title: { fontSize: 20, fontWeight: '700', flex: 1 },
+  title: { fontSize: 20, fontWeight: '700', flex: 1, color: colors.text },
   link: { fontSize: 16, color: colors.primary },
   empty: { color: colors.subtle, fontSize: 14, paddingVertical: 12 },
   row: { paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.border },
-  name: { fontSize: 15, fontWeight: '500' },
+  name: { fontSize: 15, fontWeight: '500', color: colors.text },
   meta: { fontSize: 13, color: colors.muted, marginTop: 2 },
   showAllButton: {
     backgroundColor: colors.surface,
@@ -101,5 +101,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 12,
   },
-  showAllText: { fontSize: 15, fontWeight: '600' },
+  showAllText: { fontSize: 15, fontWeight: '600', color: colors.text },
 });

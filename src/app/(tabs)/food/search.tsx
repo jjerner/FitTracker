@@ -225,9 +225,10 @@ const styles = StyleSheet.create({
     padding: 14,
     fontSize: 16,
     marginBottom: 12,
+    color: colors.text,
   },
   scanButton: {
-    backgroundColor: colors.text,
+    backgroundColor: colors.black,
     borderRadius: 8,
     padding: 12,
     alignItems: 'center',
@@ -263,6 +264,6 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.border,
   },
   resultInfo: { flex: 1, marginRight: 8 },
-  resultName: { fontSize: 15, fontWeight: '500' },
+  resultName: { fontSize: 15, fontWeight: '500', color: colors.text },
   resultBrand: { fontSize: 13, color: colors.muted },
   resultCalories: { fontSize: 13, color: colors.textSecondary },});
