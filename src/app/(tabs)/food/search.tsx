@@ -50,11 +50,12 @@ export default function FoodSearch() {
   const [selectingKey, setSelectingKey] = useState<string | null>(null);
 
   useEffect(() => {
-    if (query.trim().length < 2 || !session) return;
-
+    const willSearch = query.trim().length >= 2 && !!session;
     // Debounced search: flip loading state immediately, fetch after the delay below.
+    // Also turn it off when the box is cleared, since the cleanup cancels the pending fetch.
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    setIsSearching(true);
+    setIsSearching(willSearch);
+    if (!willSearch) return;
     setError(null);
     const timeout = setTimeout(() => {
       // Any source can fail on its own without hiding the others' results.
