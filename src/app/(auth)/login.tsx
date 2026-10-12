@@ -22,7 +22,10 @@ export default function Login() {
   async function handleLogin() {
     setError(null);
     setIsSubmitting(true);
-    const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email: email.trim(),
+      password,
+    });
     setIsSubmitting(false);
 
     if (signInError) {

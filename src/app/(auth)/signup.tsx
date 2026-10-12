@@ -7,7 +7,6 @@ import {
   Pressable,
   StyleSheet,
   Text,
-  View,
 } from 'react-native';
 
 import { LabeledInput } from '../../components/LabeledInput';
@@ -20,11 +19,15 @@ export default function Signup() {
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [confirmationSent, setConfirmationSent] = useState(false);
+  const [code, setCode] = useState('');
 
   async function handleSignup() {
     setError(null);
     setIsSubmitting(true);
-    const { data, error: signUpError } = await supabase.auth.signUp({ email, password });
+    const { data, error: signUpError } = await supabase.auth.signUp({
+      email: email.trim(),
+      password,
+    });
     setIsSubmitting(false);
 
     if (signUpError) {
@@ -41,15 +44,68 @@ export default function Signup() {
     setConfirmationSent(true);
   }
 
+  async function handleVerify() {
+    setError(null);
+    setIsSubmitting(true);
+    // A valid code confirms the email and signs the user in.
+    const { error: verifyError } = await supabase.auth.verifyOtp({
+      email: email.trim(),
+      token: code.trim(),
+      type: 'signup',
+    });
+    setIsSubmitting(false);
+    if (verifyError) {
+      setError(verifyError.message);
+      return;
+    }
+    router.replace('/(tabs)/home');
+  }
+
+  async function handleResend() {
+    setError(null);
+    setIsSubmitting(true);
+    const { error: resendError } = await supabase.auth.resend({
+      type: 'signup',
+      email: email.trim(),
+    });
+    setIsSubmitting(false);
+    if (resendError) setError(resendError.message);
+  }
+
   if (confirmationSent) {
     return (
-      <View style={styles.container}>
+      <KeyboardAvoidingView
+        style={styles.container}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
         <Text style={styles.title}>Check your email</Text>
-        <Text>We sent a confirmation link to {email}. Confirm it, then log in.</Text>
+        <Text style={styles.info}>We sent a code to {email.trim()}. Enter it below.</Text>
+        <LabeledInput
+          label="Code from email"
+          placeholder="123456"
+          keyboardType="number-pad"
+          value={code}
+          onChangeText={setCode}
+        />
+
+        {error ? <Text style={styles.error}>{error}</Text> : null}
+
+        <Pressable style={styles.button} onPress={handleVerify} disabled={isSubmitting}>
+          {isSubmitting ? (
+            <ActivityIndicator color={colors.onPrimary} />
+          ) : (
+            <Text style={styles.buttonText}>Verify</Text>
+          )}
+        </Pressable>
+
+        <Pressable onPress={handleResend} disabled={isSubmitting} hitSlop={12}>
+          <Text style={styles.link}>Didn&apos;t get it? Send again</Text>
+        </Pressable>
+
         <Link href="/(auth)/login" style={styles.link}>
           <Text>Back to log in</Text>
         </Link>
-      </View>
+      </KeyboardAvoidingView>
     );
   }
 
@@ -105,6 +161,11 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     marginBottom: 24,
     textAlign: 'center',
+  },
+  info: {
+    fontSize: 15,
+    color: colors.textSecondary,
+    marginBottom: 16,
   },
   button: {
     backgroundColor: colors.primary,
