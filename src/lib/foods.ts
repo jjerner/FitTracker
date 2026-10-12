@@ -88,13 +88,20 @@ export async function searchMyFoods(userId: string, query: string): Promise<Food
   if (custom.error) throw custom.error;
 
   const byId = new Map<string, Food>();
+  // shortcut: counts only the 500 most recent matching entries, raise the limit if that ever cuts off a regular.
+  const logCount = new Map<string, number>();
   for (const row of logged.data ?? []) {
-    if (row.foods && !byId.has(row.food_id)) byId.set(row.food_id, mapFoodRow(row.foods));
+    if (!row.foods) continue;
+    logCount.set(row.food_id, (logCount.get(row.food_id) ?? 0) + 1);
+    if (!byId.has(row.food_id)) byId.set(row.food_id, mapFoodRow(row.foods));
   }
   for (const row of custom.data ?? []) {
     if (!byId.has(row.id)) byId.set(row.id, mapFoodRow(row));
   }
-  return [...byId.values()].slice(0, 30);
+  // Most logged first; ties stay most recent first because sort keeps the order of equals.
+  return [...byId.values()]
+    .sort((a, b) => (logCount.get(b.id) ?? 0) - (logCount.get(a.id) ?? 0))
+    .slice(0, 30);
 }
 
 // Generic Livsmedelsverket foods. Every word must match; closest names first,
