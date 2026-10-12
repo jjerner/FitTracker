@@ -16,7 +16,11 @@ export default function ProgramsScreen() {
   const [addingId, setAddingId] = useState<string | null>(null);
 
   async function handleAdd(program: Program) {
-    if (!session || !catalog) return;
+    if (!session) return;
+    if (!catalog) {
+      Alert.alert('Could not add program', 'Check your connection and try again.');
+      return;
+    }
     setAddingId(program.id);
     try {
       for (const routine of program.routines) {

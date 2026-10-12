@@ -170,7 +170,11 @@ export async function saveTemplate(input: {
         target_weight_kg: te.targetWeightKg,
       }))
     );
-    if (error) throw error;
+    if (error) {
+      // A new routine without its exercises would show up empty; remove it.
+      if (!input.id) await supabase.from('workout_templates').delete().eq('id', templateId);
+      throw error;
+    }
   }
 
   if (oldRowIds.length > 0) {
