@@ -64,11 +64,26 @@ export default function Progress() {
   );
 }
 
-const WEIGHT_RANGES = [
+const RANGES = [
   { days: 30, label: '30 days' },
   { days: 90, label: '90 days' },
   { days: 365, label: '1 year' },
 ];
+
+// Row of 30 days · 90 days · 1 year, shared by the weight and workouts cards.
+function RangeTabs({ value, onChange }: { value: number; onChange: (days: number) => void }) {
+  return (
+    <View style={styles.rangeTabs}>
+      {RANGES.map((r) => (
+        <Pressable key={r.days} onPress={() => onChange(r.days)} hitSlop={8}>
+          <Text style={[styles.rangeOptionText, r.days === value && styles.rangeOptionActive]}>
+            {r.label}
+          </Text>
+        </Pressable>
+      ))}
+    </View>
+  );
+}
 
 function WeightCard({ chartWidth }: { chartWidth: number }) {
   const { data: weights, isLoading, saveWeight, isSaving } = useBodyWeights();
@@ -91,7 +106,7 @@ function WeightCard({ chartWidth }: { chartWidth: number }) {
   const firstInRange = all.findIndex((p) => p.date >= rangeStart);
   const points = firstInRange === -1 ? [] : all.slice(firstInRange);
   const trend = firstInRange === -1 ? [] : trendAll.slice(firstInRange);
-  const values = points.map((p) => Number(p.weightKg));
+  const values = [...points.map((p) => Number(p.weightKg)), ...trend];
   const minValue = Math.floor(Math.min(...values)) - 1;
   const maxValue = Math.ceil(Math.max(...values)) + 1;
 
@@ -125,15 +140,7 @@ function WeightCard({ chartWidth }: { chartWidth: number }) {
         </Pressable>
       </View>
 
-      <View style={styles.weightRanges}>
-        {WEIGHT_RANGES.map((r) => (
-          <Pressable key={r.days} onPress={() => setRangeDays(r.days)} hitSlop={8}>
-            <Text style={[styles.rangeOptionText, r.days === rangeDays && styles.rangeOptionActive]}>
-              {r.label}
-            </Text>
-          </Pressable>
-        ))}
-      </View>
+      <RangeTabs value={rangeDays} onChange={setRangeDays} />
 
       {isLoading ? (
         <ActivityIndicator />
@@ -235,19 +242,12 @@ function NutritionAveragesCard() {
   );
 }
 
-const COUNT_RANGES = [
-  { days: 30, label: 'Last 30 days' },
-  { days: 90, label: 'Last 90 days' },
-  { days: 365, label: 'Last year' },
-];
-
 // Workout data goes back a year, so the calendar does too.
 const MAX_MONTHS_BACK = 12;
 
 function WorkoutsCard() {
   const { data, isLoading } = useWorkoutDates();
   const [rangeDays, setRangeDays] = useState(30);
-  const [pickerOpen, setPickerOpen] = useState(false);
 
   const dates = data ?? [];
   const workoutDays = new Set(dates);
@@ -255,7 +255,6 @@ function WorkoutsCard() {
   // Last N days including today.
   const rangeStart = localDateDaysAgo(rangeDays - 1);
   const count = dates.filter((d) => d >= rangeStart).length;
-  const rangeLabel = COUNT_RANGES.find((r) => r.days === rangeDays)?.label;
 
   return (
     <View style={styles.card}>
@@ -265,31 +264,11 @@ function WorkoutsCard() {
         <ActivityIndicator />
       ) : (
         <>
+          <RangeTabs value={rangeDays} onChange={setRangeDays} />
           <View style={styles.countRow}>
             <Text style={styles.countValue}>{count}</Text>
             <Text style={styles.cardSubtitle}>completed</Text>
-            <Pressable style={styles.rangeButton} onPress={() => setPickerOpen(!pickerOpen)}>
-              <Text style={styles.rangeButtonText}>{rangeLabel} ▾</Text>
-            </Pressable>
           </View>
-          {pickerOpen && (
-            <View style={styles.rangeOptions}>
-              {COUNT_RANGES.map((r) => (
-                <Pressable
-                  key={r.days}
-                  style={styles.rangeOption}
-                  onPress={() => {
-                    setRangeDays(r.days);
-                    setPickerOpen(false);
-                  }}
-                >
-                  <Text style={[styles.rangeOptionText, r.days === rangeDays && styles.rangeOptionActive]}>
-                    {r.label}
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
-          )}
 
           <MonthCalendar dotDays={workoutDays} maxMonthsBack={MAX_MONTHS_BACK} />
         </>
@@ -401,20 +380,9 @@ const styles = StyleSheet.create({
   tableFootnote: { flex: 1, fontSize: 11, color: colors.subtle, textAlign: 'right' },
   countRow: { flexDirection: 'row', alignItems: 'baseline', gap: 6 },
   countValue: { fontSize: 28, fontWeight: '700' },
-  rangeButton: {
-    marginLeft: 'auto',
-    borderWidth: 1,
-    borderColor: colors.borderStrong,
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-  },
-  rangeButtonText: { fontSize: 14, color: colors.textSecondary },
-  rangeOptions: { alignSelf: 'flex-end', borderWidth: 1, borderColor: colors.borderStrong, borderRadius: 8 },
-  rangeOption: { paddingHorizontal: 14, paddingVertical: 10 },
   rangeOptionText: { fontSize: 14, color: colors.textSecondary },
   rangeOptionActive: { color: colors.primary, fontWeight: '600' },
-  weightRanges: { flexDirection: 'row', gap: 20, marginBottom: 12 },
+  rangeTabs: { flexDirection: 'row', gap: 20, marginBottom: 12 },
   legend: { fontSize: 12, color: colors.textSecondary, marginTop: 8 },
   legendTrend: { color: colors.primary },
   legendDaily: { color: colors.subtle },

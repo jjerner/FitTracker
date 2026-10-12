@@ -49,6 +49,8 @@ export default function WorkoutSummary() {
   const [a, setA] = useState('');
   const [b, setB] = useState('');
   const [saving, setSaving] = useState(false);
+  // Both boxes empty would save a blank "0 kg × 0" set; Delete set is for that.
+  const isEmptySet = a.trim() === '' && b.trim() === '';
 
   // Earlier completed workouts of each exercise, to find new records.
   const histories = useQueries({
@@ -259,7 +261,11 @@ export default function WorkoutSummary() {
               onChangeText={setB}
               keyboardType="numeric"
             />
-            <Pressable style={styles.doneButton} onPress={handleSaveSet} disabled={saving}>
+            <Pressable
+              style={[styles.doneButton, isEmptySet && styles.buttonDisabled]}
+              onPress={handleSaveSet}
+              disabled={saving || isEmptySet}
+            >
               {saving ? (
                 <ActivityIndicator color={colors.onPrimary} />
               ) : (
@@ -318,6 +324,7 @@ const styles = StyleSheet.create({
   emptyText: { color: colors.subtle, fontSize: 14 },
   setText: { fontSize: 15, color: colors.textSecondary, paddingVertical: 4 },
   editHint: { color: colors.subtle },
+  buttonDisabled: { opacity: 0.5 },
   modalBackdrop: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.4)',
