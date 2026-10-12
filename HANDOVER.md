@@ -195,6 +195,9 @@ Left over from `/ponytail-audit` and `/ponytail-review`; the three must-fix item
 | A3 | **`startWorkout` is two requests** | `lib/workouts.ts:startWorkout` creates the `workout_logs` row, then inserts the exercises. A failure between leaves an empty in-progress workout (discard fixes it). Fix: delete the log row if the second insert fails, like `saveMealFromEntries` does. | S |
 | A4 | **Workout date filter is a few hours off** | `getWorkoutDates` (`lib/progress.ts`) uses `started_at >= 'YYYY-MM-DD'`, which is UTC midnight, not local. No effect with the 365-day window; fix only if the window is ever shortened. | S |
 | A5 | **Tests for the two data fixes** | `upsertOffFood` and `saveTemplate` have no automated test (a mock would only echo the code). Do a manual check instead after each APK: pick/scan the same branded food twice, edit a routine and save it offline. Or add a test against a real Supabase test project. | S |
+| A6 | **Failed deletes show no message** | Found on-device 2026-10-12 (no connection, nothing happens). `handleDelete` in `workouts/[templateId].tsx` and `handleDiscard` in `workouts/active.tsx` await the delete with no try/catch, so a failure is silent and the screen stays put. Add `try/catch` with `Alert.alert('Could not delete', 'Check your connection and try again.')`, same wording as `food/[foodId].tsx`. Check other delete buttons for the same gap. | S |
+
+On-device results 2026-10-12: with no connection, listing exercises, saving a routine and deleting a routine all fail without changing data (routine stayed intact). Routines are online-only by design; only set logging is queued offline.
 
 ### 1. Known gaps in our own app (quick wins, high value)
 | # | Improvement | Why | Effort |
