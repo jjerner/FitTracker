@@ -226,7 +226,10 @@ export async function startWorkout(input: {
         position: index,
       }))
     );
-    if (exError) throw exError;
+    if (exError) {
+      await supabase.from('workout_logs').delete().eq('id', logId);
+      throw exError;
+    }
   }
 
   return logId;

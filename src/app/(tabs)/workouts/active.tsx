@@ -118,7 +118,12 @@ export default function ActiveWorkout() {
         text: 'Discard',
         style: 'destructive',
         onPress: async () => {
-          await deleteWorkoutLog(log.id);
+          try {
+            await deleteWorkoutLog(log.id);
+          } catch {
+            Alert.alert('Could not delete', 'Check your connection and try again.');
+            return;
+          }
           await queryClient.invalidateQueries({ queryKey: ['workoutHistory', session?.user.id] });
           router.back();
         },
@@ -394,7 +399,12 @@ function ExerciseCard({
         text: 'Delete',
         style: 'destructive',
         onPress: async () => {
-          await deleteSetEverywhere(set);
+          try {
+            await deleteSetEverywhere(set);
+          } catch {
+            Alert.alert('Could not delete', 'Check your connection and try again.');
+            return;
+          }
           await onChanged();
         },
       },

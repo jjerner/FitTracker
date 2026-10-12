@@ -164,7 +164,12 @@ function TemplateForm({ template }: { template: WorkoutTemplate | null }) {
         text: 'Delete',
         style: 'destructive',
         onPress: async () => {
-          await deleteTemplate(template.id);
+          try {
+            await deleteTemplate(template.id);
+          } catch {
+            Alert.alert('Could not delete', 'Check your connection and try again.');
+            return;
+          }
           await invalidate();
           router.back();
         },
