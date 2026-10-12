@@ -1,12 +1,35 @@
 import { useQueries, useQueryClient } from '@tanstack/react-query';
 import { router, useLocalSearchParams } from 'expo-router';
-import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useState } from 'react';
+import {
+  ActivityIndicator,
+  Alert,
+  Modal,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 
+import { LabeledInput } from '../../../../components/LabeledInput';
 import { useSession } from '../../../../context/AuthProvider';
 import { useWorkoutHistory, useWorkoutLog } from '../../../../hooks/useWorkouts';
 import { bestOf, bestOfSessions, findNewRecords } from '../../../../lib/records';
-import { deleteWorkoutLog, formatSet, getExerciseHistory } from '../../../../lib/workouts';
+import {
+  deleteSet,
+  deleteWorkoutLog,
+  formatSet,
+  getExerciseHistory,
+  updateSet,
+} from '../../../../lib/workouts';
 import { colors } from '../../../../theme';
+import type { WorkoutSet } from '../../../../types/domain';
+
+function toNumberOrNull(value: string): number | null {
+  const n = Number(value.replace(',', '.'));
+  return value.trim() === '' || Number.isNaN(n) ? null : n;
+}
 
 function logVolume(exercises: { sets: { weightKg: number | null; reps: number | null }[] }[]) {
   return exercises.reduce(
@@ -21,6 +44,11 @@ export default function WorkoutSummary() {
   const queryClient = useQueryClient();
   const { data: log, isLoading } = useWorkoutLog(logId);
   const userId = session?.user.id;
+  // The set being edited in the popup; a/b are kg/reps, or min/km for cardio.
+  const [editing, setEditing] = useState<{ set: WorkoutSet; cardio: boolean } | null>(null);
+  const [a, setA] = useState('');
+  const [b, setB] = useState('');
+  const [saving, setSaving] = useState(false);
 
   // Earlier completed workouts of each exercise, to find new records.
   const histories = useQueries({
@@ -74,6 +102,71 @@ export default function WorkoutSummary() {
         : `${e.exercise.name}: est. 1RM ${Math.round(now.oneRM)} kg (was ${Math.round(before.oneRM)} kg)`,
     ];
   });
+
+  function openEdit(set: WorkoutSet, cardio: boolean) {
+    setEditing({ set, cardio });
+    if (cardio) {
+      setA(set.durationS != null ? String(Math.round(set.durationS / 60)) : '');
+      setB(set.distanceM != null ? String(set.distanceM / 1000) : '');
+    } else {
+      setA(set.weightKg != null ? String(set.weightKg) : '');
+      setB(set.reps != null ? String(set.reps) : '');
+    }
+  }
+
+  async function refreshAfterEdit() {
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ['workoutLog', logId] }),
+      queryClient.invalidateQueries({ queryKey: ['exerciseHistory', userId] }),
+    ]);
+    setEditing(null);
+  }
+
+  async function handleSaveSet() {
+    if (!editing) return;
+    const x = toNumberOrNull(a);
+    const y = toNumberOrNull(b);
+    setSaving(true);
+    try {
+      await updateSet(
+        editing.set.id,
+        editing.cardio
+          ? {
+              weightKg: null,
+              reps: null,
+              durationS: x != null ? Math.round(x * 60) : null,
+              distanceM: y != null ? y * 1000 : null,
+            }
+          : { weightKg: x, reps: y != null ? Math.round(y) : null, durationS: null, distanceM: null }
+      );
+      await refreshAfterEdit();
+    } catch {
+      Alert.alert('Could not save', 'Check your connection and try again.');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  function handleDeleteSet() {
+    if (!editing) return;
+    const { set } = editing;
+    Alert.alert(`Delete set ${set.setNumber}?`, undefined, [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await deleteSet(set.id);
+          } catch {
+            Alert.alert('Could not delete', 'Check your connection and try again.');
+            return;
+          }
+          await refreshAfterEdit();
+        },
+      },
+    ]);
+  }
 
   function handleDelete() {
     if (!log) return;
@@ -132,13 +225,53 @@ export default function WorkoutSummary() {
             <Text style={styles.emptyText}>No sets</Text>
           ) : (
             e.sets.map((set) => (
-              <Text key={set.id} style={styles.setText}>
-                Set {set.setNumber}: {formatSet(set)}
-              </Text>
+              <Pressable
+                key={set.id}
+                onPress={() => openEdit(set, e.exercise.category === 'cardio')}
+              >
+                <Text style={styles.setText}>
+                  Set {set.setNumber}: {formatSet(set)} <Text style={styles.editHint}>✎</Text>
+                </Text>
+              </Pressable>
             ))
           )}
         </View>
       ))}
+
+      <Modal
+        visible={editing != null}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setEditing(null)}
+      >
+        <Pressable style={styles.modalBackdrop} onPress={() => setEditing(null)}>
+          <Pressable style={styles.modalCard}>
+            <Text style={styles.modalTitle}>Edit set {editing?.set.setNumber}</Text>
+            <LabeledInput
+              label={editing?.cardio ? 'Minutes' : 'Weight (kg)'}
+              value={a}
+              onChangeText={setA}
+              keyboardType="numeric"
+            />
+            <LabeledInput
+              label={editing?.cardio ? 'Distance (km)' : 'Reps'}
+              value={b}
+              onChangeText={setB}
+              keyboardType="numeric"
+            />
+            <Pressable style={styles.doneButton} onPress={handleSaveSet} disabled={saving}>
+              {saving ? (
+                <ActivityIndicator color={colors.onPrimary} />
+              ) : (
+                <Text style={styles.doneButtonText}>Save</Text>
+              )}
+            </Pressable>
+            <Pressable style={styles.deleteButton} onPress={handleDeleteSet} disabled={saving}>
+              <Text style={styles.deleteButtonText}>Delete set</Text>
+            </Pressable>
+          </Pressable>
+        </Pressable>
+      </Modal>
 
       <Pressable style={styles.doneButton} onPress={() => router.dismissTo('/(tabs)/workouts')}>
         <Text style={styles.doneButtonText}>Done</Text>
@@ -183,7 +316,16 @@ const styles = StyleSheet.create({
   exercise: { marginBottom: 16 },
   exerciseName: { fontSize: 16, fontWeight: '600', marginBottom: 4 },
   emptyText: { color: colors.subtle, fontSize: 14 },
-  setText: { fontSize: 15, color: colors.textSecondary, paddingVertical: 2 },
+  setText: { fontSize: 15, color: colors.textSecondary, paddingVertical: 4 },
+  editHint: { color: colors.subtle },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'center',
+    padding: 16,
+  },
+  modalCard: { backgroundColor: colors.background, borderRadius: 12, padding: 16 },
+  modalTitle: { fontSize: 17, fontWeight: '600', marginBottom: 12 },
   doneButton: {
     backgroundColor: colors.primary,
     borderRadius: 8,

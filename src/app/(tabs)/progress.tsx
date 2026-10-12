@@ -23,6 +23,7 @@ import {
 } from '../../hooks/useProgress';
 import { useExerciseHistory, useExercises } from '../../hooks/useWorkouts';
 import { localDateDaysAgo, todayLocalDate } from '../../lib/dateUtils';
+import { weightTrend } from '../../lib/progress';
 import { trackedStats } from '../../lib/records';
 import { colors } from '../../theme';
 
@@ -63,9 +64,16 @@ export default function Progress() {
   );
 }
 
+const WEIGHT_RANGES = [
+  { days: 30, label: '30 days' },
+  { days: 90, label: '90 days' },
+  { days: 365, label: '1 year' },
+];
+
 function WeightCard({ chartWidth }: { chartWidth: number }) {
   const { data: weights, isLoading, saveWeight, isSaving } = useBodyWeights();
   const [input, setInput] = useState('');
+  const [rangeDays, setRangeDays] = useState(30);
 
   const parsed = Number(input.replace(',', '.'));
   const isValid = input !== '' && parsed > 0;
@@ -75,8 +83,14 @@ function WeightCard({ chartWidth }: { chartWidth: number }) {
     saveWeight({ date: todayLocalDate(), weightKg: parsed }, { onSuccess: () => setInput('') });
   }
 
-  const points = weights ?? [];
-  const latest = points[points.length - 1];
+  const all = weights ?? [];
+  const latest = all[all.length - 1];
+  // Trend is worked out on everything fetched, so the first days in range still average a full week.
+  const trendAll = weightTrend(all);
+  const rangeStart = localDateDaysAgo(rangeDays - 1);
+  const firstInRange = all.findIndex((p) => p.date >= rangeStart);
+  const points = firstInRange === -1 ? [] : all.slice(firstInRange);
+  const trend = firstInRange === -1 ? [] : trendAll.slice(firstInRange);
   const values = points.map((p) => Number(p.weightKg));
   const minValue = Math.floor(Math.min(...values)) - 1;
   const maxValue = Math.ceil(Math.max(...values)) + 1;
@@ -111,28 +125,49 @@ function WeightCard({ chartWidth }: { chartWidth: number }) {
         </Pressable>
       </View>
 
+      <View style={styles.weightRanges}>
+        {WEIGHT_RANGES.map((r) => (
+          <Pressable key={r.days} onPress={() => setRangeDays(r.days)} hitSlop={8}>
+            <Text style={[styles.rangeOptionText, r.days === rangeDays && styles.rangeOptionActive]}>
+              {r.label}
+            </Text>
+          </Pressable>
+        ))}
+      </View>
+
       {isLoading ? (
         <ActivityIndicator />
       ) : points.length < 2 ? (
         <Text style={styles.empty}>Log your weight on at least 2 days to see a trend.</Text>
       ) : (
-        <LineChart
-          data={points.map((p, i) => ({
-            value: Number(p.weightKg),
-            label: sparseLabel(i, points.length, p.date),
-          }))}
-          width={chartWidth}
-          height={160}
-          adjustToWidth
-          yAxisOffset={minValue}
-          maxValue={maxValue - minValue}
-          noOfSections={4}
-          color={colors.primary}
-          dataPointsColor={colors.primary}
-          thickness={2}
-          xAxisLabelTextStyle={styles.axisLabel}
-          yAxisTextStyle={styles.axisLabel}
-        />
+        <>
+          <LineChart
+            data={points.map((p, i) => ({
+              value: Number(p.weightKg),
+              label: sparseLabel(i, points.length, p.date),
+            }))}
+            data2={trend.map((value) => ({ value }))}
+            width={chartWidth}
+            height={160}
+            adjustToWidth
+            yAxisOffset={minValue}
+            maxValue={maxValue - minValue}
+            noOfSections={4}
+            color={colors.subtle}
+            dataPointsColor={colors.subtle}
+            hideDataPoints={points.length > 40}
+            thickness={1}
+            color2={colors.primary}
+            hideDataPoints2
+            thickness2={3}
+            xAxisLabelTextStyle={styles.axisLabel}
+            yAxisTextStyle={styles.axisLabel}
+          />
+          <Text style={styles.legend}>
+            <Text style={styles.legendTrend}>━</Text> 7-day average{'   '}
+            <Text style={styles.legendDaily}>━</Text> daily weigh-ins
+          </Text>
+        </>
       )}
     </View>
   );
@@ -379,6 +414,10 @@ const styles = StyleSheet.create({
   rangeOption: { paddingHorizontal: 14, paddingVertical: 10 },
   rangeOptionText: { fontSize: 14, color: colors.textSecondary },
   rangeOptionActive: { color: colors.primary, fontWeight: '600' },
+  weightRanges: { flexDirection: 'row', gap: 20, marginBottom: 12 },
+  legend: { fontSize: 12, color: colors.textSecondary, marginTop: 8 },
+  legendTrend: { color: colors.primary },
+  legendDaily: { color: colors.subtle },
   trackedRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',

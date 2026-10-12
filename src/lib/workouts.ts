@@ -394,6 +394,22 @@ export async function addSet(input: {
   if (error) throw error;
 }
 
+export async function updateSet(
+  id: string,
+  values: { weightKg: number | null; reps: number | null; durationS: number | null; distanceM: number | null }
+): Promise<void> {
+  const { error } = await supabase
+    .from('workout_log_sets')
+    .update({
+      weight_kg: values.weightKg,
+      reps: values.reps,
+      duration_s: values.durationS,
+      distance_m: values.distanceM,
+    })
+    .eq('id', id);
+  if (error) throw error;
+}
+
 export async function deleteSet(id: string): Promise<void> {
   const { error } = await supabase.from('workout_log_sets').delete().eq('id', id);
   if (error) throw error;

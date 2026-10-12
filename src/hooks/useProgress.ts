@@ -12,8 +12,8 @@ import {
   upsertBodyWeight,
 } from '../lib/progress';
 
-// Window for the weight chart.
-const RANGE_DAYS = 30;
+// Longest weight-chart range (a year) plus 6 days so its first trend point has a full week.
+const RANGE_DAYS = 365 + 6;
 
 export function useBodyWeights() {
   const { session } = useSession();

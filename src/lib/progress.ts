@@ -95,3 +95,15 @@ export async function getWorkoutDates(userId: string, sinceDate: string): Promis
   if (error) throw error;
   return (data ?? []).map((row) => localDateOf(new Date(row.started_at)));
 }
+
+// For each weigh-in, the average of all weigh-ins in the 7 days up to and including it.
+// Days without a weigh-in are simply skipped. Input must be sorted by date.
+export function weightTrend(points: BodyWeight[]): number[] {
+  const dayNumber = (date: string) => Date.parse(`${date}T00:00:00Z`) / 86_400_000;
+  return points.map((p, i) => {
+    const window = points
+      .slice(0, i + 1)
+      .filter((q) => dayNumber(p.date) - dayNumber(q.date) < 7);
+    return window.reduce((sum, q) => sum + Number(q.weightKg), 0) / window.length;
+  });
+}
