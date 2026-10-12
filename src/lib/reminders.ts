@@ -32,16 +32,17 @@ export async function ensureReminderPermission(): Promise<boolean> {
   return (await Notifications.requestPermissionsAsync()).granted;
 }
 
-// The meal types that have at least one entry today.
-async function mealsLoggedToday(): Promise<Set<string>> {
+// The meal types that have at least one entry today, or null if that can't be read (offline).
+async function mealsLoggedToday(): Promise<Set<string> | null> {
   const { data } = await supabase.auth.getSession();
   const userId = data.session?.user.id;
-  if (!userId) return new Set();
-  const { data: rows } = await supabase
+  if (!userId) return null;
+  const { data: rows, error } = await supabase
     .from('food_log_entries')
     .select('meal_type')
     .eq('user_id', userId)
     .eq('logged_date', todayLocalDate());
+  if (error) return null;
   return new Set((rows ?? []).map((r) => r.meal_type));
 }
 
@@ -57,17 +58,20 @@ export function missingMealsMessage(logged: Set<string>): string | null {
 // for both reminders. Today's is left out or reworded from what is already logged. Call again
 // whenever food is logged or deleted, a setting changes, or the app opens — that keeps it fresh.
 export async function refreshFoodReminders(): Promise<void> {
+  const [{ enabled, minutes }, mealEnabled] = await Promise.all([getFoodReminder(), getMealReminder()]);
+  const wanted = (enabled || mealEnabled) && (await Notifications.getPermissionsAsync()).granted;
+  // Read before cancelling: offline, the current schedule beats one built from "nothing logged".
+  const logged = wanted ? await mealsLoggedToday() : null;
+  if (wanted && !logged) return;
+
   const scheduled = await Notifications.getAllScheduledNotificationsAsync();
   await Promise.all(
     scheduled
       .filter((n) => n.identifier.startsWith(ID_PREFIX) || n.identifier.startsWith(MEAL_ID_PREFIX))
       .map((n) => Notifications.cancelScheduledNotificationAsync(n.identifier)),
   );
+  if (!logged) return;
 
-  const [{ enabled, minutes }, mealEnabled] = await Promise.all([getFoodReminder(), getMealReminder()]);
-  if ((!enabled && !mealEnabled) || !(await Notifications.getPermissionsAsync()).granted) return;
-
-  const logged = await mealsLoggedToday();
   const now = new Date();
   for (let i = 0; i < DAYS_AHEAD; i++) {
     if (enabled && !(i === 0 && logged.size > 0)) {
