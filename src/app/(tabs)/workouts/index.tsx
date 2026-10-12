@@ -130,6 +130,13 @@ export default function WorkoutsHome() {
 
       <Pressable
         style={styles.secondaryButton}
+        onPress={() => router.push('/(tabs)/workouts/programs')}
+      >
+        <Text style={styles.secondaryButtonText}>Browse Programs</Text>
+      </Pressable>
+
+      <Pressable
+        style={styles.secondaryButton}
         onPress={() => router.push('/(tabs)/workouts/exercises')}
       >
         <Text style={styles.secondaryButtonText}>Exercise Catalog</Text>
