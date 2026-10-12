@@ -319,6 +319,7 @@ export async function updateFoodLogEntry(input: {
     .eq('id', input.entryId);
 
   if (error) throw error;
+  refreshFoodReminders().catch(() => {});
 }
 
 // Copies entries as they were logged (same amounts and nutrition) onto another day.
@@ -402,6 +403,7 @@ export async function updateQuickEntry(input: QuickEntryInput & { entryId: strin
     .eq('id', input.entryId);
 
   if (error) throw error;
+  refreshFoodReminders().catch(() => {});
 }
 
 export async function getSavedMeals(userId: string): Promise<SavedMeal[]> {

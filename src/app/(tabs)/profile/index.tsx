@@ -17,6 +17,7 @@ import { useSession } from '../../../context/AuthProvider';
 import { useDisplayName } from '../../../hooks/useDisplayName';
 import { useDefaultRest } from '../../../hooks/useDefaultRest';
 import { useFoodReminder } from '../../../hooks/useFoodReminder';
+import { useMealReminder } from '../../../hooks/useMealReminder';
 import { useRestVibration } from '../../../hooks/useRestVibration';
 import { supabase } from '../../../lib/supabase';
 import { colors, radius, spacing } from '../../../theme';
@@ -26,10 +27,11 @@ export default function Profile() {
   const { data: savedName, isLoading, saveName, isSaving } = useDisplayName();
   const restVibration = useRestVibration();
   const foodReminder = useFoodReminder();
+  const mealReminder = useMealReminder();
   const defaultRest = useDefaultRest();
 
-  async function handleReminderToggle(enabled: boolean) {
-    const allowed = await foodReminder.setEnabled(enabled);
+  async function handleReminderToggle(setEnabled: (enabled: boolean) => Promise<boolean>, enabled: boolean) {
+    const allowed = await setEnabled(enabled);
     if (!allowed) {
       Alert.alert('Notifications are off', 'Allow notifications for Plucky in your phone settings.');
     }
@@ -93,7 +95,10 @@ export default function Profile() {
           size={22}
         />
         <Text style={styles.rowText}>Remind me if no food logged</Text>
-        <Switch value={foodReminder.enabled} onValueChange={handleReminderToggle} />
+        <Switch
+          value={foodReminder.enabled}
+          onValueChange={(on) => handleReminderToggle(foodReminder.setEnabled, on)}
+        />
       </View>
       {foodReminder.enabled ? (
         <View style={[styles.row, styles.rowSpaced]}>
@@ -113,6 +118,18 @@ export default function Profile() {
           </Pressable>
         </View>
       ) : null}
+      <View style={[styles.row, styles.rowSpaced]}>
+        <SymbolView
+          name={{ ios: 'bell.fill', android: 'notifications' }}
+          tintColor={colors.primary}
+          size={22}
+        />
+        <Text style={styles.rowText}>Remind me about missing meals (20:30)</Text>
+        <Switch
+          value={mealReminder.enabled}
+          onValueChange={(on) => handleReminderToggle(mealReminder.setEnabled, on)}
+        />
+      </View>
 
       <Pressable style={styles.signOutButton} onPress={() => supabase.auth.signOut()}>
         <Text style={styles.signOutButtonText}>Sign Out</Text>
