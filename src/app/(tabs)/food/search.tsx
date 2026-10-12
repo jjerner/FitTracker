@@ -79,7 +79,7 @@ export default function FoodSearch() {
 
   const hasQuery = query.trim().length >= 2;
   // Same rule as the database search: every word somewhere in the name.
-  const words = query.toLowerCase().split(/\s+/).filter(Boolean);
+  const words = hasQuery ? query.toLowerCase().split(/\s+/).filter(Boolean) : [];
   const favourites = (favouriteFoods ?? []).filter((f) =>
     words.every((w) => f.name.toLowerCase().includes(w))
   );

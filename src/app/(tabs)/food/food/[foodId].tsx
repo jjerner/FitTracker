@@ -259,6 +259,7 @@ export default function FoodDetail() {
         <Text style={[styles.name, styles.nameText]}>{food.name}</Text>
         <Pressable
           onPress={toggleFavourite}
+          disabled={!favourites}
           hitSlop={12}
           accessibilityRole="button"
           accessibilityLabel={isFavourite ? 'Remove from favourites' : 'Add to favourites'}

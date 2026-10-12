@@ -90,7 +90,7 @@ Migrations live in `supabase/migrations/*.sql`, applied manually by pasting into
 - `0011_saved_meals_quick_add.sql` (food_log_entries.food_id nullable for quick-add; saved_meals + saved_meal_items, RLS own rows / via parent meal)
 - `0012_food_entry_groups.sql` (food_log_entries.group_id + group_name; saved meals log as one diary group) — applied 2026-10-10
 - `0013_daily_nutrition_view.sql` (`daily_nutrition` view, one row per user per day, `security_invoker` so RLS still applies) — applied 2026-10-11
-- `0015_favourite_foods.sql` (favourite_foods: user_id + food_id, RLS own rows) — **written 2026-10-12, user to apply before the favourites update ships**
+- `0015_favourite_foods.sql` (favourite_foods: user_id + food_id, RLS own rows) — applied 2026-10-12
 
 For any new tables, write new numbered migration files and ask the user to run them the same way.
 
