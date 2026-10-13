@@ -59,7 +59,7 @@ Three sections, fetched in parallel with `Promise.allSettled` (one failing doesn
 
 ### On hold (user's call — don't change unless asked)
 
-- **Email-verification link** redirects to a dead `localhost:3000` page (see gotchas). Custom SMTP is now set up, so the "Confirm signup" template could be switched to a code too (same approach as forgot password).
+- **Email-verification** — fixed 2026-10-13 (1.10): signup now uses a typed code (`verifyOtp({ type: 'signup' })`); the "Confirm signup" template holds only `{{ .Token }}`.
 
 ## Environment
 
@@ -103,7 +103,7 @@ For any new tables, write new numbered migration files and ask the user to run t
 
 ## Known gotchas hit this session
 
-- Supabase's default "Site URL" is `localhost:3000`, so the email-verification link redirects to a dead localhost page after confirming. Cosmetic only — verification succeeds before the redirect. Fix is tied to the SMTP/email decision (see On hold).
+- Supabase's default "Site URL" is still `localhost:3000`. No email links remain since 1.10 (signup and reset both use codes), so it only matters if a link-based email is added later. Fix with the SMTP/email decision (see On hold).
 - A `.upsert(..., { onConflict: 'barcode' })` needs a **non-partial** unique constraint on that column — a partial index (`WHERE barcode IS NOT NULL`) doesn't work as an ON CONFLICT target. Fixed in `0003`. Keep this in mind for any future upsert-by-nullable-column tables.
 - `npm install` used to fail with ERESOLVE (optional web-only `react-dom@19.3.0` vs `react@19.2.3`). Now `.npmrc` has `legacy-peer-deps=true`, so plain `npx expo install <pkg>` works. **Don't remove `.npmrc`**: EAS Build runs strict `npm ci`, which fails ("Missing: react-dom@19.3.0 from lock file") without it.
 - EAS build logs (`build:view --json` → `logFiles`) are gzipped JSON lines; PowerShell's `Invoke-WebRequest` mangles them, so fetch with Node's `fetch` + `zlib.gunzipSync`.
@@ -147,7 +147,7 @@ For any new tables, write new numbered migration files and ask the user to run t
 
 ## Next session should
 
-- **Start of next session (user, 2026-10-12):** show the user the remaining plan and let them pick the next item. They want to watch the new review + web-test routine (CLAUDE.md "Definition of done") on that build. Suggest an item with a lot to see on web (e.g. 5.6 dark mode); 1.12 is mostly native and a weaker trial.
+- **Start of next session (2026-10-13):** first ask the user about the phone tests in item 1 below (**1.10 signup code is shipped but NOT tested yet**). Then show the remaining plan and let them pick. Dark mode waits on branch `dark-mode` (0c) — don't merge or ship it unless the user says so; they may do a bigger UX overhaul first. The review + web-test routine was used for 5.6 and 1.10 and worked (sign-up UI can be tested by "signing up" with the test account's email: Supabase returns no session and sends nothing, so the code screen shows without creating an account; don't tap "Send again" there).
 - **Rule (user, 2026-10-12): every feature or fix gets a `/ponytail-review` and, when it has something to see or tap, a test by Claude in the real app on web** (see "Testing the app on web" and the "Definition of done" in CLAUDE.md). Only what web can't run goes on the user's phone test list.
 0. **Session 2026-10-12 shipped (all via `eas update`, preview channel; NOT yet tested on the phone — ask the user):** audit follow-ups A1 (migration `0014` **applied**), A3, A6 (A2 accepted as a risk, A4 skipped); C8 missing-meal reminder (20:30, offline-safe); C10 program gallery (Upper/Lower, Push/Pull/Legs); `saveTemplate` now removes a half-saved new routine. C9 is parked. Last commit before this handover: see `git log`.
 0a. **Session 2026-10-12 (later), all shipped via `eas update`:** user confirmed on the phone: "Could not delete" alert, program gallery, Workouts range buttons (4.5). Shipped: **1.5 edit past workouts** (tap a set on the workout summary → edit kg/reps or min/km, or delete the set; Save is disabled when both boxes are empty; `updateSet` in `lib/workouts.ts`; adding sets to a past workout not done); **4.1 weight trend** (7-day average line over the daily weigh-ins; `weightTrend` in `lib/progress.ts`, tested; the weight query now fetches 371 days; chart scale includes the trend line); **4.5** shared `RangeTabs` row (30 days · 90 days · 1 year) on the weight and workouts cards, old dropdown removed; **2.6 favourite foods** (migration `0015` **applied**; ☆/★ on the food page; search order is Favourites → My foods → Basic → Branded, Favourites also above Recent when the box is empty) and **most logged first** in My foods (`searchMyFoods` counts the 500 latest matching entries; ties = most recent). Each feature got a `/ponytail-review` and its fixes shipped.
