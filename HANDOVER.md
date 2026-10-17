@@ -80,6 +80,12 @@ Three sections, fetched in parallel with `Promise.allSettled` (one failing doesn
 - **Can't be tested on web:** branded search (`search.openfoodfacts.org` sends no CORS header, so the browser blocks it; fine on the phone), barcode camera, notifications/reminders, vibration. Test those on the phone.
 - Chrome window stays maximized (resize didn't work), so screens show wide, not phone-sized. Ignore the Myki password-manager popup at the bottom left; it's not the app.
 
+### PM loop + software factory (set up 2026-10-18, not yet used on a real item)
+- **`/pm`** (standup from this roadmap) → **`/pm <ids>`** (specs for a batch, user is grilled on open questions, then each item is built on its own branch `factory/<id>-<slug>` and opened as a PR with a "ship card") → **`/pm ship <ids>`** (merge, mark done here; `eas update`/`eas build` only on the user's explicit yes). **`/factory <idea>`** = the same line for one off-roadmap item.
+- Lives in the user's global `~/.claude`: `commands/pm.md`, `commands/factory.md`, `agents/` (spec-writer, builder, ux/ui/security/code-quality reviewers), `factory/` (live dashboard at http://127.0.0.1:7777/, fed by Agent hooks in `~/.claude/settings.json`). Skills used: `grilling` (mattpocock), Expo plugin (`expo@claude-plugins-official`; its MCP server needs `/mcp` login before use, the skills work without it), `security-audit` (Cloudflare, for occasional full audits only, not in the factory).
+- **CI** (`.github/workflows/ci.yml`, since PR #4): tsc, lint and jest on every PR and push to master. No secrets needed.
+- The roadmap pointer for `/pm` is in CLAUDE.md → "Roadmap".
+
 ## Database
 
 Migrations live in `supabase/migrations/*.sql`, applied manually by pasting into the Supabase SQL Editor (no CLI link set up — I don't have DB credentials, only the anon key). Applied so far:
@@ -148,6 +154,7 @@ For any new tables, write new numbered migration files and ask the user to run t
 ## Next session should
 
 - **Start of next session (2026-10-13):** first ask the user about the phone tests in item 1 below (**1.10 signup code is shipped but NOT tested yet**). Then show the remaining plan and let them pick. Dark mode waits on branch `dark-mode` (0c) — don't merge or ship it unless the user says so; they may do a bigger UX overhaul first. The review + web-test routine was used for 5.6 and 1.10 and worked (sign-up UI can be tested by "signing up" with the test account's email: Supabase returns no session and sends nothing, so the code screen shows without creating an account; don't tap "Send again" there).
+- **Session 2026-10-17/18 (tooling only, no app changes):** set up the PM loop + factory, CI and the Expo skills (see Environment → "PM loop + software factory"); added roadmap item 1.14 (UI/UX review pass, later). Open new items from `beta_test_feedback_2026-10-17.md` (comma resets weight to 0, double dinner reminder, etc.) are not on the roadmap tables yet; `/pm` reads that file too. Try `/pm` first next session.
 - **Rule (user, 2026-10-12): every feature or fix gets a `/ponytail-review` and, when it has something to see or tap, a test by Claude in the real app on web** (see "Testing the app on web" and the "Definition of done" in CLAUDE.md). Only what web can't run goes on the user's phone test list.
 0. **Session 2026-10-12 shipped (all via `eas update`, preview channel; NOT yet tested on the phone — ask the user):** audit follow-ups A1 (migration `0014` **applied**), A3, A6 (A2 accepted as a risk, A4 skipped); C8 missing-meal reminder (20:30, offline-safe); C10 program gallery (Upper/Lower, Push/Pull/Legs); `saveTemplate` now removes a half-saved new routine. C9 is parked. Last commit before this handover: see `git log`.
 0a. **Session 2026-10-12 (later), all shipped via `eas update`:** user confirmed on the phone: "Could not delete" alert, program gallery, Workouts range buttons (4.5). Shipped: **1.5 edit past workouts** (tap a set on the workout summary → edit kg/reps or min/km, or delete the set; Save is disabled when both boxes are empty; `updateSet` in `lib/workouts.ts`; adding sets to a past workout not done); **4.1 weight trend** (7-day average line over the daily weigh-ins; `weightTrend` in `lib/progress.ts`, tested; the weight query now fetches 371 days; chart scale includes the trend line); **4.5** shared `RangeTabs` row (30 days · 90 days · 1 year) on the weight and workouts cards, old dropdown removed; **2.6 favourite foods** (migration `0015` **applied**; ☆/★ on the food page; search order is Favourites → My foods → Basic → Branded, Favourites also above Recent when the box is empty) and **most logged first** in My foods (`searchMyFoods` counts the 500 latest matching entries; ties = most recent). Each feature got a `/ponytail-review` and its fixes shipped.
@@ -196,7 +203,8 @@ Bundles: **A** (JS-only, one `eas update`): B1 + B2 + B3 + B4 — do first. **B*
 | C9 | **Unilateral vs bilateral exercises** — **parked 2026-10-12 (user's call).** Research done: StrengthLog marks exercises "one side only" and doubles volume; MacroFactor has an L/R toggle per exercise; Hevy has nothing. Our sets are plain kg × reps and we show no volume. Options if revived: (1) `per_side` flag on exercises → "kg / side" labels (S, 🗄), (2) L/R rows per set (M–L, 🗄). Ask the user what the actual pain was first. | **Research + plan first.** 🗄 | M–L |
 | C10 | **Default gallery of training programs** — ✅ coded 2026-10-12, no migration: programs live in `src/lib/programs.ts` (Upper/Lower all 5×5; Push/Pull/Legs with 5×5 main / 4×5 secondary-on-same-muscle, exercises picked by the user). Workouts → "Browse Programs" → "Add to my routines" copies each routine via `saveTemplate` (names like "Upper/Lower – Upper"). Test checks every name exists in the seed SQL. No folders, filters or week progression. Needs on-device test. | **Research UX + which programs first.** 🗄 | L |
 | C11 | **Rename app + new logo** | Dumbbell with a chicken on one side, broccoli on the other. 🔁 new build; extends 1.7. | S–M — ✅ decided: name **Plucky**, mascot logo (chicken with broccoli hat); assets + app.json done, needs next APK build (slug and package id unchanged on purpose) |
-| C12 | **Usage dashboard (admin)** | For the owner only, to see how friends use the app once shared: sign-ups, daily/weekly active users, food entries and workouts logged per day, last seen per user, retention. Needs a decision: Supabase SQL views + an admin-only screen (admin flag/RLS) vs an external dashboard. Friends should be told what is counted (aggregates, not their food/workout contents). 🗄 | M–L |
+
+| C12 | **Usage dashboard (admin)** | For the owner only, to see how friends use the app once shared: sign-ups, daily/weekly active users, food entries and workouts logged per day, last seen per user, retention. Needs a decision: Supabase SQL views + an admin-only screen (admin flag/RLS) vs an external dashboard. Friends should be told what is counted (aggregates, not their food/workout contents). 🗄 | M–L |
 
 Bundle **D** (JS-only, one `eas update`): C1, C2, C3, C4, C5, C6. Later: C7 (after the pattern decision + migration), C8 + C11 (next native build), C12 (after sharing plans are clear). C9/C10 start as research, no code.
 
@@ -229,6 +237,7 @@ On-device results 2026-10-12: with no connection, listing exercises, saving a ro
 | 1.11 | **Web part done 2026-10-12, see "Testing the app on web" under Environment; Maestro/emulator (b) not started** — **Testing strategy so Claude can test the real app itself** (added 2026-10-12, user's request). Today only jest unit tests exist; every screen change waits for the user to try it on the phone. Options to decide: **(a)** web build in Chrome (`expo start --web`, driven by Claude in Chrome): cheapest, but camera/barcode, notifications and vibration don't run on web, and `react-native-web`/`react-dom` aren't installed yet; **(b)** Android emulator + Maestro flows (tap/type/assert scripts in YAML): the real native app, but needs the Android SDK (not installed on this PC) and a dev build 🔁; **(c)** both, web for quick checks and Maestro for a few key flows (log food, finish a workout). Either way: a separate Supabase test account with seed data, so tests never touch the user's real diary. | Catch bugs before they reach the phone; fewer "please test this" rounds. | M–L |
 | 1.12 | **APK update banner for testers** (added 2026-10-12; user chose this over Play internal testing and plain link-sharing; recipients = user + a few friends). Problem: after a 🔁 build, phones on the old APK silently stop getting `eas update`s (different runtime fingerprint) and nobody knows a new APK exists. Plan: 🗄 `0016` table `app_releases` (`version_code int`, `install_url text`, `notes text`, `created_at`), select for signed-in users, no app writes (rows added by SQL after each build). App reads its own build number (`expo-application` `nativeBuildVersion`, check the SDK docs; needs `"autoIncrement": true` on the `preview` profile so every build gets a higher number) and, if the newest row is higher, shows a banner on Home: "New version available → Download", which opens the EAS install page (`Linking.openURL`). Release step after each `eas build`: insert a row with the build's install link. The banner itself needs one APK build 🔁 to reach phones; friends install that one by link. | Testers never get stuck on an old version without knowing. | M |
 | 1.13 | **Send app emails from an app address, not the user's personal Gmail** (added 2026-10-12, user's request). Today Supabase custom SMTP uses the user's own Gmail (app password "FitTrack", `smtp.gmail.com:465`), so reset codes come from their private address. Options: **(a)** a new free Gmail just for the app (e.g. a "Plucky" account) with its own app password: same setup, 5 minutes, but still looks like a hobby address and Gmail caps sending at ~500/day; **(b)** an email service such as Resend or Brevo (free tier) with your own domain: looks professional and is the right choice for the store release, but needs a domain (~100 kr/year) and DNS records (SPF/DKIM). Either way it's a dashboard change only (Supabase → Authentication → SMTP), no app code; then send a test reset code. Ties into the "On hold" email items and 2b. | Privacy: strangers shouldn't see the user's personal email; needed before the store release. | S |
+| 1.14 | **UI/UX review pass of the whole app** (added 2026-10-18, user's request, do later). Go screen by screen with the Expo design skills (`expo:expo-design-system`, `expo:expo-native-ui`; Android only, so skip Apple-only advice) and Nielsen's 10 usability heuristics (same lists the factory's ui-reviewer and ux-reviewer use). Output first: a ranked findings list + suggested fixes per screen, no code; the user picks what to build (then via `/pm`). Also decide here whether the "bigger UX overhaul" happens, since dark mode (5.6, branch `dark-mode`) waits on it. Optional input: UI/UX Pro Max skill for a design direction. | Consistent, native-feeling app before more features and before the store release. | M–L |
 
 ### 2. Food — features competitors have that we don't
 | # | Feature | Seen in | Effort |
@@ -281,6 +290,34 @@ Withings scale sync is B5 in section 0 (deprioritised: new feature, do after the
 ### 6. Deliberately not proposed
 Social feed/friends (Hevy), diet-pattern scores (Lifesum), 80+ micronutrients (Cronometer), coaching programs (StrengthLog), wearables — too big or not useful for a single user.
 
+### 7. Later — feature ideas (added 2026-10-14, when there's time)
+Not scheduled. **Before building any of these, grill the user on the open questions one at a time.** Builds on C10 (program gallery has no week progression yet).
+
+| # | Feature | Details | Effort |
+|---|---|---|---|
+| 7.1 | **Program scheduling** (routines over time) | Run a program (premade like Push/Pull/Legs, or own selected routines) for a set number of weeks or indefinitely. 🗄 | M–L |
+| 7.2 | **Preload last performance** | Remember last-used sets, reps and weight from the last time the program/routine was used; preload them when starting it again. Foundation for 7.3–7.5. | M |
+| 7.3 | **Linear progression** | All sets unchanged from preload and all marked completed → next session weight += **X** (Profile setting). | M |
+| 7.4 | **Double progression** | Same trigger → next session reps += **A** while reps are between **Y** and **Z**; at the top of the range reset reps to Y and weight += X. A, Y, Z = Profile settings. (User wrote "if A >= Z, reset A = Y" — confirm meaning.) | M |
+| 7.5 | **Triple progression** | Like 7.4 but increase reps first, then sets, then weight. | M |
+| 7.6 | **Kids / parents sports app** (branch off Plucky) | Training app for kids, or parents training their kids in sports (soccer, tennis etc.). Drills/skills and milestones instead of load; multiple kids per account; gamification. Risks: child data/GDPR (parent-owned accounts, photos/video), age-appropriate load, drill content per sport. | L+ |
+
+**Suggested build order for 7.1–7.5:** lock spec → data model (schedule, progression settings, last-performance lookup) 🗄 → 7.2 preload → progression engine as pure functions + unit tests → 7.1 scheduling UI → Profile settings (X, A, Y, Z, set range) → on-device test.
+
+**Open questions (ask one at a time):**
+- Q1: 7.4 — confirm the logic; does +A apply to all sets or one set per session?
+- Q2: progression gated per exercise or per whole routine?
+- Q3: global progression settings or per exercise?
+- Q4: user changes preload (more/less) — what happens next session?
+- Q5: 7.5 — set range and reset rules?
+- Q6: schedule model — rotation vs fixed weekdays; what happens when the program ends?
+- Q7: 7.6 primary user — parent with 1–3 kids or youth coach with a team?
+- Q8: 7.6 separate app with shared core (monorepo) vs a mode inside Plucky?
+- Q9: 7.6 which sports first?
+- Q10: 7.6 progression model for kids (skill levels/milestones)?
+- Q11: 7.6 child data/GDPR approach?
+- Q12: 7.6 drill content source (own library, demo videos)?
+
 ### Suggested order (recommendation)
 1. Beta-test fixes (section 0, bundle A: B1–B4) →
 2. ~~Quick food wins: 1.1, 1.2, 1.3, 1.4, 2.1~~ (done) →
@@ -289,5 +326,6 @@ Social feed/friends (Hevy), diet-pattern scores (Lifesum), 80+ micronutrients (C
 5. ~~Look & feel: 1.8 theme, 2.4 Lifesum diary~~ (done; 1.7 icon already built) →
 6. ~~Beta round 2, bundle D (C1–C6)~~ (done) → then C7, C8, C11, research C9/C10 (section 0b) →
 7. Bigger bets to discuss: 5.2 goal helper / 2.9 adaptive goal, 2.8 AI logging.
+8. When there's time: section 7 (program scheduling, progression, kids app).
 
 Sources: MyFitnessPal (Meal Scan, Quick Add, My Meals), MacroFactor (adaptive targets), Cronometer (micronutrients), Lifesum (diet patterns, water/habits), Strong (plate calculator, PRs, 1RM, CSV export), Hevy (social, set types), StrengthLog (programs) — 2026 comparison articles.
