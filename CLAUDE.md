@@ -11,3 +11,9 @@ Before calling a change done (and before `eas update` or a build):
 5. Tell the user what was reviewed and what was tested, and what still needs the phone.
 
 Setup details and known web limits: HANDOVER.md → "Testing the app on web".
+
+## Roadmap (read by /pm)
+
+- Roadmap: HANDOVER.md → "Proposed roadmap" (item IDs like B1, C8, 1.12; 🗄 = SQL migration the user pastes into Supabase, 🔁 = needs a new APK build).
+- New feedback: the newest `beta_test_feedback_*.md` (unchecked `- [ ]` lines).
+- Shipping is `eas update` / `eas build` (see HANDOVER.md). Only run them when the user says so.
