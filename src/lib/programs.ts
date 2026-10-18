@@ -78,6 +78,6 @@ export function routineExercises(
   return routine.exercises.map(([name, sets, reps]) => {
     const exercise = catalog.find((e) => !e.isCustom && e.name === name);
     if (!exercise) throw new Error(`Exercise not found: ${name}`);
-    return { exercise, targetSets: sets, targetReps: reps, targetWeightKg: null };
+    return { exercise, targetSets: sets, targetReps: reps, targetWeightKg: null, restSeconds: null };
   });
 }

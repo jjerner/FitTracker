@@ -162,18 +162,23 @@ export default function ActiveWorkout() {
         <Text style={styles.title}>{log.name}</Text>
         <ElapsedClock startedAt={log.startedAt} />
 
-        {exercises.map((logExercise) => (
-          <ExerciseCard
-            // Includes the exercise so a swap resets the card's local rows.
-            key={`${logExercise.id}-${logExercise.exercise.id}`}
-            logId={log.id}
-            logExercise={logExercise}
-            pendingIds={pendingIds}
-            target={template?.exercises.find((te) => te.exercise.id === logExercise.exercise.id)}
-            onChanged={refresh}
-            onSetDone={() => setRestEndsAt(Date.now() + defaultRest.seconds * 1000)}
-          />
-        ))}
+        {exercises.map((logExercise) => {
+          const target = template?.exercises.find((te) => te.exercise.id === logExercise.exercise.id);
+          return (
+            <ExerciseCard
+              // Includes the exercise so a swap resets the card's local rows.
+              key={`${logExercise.id}-${logExercise.exercise.id}`}
+              logId={log.id}
+              logExercise={logExercise}
+              pendingIds={pendingIds}
+              target={target}
+              onChanged={refresh}
+              onSetDone={() =>
+                setRestEndsAt(Date.now() + (target?.restSeconds ?? defaultRest.seconds) * 1000)
+              }
+            />
+          );
+        })}
 
         <Pressable style={styles.secondaryButton} onPress={() => setPickerOpen(true)}>
           <Text style={styles.secondaryButtonText}>+ Add Exercise</Text>
@@ -444,12 +449,18 @@ function ExerciseCard({
     return `${prev.weightKg ?? 0} × ${prev.reps ?? 0}`;
   }
 
-  const targetText =
-    target && !isCardio && (target.targetSets || target.targetReps)
-      ? `Target: ${target.targetSets ?? '?'} × ${target.targetReps ?? '?'}${
-          target.targetWeightKg ? ` @ ${target.targetWeightKg} kg` : ''
-        }`
-      : null;
+  const targetParts =
+    target && !isCardio
+      ? [
+          target.targetSets || target.targetReps
+            ? `Target: ${target.targetSets ?? '?'} × ${target.targetReps ?? '?'}${
+                target.targetWeightKg ? ` @ ${target.targetWeightKg} kg` : ''
+              }`
+            : null,
+          target.restSeconds ? `🕐 Rest ${formatDuration(target.restSeconds)}` : null,
+        ].filter(Boolean)
+      : [];
+  const targetText = targetParts.length ? targetParts.join(' · ') : null;
 
   const waitingCount = doneSets.filter((set) => pendingIds.has(set.id)).length;
 
