@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { router, useLocalSearchParams } from 'expo-router';
+import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
@@ -29,8 +29,9 @@ type Result = { kind: 'db'; food: Food } | { kind: 'off'; food: OffFood };
 export default function FoodSearch() {
   const { session } = useSession();
   // Set when opened from a meal's "+" so the food page starts on that meal.
-  const { meal } = useLocalSearchParams<{ meal?: MealType }>();
-  const mealQuery = meal ? `?meal=${meal}` : '';
+  // `recipe` is set when adding an ingredient from the Recipe screen; it is passed on instead.
+  const { meal, recipe } = useLocalSearchParams<{ meal?: MealType; recipe?: string }>();
+  const mealQuery = recipe ? '?recipe=1' : meal ? `?meal=${meal}` : '';
   const { data: recentFoods } = useQuery({
     queryKey: ['recentFoods', session?.user.id],
     queryFn: () => getRecentFoods(session?.user.id as string),
@@ -146,6 +147,7 @@ export default function FoodSearch() {
 
   return (
     <View style={styles.container}>
+      {recipe ? <Stack.Screen options={{ title: 'Add Ingredient' }} /> : null}
       <TextInput
         style={styles.input}
         placeholder="Search foods..."
@@ -162,12 +164,14 @@ export default function FoodSearch() {
       </Pressable>
 
       <View style={styles.shortcutRow}>
-        <Pressable
-          style={styles.shortcut}
-          onPress={() => router.push(`/(tabs)/food/saved-meals${mealQuery}`)}
-        >
-          <Text style={styles.shortcutText}>Saved meals</Text>
-        </Pressable>
+        {recipe ? null : (
+          <Pressable
+            style={styles.shortcut}
+            onPress={() => router.push(`/(tabs)/food/saved-meals${mealQuery}`)}
+          >
+            <Text style={styles.shortcutText}>Saved meals</Text>
+          </Pressable>
+        )}
         <Pressable
           style={styles.shortcut}
           onPress={() => router.push(`/(tabs)/food/custom-food/new${mealQuery}`)}

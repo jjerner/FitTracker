@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { router, useLocalSearchParams } from 'expo-router';
+import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useMemo, useState } from 'react';
 import {
   ActivityIndicator,
@@ -26,6 +26,7 @@ import {
   updateFoodServing,
 } from '../../../../lib/foods';
 import { toNumberOrNull } from '../../../../lib/numbers';
+import { addPendingRecipeItem } from '../../../../lib/recipeDraft';
 import { LabeledInput } from '../../../../components/LabeledInput';
 import type { MealType } from '../../../../types/domain';
 import { colors } from '../../../../theme';
@@ -42,6 +43,7 @@ type ServingOption = { id: string; label: string; grams: number };
 
 export default function FoodDetail() {
   // entryId/quantity/unit/servingG/meal are set only when editing a logged entry.
+  // recipe is set when adding an ingredient to the Recipe screen instead of the diary.
   const params = useLocalSearchParams<{
     foodId: string;
     entryId?: string;
@@ -49,6 +51,7 @@ export default function FoodDetail() {
     unit?: 'g' | 'serving';
     servingG?: string;
     meal?: MealType;
+    recipe?: string;
   }>();
   const { foodId, entryId } = params;
   const { session } = useSession();
@@ -203,6 +206,7 @@ export default function FoodDetail() {
   }
 
   const amountNumber = toNumberOrNull(amount) ?? 0;
+  const recipeBlocked = !!params.recipe && !(amountNumber > 0);
   const preview = useMemo(() => {
     if (!food) return null;
     const grams = selected ? amountNumber * selected.grams : amountNumber;
@@ -217,6 +221,16 @@ export default function FoodDetail() {
 
   async function handleSave() {
     if (!food || !session) return;
+    if (params.recipe) {
+      addPendingRecipeItem({
+        food,
+        quantity: amountNumber,
+        quantityUnit: unit,
+        servingG: selected?.grams ?? null,
+      });
+      router.dismissTo('/(tabs)/food/recipe');
+      return;
+    }
     setIsSaving(true);
     try {
       if (entryId) {
@@ -256,6 +270,7 @@ export default function FoodDetail() {
 
   return (
     <View style={styles.container}>
+      {params.recipe ? <Stack.Screen options={{ title: 'Add to Recipe' }} /> : null}
       <View style={styles.nameRow}>
         <Text style={[styles.name, styles.nameText]}>{food.name}</Text>
         <Pressable
@@ -356,20 +371,24 @@ export default function FoodDetail() {
         keyboardType="numeric"
       />
 
-      <Text style={styles.label}>Meal</Text>
-      <View style={styles.mealRow}>
-        {MEAL_TYPES.map((type) => (
-          <Pressable
-            key={type}
-            style={[styles.mealChip, mealType === type && styles.mealChipActive]}
-            onPress={() => setMealType(type)}
-          >
-            <Text style={mealType === type ? styles.mealChipTextActive : styles.mealChipText}>
-              {MEAL_LABELS[type]}
-            </Text>
-          </Pressable>
-        ))}
-      </View>
+      {params.recipe ? null : (
+        <>
+          <Text style={styles.label}>Meal</Text>
+          <View style={styles.mealRow}>
+            {MEAL_TYPES.map((type) => (
+              <Pressable
+                key={type}
+                style={[styles.mealChip, mealType === type && styles.mealChipActive]}
+                onPress={() => setMealType(type)}
+              >
+                <Text style={mealType === type ? styles.mealChipTextActive : styles.mealChipText}>
+                  {MEAL_LABELS[type]}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+        </>
+      )}
 
       {preview ? (
         <View style={styles.previewCard}>
@@ -381,11 +400,17 @@ export default function FoodDetail() {
         </View>
       ) : null}
 
-      <Pressable style={styles.saveButton} onPress={handleSave} disabled={isSaving}>
+      <Pressable
+        style={[styles.saveButton, recipeBlocked && styles.saveButtonDisabled]}
+        onPress={handleSave}
+        disabled={isSaving || recipeBlocked}
+      >
         {isSaving ? (
           <ActivityIndicator color={colors.onPrimary} />
         ) : (
-          <Text style={styles.saveButtonText}>{entryId ? 'Save changes' : 'Add to Diary'}</Text>
+          <Text style={styles.saveButtonText}>
+            {params.recipe ? 'Add to Recipe' : entryId ? 'Save changes' : 'Add to Diary'}
+          </Text>
         )}
       </Pressable>
     </View>
@@ -439,5 +464,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 24,
   },
+  saveButtonDisabled: { opacity: 0.5 },
   saveButtonText: { color: colors.onPrimary, fontSize: 16, fontWeight: '600' },
 });

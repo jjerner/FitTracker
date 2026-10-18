@@ -54,6 +54,8 @@ export type SavedMealItem = {
 export type SavedMeal = {
   id: string;
   name: string;
+  // How many portions the items make; 1 for a normal saved meal (migration 0016).
+  portions: number;
   items: SavedMealItem[];
 };
 

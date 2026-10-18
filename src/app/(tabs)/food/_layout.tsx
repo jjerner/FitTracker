@@ -14,6 +14,7 @@ export default function FoodLayout() {
       <Stack.Screen name="custom-food/new" options={{ title: 'New Food' }} />
       <Stack.Screen name="quick-add" options={{ title: 'Quick Add' }} />
       <Stack.Screen name="saved-meals" options={{ title: 'Saved Meals' }} />
+      <Stack.Screen name="recipe" options={{ title: 'Recipe' }} />
     </Stack>
   );
 }

@@ -5,9 +5,11 @@ import {
   ActivityIndicator,
   Alert,
   FlatList,
+  Modal,
   Pressable,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from 'react-native';
 
@@ -19,7 +21,9 @@ import {
   entryNutrition,
   getSavedMeals,
   logSavedMeal,
+  scaleSavedMealItems,
 } from '../../../lib/foods';
+import { toNumberOrNull } from '../../../lib/numbers';
 import type { MealType, SavedMeal } from '../../../types/domain';
 import { colors } from '../../../theme';
 
@@ -31,8 +35,8 @@ const MEAL_LABELS: Record<MealType, string> = {
   snack: 'Snack',
 };
 
-function mealCalories(meal: SavedMeal): number {
-  return meal.items.reduce(
+function mealCalories(items: SavedMeal['items']): number {
+  return items.reduce(
     (sum, i) =>
       sum + entryNutrition(i.food, i.quantity, i.quantityUnit, i.servingG).calories_kcal,
     0
@@ -47,6 +51,10 @@ export default function SavedMeals() {
   const params = useLocalSearchParams<{ meal?: MealType }>();
   const [mealType, setMealType] = useState<MealType>(params.meal ?? defaultMealForNow());
   const [busyId, setBusyId] = useState<string | null>(null);
+  // The recipe whose "How many portions?" popup is open, and what is typed in it.
+  const [askingMeal, setAskingMeal] = useState<SavedMeal | null>(null);
+  const [eaten, setEaten] = useState('1');
+  const eatenNumber = toNumberOrNull(eaten) ?? 0;
 
   const { data: meals, isLoading } = useQuery({
     queryKey: ['savedMeals', userId],
@@ -54,11 +62,11 @@ export default function SavedMeals() {
     enabled: !!userId,
   });
 
-  async function handleLog(meal: SavedMeal) {
+  async function handleLog(meal: SavedMeal, portions = meal.portions) {
     if (!userId || busyId) return;
     setBusyId(meal.id);
     try {
-      await logSavedMeal(userId, meal, date, mealType);
+      await logSavedMeal(userId, meal, date, mealType, portions);
       await queryClient.invalidateQueries({ queryKey: ['foodDiary', userId, date] });
       router.dismissTo('/(tabs)/food');
     } catch {
@@ -87,6 +95,58 @@ export default function SavedMeals() {
 
   return (
     <View style={styles.container}>
+      <Pressable
+        style={styles.newRecipe}
+        onPress={() => router.push('/(tabs)/food/recipe')}
+        accessibilityRole="button"
+      >
+        <Text style={styles.newRecipeText}>New recipe</Text>
+      </Pressable>
+
+      <Modal
+        visible={askingMeal != null}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setAskingMeal(null)}
+      >
+        <Pressable style={styles.modalBackdrop} onPress={() => setAskingMeal(null)}>
+          <Pressable style={styles.modalCard}>
+            <Text style={styles.modalTitle}>
+              {askingMeal?.name}: how many portions? (of {askingMeal?.portions})
+            </Text>
+            <TextInput
+              style={styles.modalInput}
+              value={eaten}
+              onChangeText={setEaten}
+              keyboardType="decimal-pad"
+              accessibilityLabel="Portions eaten"
+              selectTextOnFocus
+              autoFocus
+            />
+            <Text style={styles.modalPreview}>
+              {askingMeal
+                ? Math.round(mealCalories(scaleSavedMealItems(askingMeal, eatenNumber)))
+                : 0}{' '}
+              kcal
+            </Text>
+            <Pressable
+              style={[styles.logButton, !(eatenNumber > 0) && styles.buttonDisabled]}
+              disabled={!(eatenNumber > 0) || !!busyId}
+              onPress={() => {
+                const meal = askingMeal!;
+                setAskingMeal(null);
+                handleLog(meal, eatenNumber);
+              }}
+            >
+              <Text style={styles.logButtonText}>Log</Text>
+            </Pressable>
+            <Pressable style={styles.cancelButton} onPress={() => setAskingMeal(null)}>
+              <Text style={styles.cancelText}>Cancel</Text>
+            </Pressable>
+          </Pressable>
+        </Pressable>
+      </Modal>
+
       <Text style={styles.label}>Log to</Text>
       <View style={styles.mealRow}>
         {MEAL_TYPES.map((type) => (
@@ -110,22 +170,46 @@ export default function SavedMeals() {
           keyExtractor={(m) => m.id}
           ListEmptyComponent={
             <Text style={styles.empty}>
-              No saved meals yet. On the diary, tap &quot;Save as meal&quot; on a meal to create one.
+              No saved meals yet. Tap &quot;New recipe&quot; above, or on the diary tap &quot;Save as
+              meal&quot; on a meal.
             </Text>
           }
           renderItem={({ item }) => (
             <View style={styles.row}>
-              <Pressable style={styles.rowTap} onPress={() => handleLog(item)} disabled={!!busyId}>
+              <Pressable
+                style={styles.rowTap}
+                onPress={() => {
+                  if (item.portions === 1) return handleLog(item);
+                  setEaten('1');
+                  setAskingMeal(item);
+                }}
+                disabled={!!busyId}
+              >
                 <View style={styles.rowInfo}>
                   <Text style={styles.rowName}>{item.name}</Text>
                   <Text style={styles.rowSub}>
                     {item.items.length} {item.items.length === 1 ? 'food' : 'foods'} ·{' '}
-                    {Math.round(mealCalories(item))} kcal
+                    {item.portions === 1
+                      ? `${Math.round(mealCalories(item.items))} kcal`
+                      : `makes ${item.portions} · ${Math.round(mealCalories(item.items) / item.portions)} kcal per portion`}
                   </Text>
                 </View>
                 {busyId === item.id ? <ActivityIndicator /> : <Text style={styles.add}>Add</Text>}
               </Pressable>
-              <Pressable onPress={() => confirmDelete(item)} hitSlop={10}>
+              <Pressable
+                onPress={() => router.push(`/(tabs)/food/recipe?id=${item.id}`)}
+                style={styles.iconButton}
+                accessibilityRole="button"
+                accessibilityLabel={`Edit ${item.name}`}
+              >
+                <Text style={styles.edit}>Edit</Text>
+              </Pressable>
+              <Pressable
+                onPress={() => confirmDelete(item)}
+                style={styles.iconButton}
+                accessibilityRole="button"
+                accessibilityLabel={`Delete ${item.name}`}
+              >
                 <Text style={styles.delete}>✕</Text>
               </Pressable>
             </View>
@@ -166,4 +250,42 @@ const styles = StyleSheet.create({
   rowSub: { fontSize: 13, color: colors.muted },
   add: { fontSize: 15, color: colors.primary, fontWeight: '600' },
   delete: { fontSize: 16, color: colors.subtle, paddingHorizontal: 4 },
+  edit: { fontSize: 14, color: colors.primary },
+  iconButton: { minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' },
+  cancelButton: { alignItems: 'center', paddingTop: 12 },
+  cancelText: { color: colors.muted, fontSize: 15, fontWeight: '600' },
+  newRecipe: {
+    borderWidth: 1,
+    borderColor: colors.primary,
+    borderRadius: 8,
+    padding: 12,
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  newRecipeText: { color: colors.primary, fontSize: 15, fontWeight: '600' },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'center',
+    padding: 16,
+  },
+  modalCard: { backgroundColor: colors.background, borderRadius: 12, padding: 16 },
+  modalTitle: { fontSize: 17, fontWeight: '600', marginBottom: 12 },
+  modalInput: {
+    borderWidth: 1,
+    borderColor: colors.borderStrong,
+    borderRadius: 8,
+    padding: 14,
+    fontSize: 16,
+  },
+  modalPreview: { fontSize: 15, color: colors.textSecondary, marginTop: 12 },
+  logButton: {
+    backgroundColor: colors.primary,
+    borderRadius: 8,
+    padding: 14,
+    alignItems: 'center',
+    marginTop: 16,
+  },
+  logButtonText: { color: colors.onPrimary, fontSize: 16, fontWeight: '600' },
+  buttonDisabled: { opacity: 0.5 },
 });
