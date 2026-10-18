@@ -1,0 +1,2 @@
+# LF everywhere for JSON: CRLF in eas.json/app.json changes the Expo runtime fingerprint.
+*.json text eol=lf
