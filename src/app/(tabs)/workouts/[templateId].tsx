@@ -12,10 +12,13 @@ import {
   View,
 } from 'react-native';
 
+import { RestTimeInput } from '../../../components/RestTimeInput';
 import { ExercisePicker } from '../../../components/workouts/ExercisePicker';
 import { useSession } from '../../../context/AuthProvider';
+import { useDefaultRest } from '../../../hooks/useDefaultRest';
 import { useWorkoutTemplate } from '../../../hooks/useWorkouts';
 import { toNumberOrNull } from '../../../lib/numbers';
+import { formatRest } from '../../../lib/restTime';
 import { deleteTemplate, saveTemplate, setTemplateArchived } from '../../../lib/workouts';
 import type { WorkoutTemplate, WorkoutTemplateExercise } from '../../../types/domain';
 import { colors } from '../../../theme';
@@ -45,11 +48,14 @@ type DraftExercise = {
   weight: string;
   // Targets are optional; the inputs stay hidden until asked for.
   showTargets: boolean;
+  // Own rest time for this exercise; null = the default from Profile.
+  restSeconds: number | null;
 };
 
 function TemplateForm({ template }: { template: WorkoutTemplate | null }) {
   const { session } = useSession();
   const queryClient = useQueryClient();
+  const defaultRest = useDefaultRest();
   const [name, setName] = useState(template?.name ?? '');
   const [exercises, setExercises] = useState<DraftExercise[]>(
     (template?.exercises ?? []).map((te) => ({
@@ -58,6 +64,7 @@ function TemplateForm({ template }: { template: WorkoutTemplate | null }) {
       reps: te.targetReps?.toString() ?? '',
       weight: te.targetWeightKg?.toString() ?? '',
       showTargets: te.targetSets != null || te.targetReps != null || te.targetWeightKg != null,
+      restSeconds: te.restSeconds ?? null,
     }))
   );
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -82,6 +89,7 @@ function TemplateForm({ template }: { template: WorkoutTemplate | null }) {
       targetSets: toNumberOrNull(e.sets),
       targetReps: toNumberOrNull(e.reps),
       targetWeightKg: toNumberOrNull(e.weight),
+      restSeconds: e.exercise.category === 'strength' ? e.restSeconds : null,
     }));
   }
 
@@ -218,17 +226,55 @@ function TemplateForm({ template }: { template: WorkoutTemplate | null }) {
               <Text style={styles.removeText}>Remove</Text>
             </Pressable>
           </View>
-          {e.exercise.category === 'strength' && !e.showTargets ? (
-            <Pressable onPress={() => updateExercise(index, { showTargets: true })}>
-              <Text style={styles.addTargetsText}>+ Targets</Text>
-            </Pressable>
-          ) : null}
-          {e.exercise.category === 'strength' && e.showTargets ? (
-            <View style={styles.targetsRow}>
-              <TargetInput label="Sets" value={e.sets} onChange={(v) => updateExercise(index, { sets: v })} />
-              <TargetInput label="Reps" value={e.reps} onChange={(v) => updateExercise(index, { reps: v })} />
-              <TargetInput label="kg" value={e.weight} onChange={(v) => updateExercise(index, { weight: v })} />
-            </View>
+          {e.exercise.category === 'strength' ? (
+            <>
+              {!e.showTargets || e.restSeconds == null ? (
+                <View style={styles.addLinksRow}>
+                  {!e.showTargets ? (
+                    <Pressable onPress={() => updateExercise(index, { showTargets: true })} hitSlop={8}>
+                      <Text style={styles.addTargetsText}>+ Targets</Text>
+                    </Pressable>
+                  ) : null}
+                  {e.restSeconds == null ? (
+                    <Pressable
+                      onPress={() => updateExercise(index, { restSeconds: defaultRest.seconds })}
+                      hitSlop={8}
+                    >
+                      <Text style={styles.addTargetsText}>+ Rest time</Text>
+                    </Pressable>
+                  ) : null}
+                </View>
+              ) : null}
+              {e.showTargets ? (
+                <View style={styles.targetsRow}>
+                  <TargetInput label="Sets" value={e.sets} onChange={(v) => updateExercise(index, { sets: v })} />
+                  <TargetInput label="Reps" value={e.reps} onChange={(v) => updateExercise(index, { reps: v })} />
+                  <TargetInput label="kg" value={e.weight} onChange={(v) => updateExercise(index, { weight: v })} />
+                </View>
+              ) : null}
+              {e.restSeconds == null ? (
+                <Text style={styles.defaultRestText}>
+                  Uses your default rest ({formatRest(defaultRest.seconds)})
+                </Text>
+              ) : (
+                <View style={styles.restRow}>
+                  <Text style={styles.restLabel}>Rest</Text>
+                  <RestTimeInput
+                    initialSeconds={e.restSeconds}
+                    min={5}
+                    label={`${e.exercise.name} rest`}
+                    onChange={(v) => updateExercise(index, { restSeconds: v })}
+                  />
+                  <Pressable
+                    onPress={() => updateExercise(index, { restSeconds: null })}
+                    hitSlop={8}
+                    accessibilityRole="button"
+                  >
+                    <Text style={styles.useDefaultText}>✕ Use default</Text>
+                  </Pressable>
+                </View>
+              )}
+            </>
           ) : null}
         </View>
       ))}
@@ -276,7 +322,7 @@ function TemplateForm({ template }: { template: WorkoutTemplate | null }) {
         onSelect={(exercise) =>
           setExercises((prev) => [
             ...prev,
-            { exercise, sets: '', reps: '', weight: '', showTargets: false },
+            { exercise, sets: '', reps: '', weight: '', showTargets: false, restSeconds: null },
           ])
         }
       />
@@ -331,7 +377,12 @@ const styles = StyleSheet.create({
   moveButton: { paddingHorizontal: 8, paddingVertical: 2 },
   moveText: { fontSize: 18, color: colors.primary },
   moveTextDisabled: { fontSize: 18, color: colors.borderStrong },
+  addLinksRow: { flexDirection: 'row', gap: 20 },
   addTargetsText: { color: colors.primary, fontSize: 14, marginTop: 6 },
+  defaultRestText: { color: colors.muted, fontSize: 13, marginTop: 6 },
+  restLabel: { fontSize: 12, color: colors.textSecondary },
+  useDefaultText: { color: colors.primary, fontSize: 14 },
+  restRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 8, marginTop: 8 },
   targetsRow: { flexDirection: 'row', gap: 8, marginTop: 8 },
   targetField: { flex: 1 },
   targetLabel: { fontSize: 12, color: colors.textSecondary, marginBottom: 4 },

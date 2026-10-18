@@ -18,5 +18,9 @@ export function useDefaultRest() {
     },
   });
 
-  return { seconds: query.data ?? DEFAULT_REST_SECONDS, setSeconds: saveMutation.mutate };
+  return {
+    seconds: query.data ?? DEFAULT_REST_SECONDS,
+    isLoading: query.isLoading,
+    setSeconds: saveMutation.mutate,
+  };
 }

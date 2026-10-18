@@ -120,6 +120,7 @@ function mapTemplateRow(row: any): WorkoutTemplate {
         targetSets: te.target_sets,
         targetReps: te.target_reps,
         targetWeightKg: te.target_weight_kg,
+        restSeconds: te.rest_seconds,
       })
     );
 
@@ -170,6 +171,7 @@ export async function saveTemplate(input: {
         target_sets: te.targetSets,
         target_reps: te.targetReps,
         target_weight_kg: te.targetWeightKg,
+        rest_seconds: te.restSeconds,
       }))
     );
     if (error) {
