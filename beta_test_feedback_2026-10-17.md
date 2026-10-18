@@ -5,13 +5,13 @@ Collected 2026-10-10 – 2026-10-17. Nothing fixed yet. Round 1: `beta_test_feed
 ## Bugs / issues
 - [ ] Sign-up confirmation email links to a localhost site (2026-10-10)
 - [ ] Email confirmation isn't required — user can log in without confirming (2026-10-10)
-- [ ] Missing-dinner food-log reminder fired twice (duplicate notification) (2026-10-15)
+- [x] Missing-dinner food-log reminder fired twice (duplicate notification) (2026-10-15) — F3 done 2026-10-18, PR #6 (likely a second install; refreshes now queued)
   - Check: scheduled twice (app open + background)? old notification not cancelled before rescheduling? same time or two different times?
-- [ ] Typing "," in the food weight field resets the value to 0 (2026-10-15)
+- [x] Typing "," in the food weight field resets the value to 0 (2026-10-15) — F4 done 2026-10-18, PR #5 (all number fields)
   - Likely cause: Swedish keyboard decimal ","; `Number("12,")` → NaN → falls back to 0. Fix: keep raw text in state, replace "," with ".", parse on blur/save
 
 ## UX / feature ideas
-- [ ] "Save as meal" popup: list all items being saved with checkboxes (all checked by default) so items can be excluded (2026-10-10)
+- [x] (F5 done 2026-10-18, PR #7) "Save as meal" popup: list all items being saved with checkboxes (all checked by default) so items can be excluded (2026-10-10)
 - [ ] Calorie ring: show the same info as Lifesum's ring, but without calories burned (2026-10-10)
 - [ ] Custom meal from a cooked batch (2026-10-15): log every ingredient in the batch + how many portions it yielded → meal size of 1 portion
   - Example: pancake batter ingredients + "made 12 pancakes" → log 1, 2 or 2.5 pancakes
