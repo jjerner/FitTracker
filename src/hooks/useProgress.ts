@@ -1,11 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { useSession } from '../context/AuthProvider';
-import { localDateDaysAgo } from '../lib/dateUtils';
+import { addDays, localDateDaysAgo, mondayOf, todayLocalDate } from '../lib/dateUtils';
 import {
   addTrackedExercise,
   getBodyWeights,
   getDailyNutrition,
+  getMuscleSetRows,
   getTrackedExerciseIds,
   getWorkoutDates,
   removeTrackedExercise,
@@ -84,6 +85,21 @@ export function useWorkoutDates() {
     queryKey: ['workoutDates', userId],
     // The calendar and the counts go back at most a year.
     queryFn: () => getWorkoutDates(userId as string, localDateDaysAgo(365)),
+    enabled: !!userId,
+  });
+}
+
+export function useMuscleSets() {
+  const { session } = useSession();
+  const userId = session?.user.id;
+
+  return useQuery({
+    queryKey: ['muscleSets', userId],
+    queryFn: () => {
+      // Local midnight of the Monday 3 weeks before this week, sent as an ISO timestamp.
+      const [y, m, d] = addDays(mondayOf(todayLocalDate()), -21).split('-').map(Number);
+      return getMuscleSetRows(userId as string, new Date(y, m - 1, d).toISOString());
+    },
     enabled: !!userId,
   });
 }

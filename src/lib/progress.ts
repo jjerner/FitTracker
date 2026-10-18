@@ -1,5 +1,5 @@
 import { supabase } from './supabase';
-import { addDays, localDateOf } from './dateUtils';
+import { addDays, localDateOf, mondayOf } from './dateUtils';
 import type { BodyWeight, DailyNutrition, NutritionGoals } from '../types/domain';
 
 export async function getBodyWeights(userId: string, sinceDate: string): Promise<BodyWeight[]> {
@@ -116,6 +116,56 @@ export function goalStreak(days: DailyNutrition[], goals: NutritionGoals, today:
     date = addDays(date, -1);
   }
   return streak;
+}
+
+export type MuscleSetRow = {
+  startedAt: string;
+  muscleGroup: string | null;
+  category: string;
+  setCount: number;
+};
+
+// One row per exercise done in a completed workout since `sinceIso`, with its number of sets.
+export async function getMuscleSetRows(userId: string, sinceIso: string): Promise<MuscleSetRow[]> {
+  const { data, error } = await supabase
+    .from('workout_log_exercises')
+    .select(
+      'exercises(muscle_group, category), workout_logs!inner(started_at, completed_at, user_id), workout_log_sets(id)'
+    )
+    .eq('workout_logs.user_id', userId)
+    .not('workout_logs.completed_at', 'is', null)
+    .gte('workout_logs.started_at', sinceIso);
+
+  if (error) throw error;
+  return (data ?? []).map((row: any) => ({
+    startedAt: row.workout_logs.started_at,
+    muscleGroup: row.exercises?.muscle_group ?? null,
+    category: row.exercises?.category ?? '',
+    setCount: (row.workout_log_sets ?? []).length,
+  }));
+}
+
+// Sets per muscle group per week. `counts[i]` belongs to `weekStarts[i]` (Mondays).
+// Cardio is skipped, a missing group is 'other' (sorted last), rows outside the weeks are ignored.
+export function weeklyMuscleSets(
+  rows: MuscleSetRow[],
+  weekStarts: string[]
+): { group: string; counts: number[] }[] {
+  const byGroup = new Map<string, number[]>();
+  for (const row of rows) {
+    if (row.category === 'cardio') continue;
+    const week = weekStarts.indexOf(mondayOf(localDateOf(new Date(row.startedAt))));
+    if (week === -1 || row.setCount === 0) continue;
+    const group = row.muscleGroup?.trim().toLowerCase() || 'other';
+    const counts = byGroup.get(group) ?? weekStarts.map(() => 0);
+    counts[week] += row.setCount;
+    byGroup.set(group, counts);
+  }
+  return [...byGroup]
+    .map(([group, counts]) => ({ group, counts }))
+    .sort((a, b) =>
+      a.group === 'other' ? 1 : b.group === 'other' ? -1 : a.group.localeCompare(b.group)
+    );
 }
 
 // For each weigh-in, the average of all weigh-ins in the 7 days up to and including it.
