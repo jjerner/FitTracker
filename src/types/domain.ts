@@ -93,6 +93,8 @@ export type WorkoutTemplate = {
   exercises: WorkoutTemplateExercise[];
 };
 
+export type SetType = 'normal' | 'warmup';
+
 export type WorkoutSet = {
   id: string;
   setNumber: number;
@@ -100,6 +102,7 @@ export type WorkoutSet = {
   reps: number | null;
   durationS: number | null;
   distanceM: number | null;
+  setType: SetType;
 };
 
 export type WorkoutLogExercise = {

@@ -1,8 +1,10 @@
-import { trackedStats } from '../records';
-import type { ExerciseSession } from '../../types/domain';
+import { bestOf, findNewRecords, matchingSet, setLabels, trackedStats, workingSets } from '../records';
+import type { ExerciseSession, SetType } from '../../types/domain';
+
+type TestSet = { weightKg: number; reps: number; setType?: SetType };
 
 // Midday UTC, so the local date is the same in any time zone.
-function session(isoDate: string, sets: { weightKg: number; reps: number }[]): ExerciseSession {
+function session(isoDate: string, sets: TestSet[]): ExerciseSession {
   return {
     logId: isoDate,
     startedAt: `${isoDate}T12:00:00Z`,
@@ -13,6 +15,7 @@ function session(isoDate: string, sets: { weightKg: number; reps: number }[]): E
       reps: s.reps,
       durationS: null,
       distanceM: null,
+      setType: s.setType ?? 'normal',
     })),
   };
 }
@@ -56,5 +59,74 @@ describe('trackedStats', () => {
     ]);
     expect(stats.change30).toBeNull();
     expect(stats.change90).toBeNull();
+  });
+});
+
+const warmup = (weightKg: number, reps: number): TestSet => ({ weightKg, reps, setType: 'warmup' });
+
+describe('warm-up sets', () => {
+  beforeEach(() => {
+    jest.useFakeTimers().setSystemTime(new Date('2026-10-11T12:00:00Z'));
+  });
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
+  it('workingSets leaves warm-ups out', () => {
+    const { sets } = session('2026-10-10', [warmup(40, 10), { weightKg: 80, reps: 5 }]);
+    expect(workingSets(sets).map((s) => s.weightKg)).toEqual([80]);
+  });
+
+  it('bestOf ignores a heavier warm-up', () => {
+    const { sets } = session('2026-10-10', [warmup(120, 1), { weightKg: 80, reps: 5 }]);
+    expect(bestOf(sets).weightKg).toBe(80);
+  });
+
+  it('trackedStats uses the heaviest working set, and skips warm-up-only sessions', () => {
+    const stats = trackedStats([
+      session('2026-10-10', [warmup(120, 1), { weightKg: 90, reps: 5 }]),
+      session('2026-10-05', [warmup(200, 1)]),
+    ]);
+    expect(stats.current).toMatchObject({ weightKg: 90, reps: 5 });
+    expect(stats.pr).toMatchObject({ weightKg: 90, reps: 5 });
+    expect(trackedStats([session('2026-10-10', [warmup(60, 10)])]).current).toBeNull();
+  });
+
+  it('findNewRecords needs an earlier working set', () => {
+    const earlier = [session('2026-10-05', [warmup(40, 10)])];
+    const now = session('2026-10-10', [{ weightKg: 80, reps: 5 }]).sets;
+    expect(findNewRecords(now, earlier)).toEqual({ weight: false, oneRM: false });
+  });
+
+  it('findNewRecords: a warm-up above the best is no record, a working set is', () => {
+    const earlier = [session('2026-10-05', [{ weightKg: 80, reps: 5 }])];
+    const warm = session('2026-10-10', [warmup(100, 5), { weightKg: 60, reps: 5 }]).sets;
+    expect(findNewRecords(warm, earlier)).toEqual({ weight: false, oneRM: false });
+    const work = session('2026-10-10', [warmup(40, 10), { weightKg: 100, reps: 5 }]).sets;
+    expect(findNewRecords(work, earlier)).toEqual({ weight: true, oneRM: true });
+  });
+});
+
+describe('setLabels', () => {
+  it('numbers only working sets', () => {
+    expect(setLabels(['warmup', 'warmup', 'normal', 'normal'])).toEqual(['W', 'W', '1', '2']);
+    expect(setLabels(['normal', 'warmup', 'normal'])).toEqual(['1', 'W', '2']);
+    expect(setLabels([])).toEqual([]);
+  });
+});
+
+describe('matchingSet', () => {
+  // Last time: W 40, W 60, 1: 80, 2: 85
+  const last = session('2026-10-10', [warmup(40, 10), warmup(60, 5), { weightKg: 80, reps: 5 }, { weightKg: 85, reps: 5 }]).sets;
+
+  it('matches working rows to last working sets and warm-ups to last warm-ups', () => {
+    const types: SetType[] = ['warmup', 'normal', 'normal'];
+    expect(matchingSet(last, types, 0)?.weightKg).toBe(40);
+    expect(matchingSet(last, types, 1)?.weightKg).toBe(80);
+    expect(matchingSet(last, types, 2)?.weightKg).toBe(85);
+  });
+
+  it('returns undefined past the end of that type', () => {
+    expect(matchingSet(last, ['warmup', 'warmup', 'warmup'], 2)).toBeUndefined();
   });
 });

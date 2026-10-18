@@ -42,10 +42,11 @@ import {
   usePendingSync,
 } from '../../../lib/pendingSets';
 import { toNumberOrNull } from '../../../lib/numbers';
-import { bestOf, findNewRecords } from '../../../lib/records';
+import { bestOf, findNewRecords, matchingSet, setLabels } from '../../../lib/records';
 import { colors, radius, spacing } from '../../../theme';
 import type {
   Exercise,
+  SetType,
   WorkoutLogExercise,
   WorkoutSet,
   WorkoutTemplateExercise,
@@ -150,6 +151,7 @@ export default function ActiveWorkout() {
           reps: p.reps,
           durationS: p.durationS,
           distanceM: p.distanceM,
+          setType: p.setType === 'warmup' ? ('warmup' as const) : ('normal' as const),
         })),
     ],
   }));
@@ -268,12 +270,12 @@ function RestTimer({
 }
 
 // A set row not yet saved. a/b = kg/reps (strength) or min/km (cardio).
-type DraftRow = { key: number; a: string; b: string };
+type DraftRow = { key: number; a: string; b: string; type: SetType };
 
 let lastDraftKey = 0;
-function newRow(a = '', b = ''): DraftRow {
+function newRow(a = '', b = '', type: SetType = 'normal'): DraftRow {
   lastDraftKey += 1;
-  return { key: lastDraftKey, a, b };
+  return { key: lastDraftKey, a, b, type };
 }
 
 function ExerciseCard({
@@ -307,8 +309,11 @@ function ExerciseCard({
   const [swapOpen, setSwapOpen] = useState(false);
 
   // Suggested values shown greyed out; used when the input is left empty.
-  function suggestion(setNumber: number): { a: number | null; b: number | null } {
-    const prev = previous?.sets[setNumber - 1];
+  // Row types, done sets first then drafts; same order as the rows on screen.
+  const types = [...doneSets.map((s) => s.setType), ...drafts.map((d) => d.type)];
+
+  function suggestion(index: number): { a: number | null; b: number | null } {
+    const prev = previous && matchingSet(previous.sets, types, index);
     if (isCardio) {
       const src = prev ?? lastDone;
       return {
@@ -326,8 +331,8 @@ function ExerciseCard({
     setDrafts((prev) => prev.map((d) => (d.key === key ? { ...d, ...patch } : d)));
   }
 
-  async function handleDone(draft: DraftRow, setNumber: number) {
-    const s = suggestion(setNumber);
+  async function handleDone(draft: DraftRow, index: number) {
+    const s = suggestion(index);
     const a = toNumberOrNull(draft.a) ?? s.a;
     const b = toNumberOrNull(draft.b) ?? s.b;
     if (a == null && b == null) return;
@@ -342,6 +347,7 @@ function ExerciseCard({
         reps: isCardio ? null : b,
         durationS: isCardio && a != null ? Math.round(a * 60) : null,
         distanceM: isCardio && b != null ? b * 1000 : null,
+        setType: isCardio ? ('normal' as const) : draft.type,
       };
       // No answer within 8 seconds counts as no signal. If the save did go through, sending
       // it again later is harmless (same id).
@@ -384,12 +390,12 @@ function ExerciseCard({
       ? set.distanceM != null ? String(set.distanceM / 1000) : ''
       : set.reps?.toString() ?? '';
     await deleteSetEverywhere(set);
-    setDrafts((prev) => [newRow(a, b), ...prev]);
+    setDrafts((prev) => [newRow(a, b, set.setType), ...prev]);
     await onChanged();
   }
 
-  function handleDeleteSet(set: WorkoutSet, setNumber: number) {
-    Alert.alert(`Delete set ${setNumber}?`, 'This set will be removed from the workout.', [
+  function handleDeleteSet(set: WorkoutSet, label: string) {
+    Alert.alert(label === 'W' ? 'Delete warm-up set?' : `Delete set ${label}?`, 'This set will be removed from the workout.', [
       { text: 'Cancel', style: 'cancel' },
       {
         text: 'Delete',
@@ -426,8 +432,8 @@ function ExerciseCard({
     await onChanged();
   }
 
-  function previousText(setNumber: number): string {
-    const prev = previous?.sets[setNumber - 1];
+  function previousText(index: number): string {
+    const prev = previous && matchingSet(previous.sets, types, index);
     if (!prev) return '—';
     if (isCardio) {
       const parts = [];
@@ -457,6 +463,7 @@ function ExerciseCard({
       : null;
 
   const [labelA, labelB] = isCardio ? ['min', 'km'] : ['kg', 'reps'];
+  const labels = setLabels(types);
 
   return (
     <View style={styles.card}>
@@ -491,8 +498,10 @@ function ExerciseCard({
 
       {doneSets.map((set, index) => (
         <View key={set.id} style={[styles.row, styles.rowDone]}>
-          <Text style={[styles.cell, styles.colSet]}>{index + 1}</Text>
-          <Text style={[styles.prevCell, styles.colPrev]}>{previousText(index + 1)}</Text>
+          <Text style={[styles.cell, styles.colSet, set.setType === 'warmup' && styles.warmupText]}>
+            {labels[index]}
+          </Text>
+          <Text style={[styles.prevCell, styles.colPrev]}>{previousText(index)}</Text>
           <Text style={[styles.doneValue, styles.colInput]}>
             {isCardio
               ? set.durationS != null ? Math.round(set.durationS / 60) : '—'
@@ -506,19 +515,34 @@ function ExerciseCard({
           <Pressable style={[styles.check, styles.checkDone]} onPress={() => handleUndo(set)}>
             <Text style={styles.checkDoneText}>✓</Text>
           </Pressable>
-          <Pressable style={styles.colRemove} onPress={() => handleDeleteSet(set, index + 1)} hitSlop={6}>
+          <Pressable style={styles.colRemove} onPress={() => handleDeleteSet(set, labels[index])} hitSlop={6}>
             <Text style={styles.removeSetText}>✕</Text>
           </Pressable>
         </View>
       ))}
 
       {drafts.map((draft, i) => {
-        const setNumber = doneSets.length + i + 1;
-        const s = suggestion(setNumber);
+        const index = doneSets.length + i;
+        const s = suggestion(index);
+        const warmup = draft.type === 'warmup';
+        const label = labels[index];
         return (
           <View key={draft.key} style={styles.row}>
-            <Text style={[styles.cell, styles.colSet]}>{setNumber}</Text>
-            <Text style={[styles.prevCell, styles.colPrev]}>{previousText(setNumber)}</Text>
+            {isCardio ? (
+              <Text style={[styles.cell, styles.colSet]}>{label}</Text>
+            ) : (
+              <Pressable
+                style={styles.colSet}
+                onPress={() => updateDraft(draft.key, { type: warmup ? 'normal' : 'warmup' })}
+                hitSlop={6}
+                accessibilityRole="button"
+                accessibilityLabel={`Set ${label}, ${warmup ? 'warm-up' : 'working set'}`}
+                accessibilityHint={warmup ? 'Tap to make it a working set' : 'Tap to mark as warm-up'}
+              >
+                <Text style={[styles.cell, styles.setBadge, warmup && styles.warmupText]}>{label}</Text>
+              </Pressable>
+            )}
+            <Text style={[styles.prevCell, styles.colPrev]}>{previousText(index)}</Text>
             <TextInput
               style={[styles.input, styles.colInput]}
               value={draft.a}
@@ -537,7 +561,7 @@ function ExerciseCard({
             />
             <Pressable
               style={styles.check}
-              onPress={() => handleDone(draft, setNumber)}
+              onPress={() => handleDone(draft, index)}
               disabled={savingKey != null}
             >
               {savingKey === draft.key ? (
@@ -561,7 +585,7 @@ function ExerciseCard({
         style={styles.addSetButton}
         onPress={() => {
           const last = drafts.at(-1);
-          setDrafts((prev) => [...prev, newRow(last?.a, last?.b)]);
+          setDrafts((prev) => [...prev, newRow(last?.a, last?.b, last?.type)]);
         }}
       >
         <Text style={styles.addSetText}>+ Add set</Text>
@@ -619,6 +643,15 @@ const styles = StyleSheet.create({
   colRemove: { width: 28, height: 36, alignItems: 'center', justifyContent: 'center' },
   removeSetText: { fontSize: 16, color: colors.muted },
   cell: { fontSize: 15, fontWeight: '600', color: colors.text },
+  // Looks tappable: the set number toggles warm-up on unticked strength rows.
+  setBadge: {
+    textAlign: 'center',
+    paddingVertical: 6,
+    borderRadius: radius.sm,
+    backgroundColor: colors.border,
+    overflow: 'hidden',
+  },
+  warmupText: { color: colors.warningText },
   prevCell: { fontSize: 13, color: colors.muted },
   doneValue: { fontSize: 15, color: colors.text, paddingVertical: 8 },
   input: {

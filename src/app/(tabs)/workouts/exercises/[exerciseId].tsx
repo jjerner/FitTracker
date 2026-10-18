@@ -12,7 +12,7 @@ import {
 import { LineChart } from 'react-native-gifted-charts';
 
 import { useExerciseHistory, useExercises } from '../../../../hooks/useWorkouts';
-import { bestOf } from '../../../../lib/records';
+import { bestOf, setLabels, workingSets } from '../../../../lib/records';
 import { formatSet } from '../../../../lib/workouts';
 import type { ExerciseSession } from '../../../../types/domain';
 import { colors } from '../../../../theme';
@@ -64,7 +64,9 @@ export default function ExerciseDetail() {
       : 'Total time per workout (min)';
 
   // Chart runs oldest -> newest, the list newest -> oldest.
-  const values = [...history].reverse().map((s) => ({
+  // A warm-up-only workout has nothing to chart for strength.
+  const charted = isCardio ? history : history.filter((s) => workingSets(s.sets).length > 0);
+  const values = [...charted].reverse().map((s) => ({
     value: Math.round(sessionValue(s, isCardio, useDistance, metric) * 10) / 10,
     date: s.startedAt,
   }));
@@ -88,7 +90,7 @@ export default function ExerciseDetail() {
         contentContainerStyle={styles.content}
         ListHeaderComponent={
           <View style={styles.card}>
-            {!isCardio && history.length > 0 ? (
+            {!isCardio && charted.length > 0 ? (
               <View style={styles.recordsRow}>
                 <View style={styles.record}>
                   <Text style={styles.recordValue}>🏆 {records.weightKg} kg</Text>
@@ -118,7 +120,7 @@ export default function ExerciseDetail() {
             <Text style={styles.cardTitle}>{chartLabel}</Text>
             {best != null && (
               <Text style={styles.cardSubtitle}>
-                Best: {best} {unit} · {history.length} workout{history.length === 1 ? '' : 's'}
+                Best: {best} {unit} · {charted.length} workout{charted.length === 1 ? '' : 's'}
               </Text>
             )}
             {values.length < 2 ? (
@@ -158,9 +160,9 @@ export default function ExerciseDetail() {
             onPress={() => router.push(`/(tabs)/workouts/log/${item.logId}`)}
           >
             <Text style={styles.sessionDate}>{formatDate(item.startedAt)}</Text>
-            {item.sets.map((set) => (
-              <Text key={set.id} style={styles.setText}>
-                Set {set.setNumber}: {formatSet(set)}
+            {setLabels(item.sets.map((s) => s.setType)).map((label, i) => (
+              <Text key={item.sets[i].id} style={styles.setText}>
+                {label === 'W' ? 'Warm-up' : `Set ${label}`}: {formatSet(item.sets[i])}
               </Text>
             ))}
           </Pressable>
