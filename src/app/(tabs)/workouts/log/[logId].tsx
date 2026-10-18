@@ -16,7 +16,7 @@ import { LabeledInput } from '../../../../components/LabeledInput';
 import { useSession } from '../../../../context/AuthProvider';
 import { useWorkoutHistory, useWorkoutLog } from '../../../../hooks/useWorkouts';
 import { toNumberOrNull } from '../../../../lib/numbers';
-import { bestOf, bestOfSessions, findNewRecords } from '../../../../lib/records';
+import { bestOf, bestOfSessions, findNewRecords, setLabels, workingSets } from '../../../../lib/records';
 import {
   deleteSet,
   deleteWorkoutLog,
@@ -25,11 +25,12 @@ import {
   updateSet,
 } from '../../../../lib/workouts';
 import { colors } from '../../../../theme';
-import type { WorkoutSet } from '../../../../types/domain';
+import type { SetType, WorkoutSet } from '../../../../types/domain';
 
-function logVolume(exercises: { sets: { weightKg: number | null; reps: number | null }[] }[]) {
+function logVolume(exercises: { sets: WorkoutSet[] }[]) {
   return exercises.reduce(
-    (sum, e) => sum + e.sets.reduce((s, set) => s + (set.weightKg ?? 0) * (set.reps ?? 0), 0),
+    (sum, e) =>
+      sum + workingSets(e.sets).reduce((s, set) => s + (set.weightKg ?? 0) * (set.reps ?? 0), 0),
     0
   );
 }
@@ -41,9 +42,12 @@ export default function WorkoutSummary() {
   const { data: log, isLoading } = useWorkoutLog(logId);
   const userId = session?.user.id;
   // The set being edited in the popup; a/b are kg/reps, or min/km for cardio.
-  const [editing, setEditing] = useState<{ set: WorkoutSet; cardio: boolean } | null>(null);
+  const [editing, setEditing] = useState<{ set: WorkoutSet; cardio: boolean; label: string } | null>(
+    null
+  );
   const [a, setA] = useState('');
   const [b, setB] = useState('');
+  const [type, setType] = useState<SetType>('normal');
   const [saving, setSaving] = useState(false);
   // Both boxes empty would save a blank "0 kg × 0" set; Delete set is for that.
   const isEmptySet = a.trim() === '' && b.trim() === '';
@@ -101,8 +105,9 @@ export default function WorkoutSummary() {
     ];
   });
 
-  function openEdit(set: WorkoutSet, cardio: boolean) {
-    setEditing({ set, cardio });
+  function openEdit(set: WorkoutSet, cardio: boolean, label: string) {
+    setEditing({ set, cardio, label });
+    setType(set.setType);
     if (cardio) {
       setA(set.durationS != null ? String(Math.round(set.durationS / 60)) : '');
       setB(set.distanceM != null ? String(set.distanceM / 1000) : '');
@@ -134,8 +139,15 @@ export default function WorkoutSummary() {
               reps: null,
               durationS: x != null ? Math.round(x * 60) : null,
               distanceM: y != null ? y * 1000 : null,
+              setType: 'normal',
             }
-          : { weightKg: x, reps: y != null ? Math.round(y) : null, durationS: null, distanceM: null }
+          : {
+              weightKg: x,
+              reps: y != null ? Math.round(y) : null,
+              durationS: null,
+              distanceM: null,
+              setType: type,
+            }
       );
       await refreshAfterEdit();
     } catch {
@@ -147,8 +159,8 @@ export default function WorkoutSummary() {
 
   function handleDeleteSet() {
     if (!editing) return;
-    const { set } = editing;
-    Alert.alert(`Delete set ${set.setNumber}?`, undefined, [
+    const { set, label } = editing;
+    Alert.alert(`Delete set ${label}?`, undefined, [
       { text: 'Cancel', style: 'cancel' },
       {
         text: 'Delete',
@@ -222,16 +234,19 @@ export default function WorkoutSummary() {
           {e.sets.length === 0 ? (
             <Text style={styles.emptyText}>No sets</Text>
           ) : (
-            e.sets.map((set) => (
-              <Pressable
-                key={set.id}
-                onPress={() => openEdit(set, e.exercise.category === 'cardio')}
-              >
-                <Text style={styles.setText}>
-                  Set {set.setNumber}: {formatSet(set)} <Text style={styles.editHint}>✎</Text>
-                </Text>
-              </Pressable>
-            ))
+            setLabels(e.sets.map((s) => s.setType)).map((label, i) => {
+              const set = e.sets[i];
+              return (
+                <Pressable
+                  key={set.id}
+                  onPress={() => openEdit(set, e.exercise.category === 'cardio', label)}
+                >
+                  <Text style={styles.setText}>
+                    Set {label}: {formatSet(set)} <Text style={styles.editHint}>✎</Text>
+                  </Text>
+                </Pressable>
+              );
+            })
           )}
         </View>
       ))}
@@ -244,7 +259,24 @@ export default function WorkoutSummary() {
       >
         <Pressable style={styles.modalBackdrop} onPress={() => setEditing(null)}>
           <Pressable style={styles.modalCard}>
-            <Text style={styles.modalTitle}>Edit set {editing?.set.setNumber}</Text>
+            <Text style={styles.modalTitle}>Edit set {editing?.label}</Text>
+            {editing && !editing.cardio ? (
+              <View style={styles.chipRow}>
+                {(['normal', 'warmup'] as const).map((t) => (
+                  <Pressable
+                    key={t}
+                    style={[styles.chip, type === t && styles.chipActive]}
+                    onPress={() => setType(t)}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: type === t }}
+                  >
+                    <Text style={type === t ? styles.chipTextActive : styles.chipText}>
+                      {t === 'normal' ? 'Normal' : 'Warm-up'}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+            ) : null}
             <LabeledInput
               label={editing?.cardio ? 'Minutes' : 'Weight (kg)'}
               value={a}
@@ -329,6 +361,18 @@ const styles = StyleSheet.create({
   },
   modalCard: { backgroundColor: colors.background, borderRadius: 12, padding: 16 },
   modalTitle: { fontSize: 17, fontWeight: '600', marginBottom: 12 },
+  // Same chips as CreateExerciseForm.
+  chipRow: { flexDirection: 'row', gap: 8, marginBottom: 12 },
+  chip: {
+    borderWidth: 1,
+    borderColor: colors.borderStrong,
+    borderRadius: 20,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+  },
+  chipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
+  chipText: { color: colors.textSecondary },
+  chipTextActive: { color: colors.onPrimary },
   doneButton: {
     backgroundColor: colors.primary,
     borderRadius: 8,

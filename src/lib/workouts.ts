@@ -3,6 +3,7 @@ import type {
   Exercise,
   ExerciseCategory,
   ExerciseSession,
+  SetType,
   WorkoutLog,
   WorkoutLogSummary,
   WorkoutSet,
@@ -30,6 +31,7 @@ function mapSetRow(row: any): WorkoutSet {
     reps: row.reps,
     durationS: row.duration_s,
     distanceM: row.distance_m,
+    setType: row.set_type ?? 'normal',
   };
 }
 
@@ -378,6 +380,7 @@ export async function addSet(input: {
   reps: number | null;
   durationS: number | null;
   distanceM: number | null;
+  setType: SetType;
 }): Promise<void> {
   const { error } = await supabase.from('workout_log_sets').upsert(
     {
@@ -388,6 +391,7 @@ export async function addSet(input: {
       reps: input.reps,
       duration_s: input.durationS,
       distance_m: input.distanceM,
+      set_type: input.setType,
     },
     { onConflict: 'id', ignoreDuplicates: true }
   );
@@ -396,7 +400,13 @@ export async function addSet(input: {
 
 export async function updateSet(
   id: string,
-  values: { weightKg: number | null; reps: number | null; durationS: number | null; distanceM: number | null }
+  values: {
+    weightKg: number | null;
+    reps: number | null;
+    durationS: number | null;
+    distanceM: number | null;
+    setType: SetType;
+  }
 ): Promise<void> {
   const { error } = await supabase
     .from('workout_log_sets')
@@ -405,6 +415,7 @@ export async function updateSet(
       reps: values.reps,
       duration_s: values.durationS,
       distance_m: values.distanceM,
+      set_type: values.setType,
     })
     .eq('id', id);
   if (error) throw error;
@@ -429,11 +440,12 @@ export async function deleteWorkoutLog(id: string): Promise<void> {
 }
 
 export function formatSet(set: WorkoutSet): string {
+  const label = set.setType === 'warmup' ? ' · Warm-up' : '';
   if (set.durationS != null || set.distanceM != null) {
     const parts = [];
     if (set.durationS != null) parts.push(`${Math.round(set.durationS / 60)} min`);
     if (set.distanceM != null) parts.push(`${set.distanceM / 1000} km`);
-    return parts.join(' · ');
+    return parts.join(' · ') + label;
   }
-  return `${set.weightKg ?? 0} kg × ${set.reps ?? 0}`;
+  return `${set.weightKg ?? 0} kg × ${set.reps ?? 0}${label}`;
 }

@@ -3,6 +3,7 @@ import { useEffect, useSyncExternalStore } from 'react';
 import { AppState } from 'react-native';
 
 import { supabase } from './supabase';
+import type { SetType } from '../types/domain';
 
 // Sets that could not be saved (no signal) wait here, on the phone, until they can be sent.
 // Each has its own id, so sending the same set twice never creates a duplicate.
@@ -15,6 +16,8 @@ export type PendingSet = {
   reps: number | null;
   durationS: number | null;
   distanceM: number | null;
+  // Missing on sets queued by an app version from before warm-up sets.
+  setType?: SetType;
 };
 
 const STORAGE_KEY = 'pendingSets';
@@ -105,6 +108,7 @@ async function doFlush(): Promise<{ sent: boolean; allSent: boolean }> {
         reps: set.reps,
         duration_s: set.durationS,
         distance_m: set.distanceM,
+        set_type: set.setType ?? 'normal',
       },
       { onConflict: 'id', ignoreDuplicates: true }
     );

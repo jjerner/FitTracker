@@ -1,5 +1,16 @@
 import { localDateDaysAgo, localDateOf } from './dateUtils';
-import type { ExerciseSession, WorkoutSet } from '../types/domain';
+import type { ExerciseSession, SetType, WorkoutSet } from '../types/domain';
+
+// Warm-ups never count towards records, the chart or volume.
+export function workingSets(sets: WorkoutSet[]): WorkoutSet[] {
+  return sets.filter((s) => s.setType !== 'warmup');
+}
+
+// Strong-style numbers: warm-ups show "W", only working sets are numbered (W, W, 1, 2).
+export function setLabels(types: SetType[]): string[] {
+  let n = 0;
+  return types.map((t) => (t === 'warmup' ? 'W' : String(++n)));
+}
 
 // Estimated one-rep max (Epley formula). A single rep is the weight itself.
 export function estimate1RM(weightKg: number, reps: number): number {
@@ -15,7 +26,7 @@ export type Bests = { weightKg: number; oneRM: number };
 
 // Heaviest weight and highest estimated 1RM across sets.
 export function bestOf(sets: WorkoutSet[]): Bests {
-  return sets.reduce<Bests>(
+  return workingSets(sets).reduce<Bests>(
     (best, set) => ({
       weightKg: Math.max(best.weightKg, Number(set.weightKg ?? 0)),
       oneRM: Math.max(best.oneRM, setOneRM(set)),
@@ -41,7 +52,7 @@ export type TrackedStats = {
 // Heaviest logged set, more reps winning a tie. Sets without weight are ignored.
 function heaviestSet(session: ExerciseSession): LoggedLift | null {
   let best: LoggedLift | null = null;
-  for (const set of session.sets) {
+  for (const set of workingSets(session.sets)) {
     const weightKg = Number(set.weightKg ?? 0);
     const reps = Number(set.reps ?? 0);
     if (weightKg <= 0) continue;
@@ -79,7 +90,7 @@ export type NewRecords ={ weight: boolean; oneRM: boolean };
 
 // A record needs earlier history to beat; the very first time doing an exercise isn't one.
 export function findNewRecords(sets: WorkoutSet[], earlier: ExerciseSession[]): NewRecords {
-  if (earlier.length === 0) return { weight: false, oneRM: false };
+  if (!earlier.some((s) => workingSets(s.sets).length > 0)) return { weight: false, oneRM: false };
   const prior = bestOfSessions(earlier);
   const now = bestOf(sets);
   return {
