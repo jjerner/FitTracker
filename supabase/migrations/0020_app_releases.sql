@@ -1,7 +1,7 @@
 -- One row per APK build; the app shows an update banner when a newer row exists. Rows are added by hand after each eas build.
 create table public.app_releases (
   version_code int primary key,
-  install_url text not null,
+  install_url text not null check (install_url like 'https://%'),
   notes text,
   created_at timestamptz not null default now()
 );

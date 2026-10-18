@@ -115,7 +115,7 @@ export default function Home() {
           <Pressable
             style={styles.bannerLink}
             accessibilityRole="link"
-            onPress={() => Linking.openURL(latestRelease.installUrl)}
+            onPress={() => Linking.openURL(latestRelease.installUrl).catch(() => {})}
           >
             <Text style={styles.bannerTitle}>New version available → Download</Text>
             {latestRelease.notes ? (
@@ -125,7 +125,7 @@ export default function Home() {
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Hide update banner"
-            hitSlop={10}
+            hitSlop={16}
             onPress={() => setReleaseHidden(true)}
           >
             <Text style={styles.bannerClose}>✕</Text>
