@@ -90,7 +90,7 @@ export default function ExerciseDetail() {
         contentContainerStyle={styles.content}
         ListHeaderComponent={
           <View style={styles.card}>
-            {!isCardio && history.length > 0 ? (
+            {!isCardio && charted.length > 0 ? (
               <View style={styles.recordsRow}>
                 <View style={styles.record}>
                   <Text style={styles.recordValue}>🏆 {records.weightKg} kg</Text>
@@ -120,7 +120,7 @@ export default function ExerciseDetail() {
             <Text style={styles.cardTitle}>{chartLabel}</Text>
             {best != null && (
               <Text style={styles.cardSubtitle}>
-                Best: {best} {unit} · {history.length} workout{history.length === 1 ? '' : 's'}
+                Best: {best} {unit} · {charted.length} workout{charted.length === 1 ? '' : 's'}
               </Text>
             )}
             {values.length < 2 ? (
@@ -162,7 +162,7 @@ export default function ExerciseDetail() {
             <Text style={styles.sessionDate}>{formatDate(item.startedAt)}</Text>
             {setLabels(item.sets.map((s) => s.setType)).map((label, i) => (
               <Text key={item.sets[i].id} style={styles.setText}>
-                Set {label}: {formatSet(item.sets[i])}
+                {label === 'W' ? 'Warm-up' : `Set ${label}`}: {formatSet(item.sets[i])}
               </Text>
             ))}
           </Pressable>

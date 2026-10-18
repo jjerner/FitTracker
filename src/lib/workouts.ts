@@ -440,12 +440,11 @@ export async function deleteWorkoutLog(id: string): Promise<void> {
 }
 
 export function formatSet(set: WorkoutSet): string {
-  const label = set.setType === 'warmup' ? ' · Warm-up' : '';
   if (set.durationS != null || set.distanceM != null) {
     const parts = [];
     if (set.durationS != null) parts.push(`${Math.round(set.durationS / 60)} min`);
     if (set.distanceM != null) parts.push(`${set.distanceM / 1000} km`);
-    return parts.join(' · ') + label;
+    return parts.join(' · ');
   }
-  return `${set.weightKg ?? 0} kg × ${set.reps ?? 0}${label}`;
+  return `${set.weightKg ?? 0} kg × ${set.reps ?? 0}`;
 }

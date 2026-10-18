@@ -42,7 +42,7 @@ import {
   usePendingSync,
 } from '../../../lib/pendingSets';
 import { toNumberOrNull } from '../../../lib/numbers';
-import { bestOf, findNewRecords, setLabels } from '../../../lib/records';
+import { bestOf, findNewRecords, matchingSet, setLabels } from '../../../lib/records';
 import { colors, radius, spacing } from '../../../theme';
 import type {
   Exercise,
@@ -151,7 +151,7 @@ export default function ActiveWorkout() {
           reps: p.reps,
           durationS: p.durationS,
           distanceM: p.distanceM,
-          setType: p.setType ?? 'normal',
+          setType: p.setType === 'warmup' ? ('warmup' as const) : ('normal' as const),
         })),
     ],
   }));
@@ -309,8 +309,11 @@ function ExerciseCard({
   const [swapOpen, setSwapOpen] = useState(false);
 
   // Suggested values shown greyed out; used when the input is left empty.
-  function suggestion(setNumber: number): { a: number | null; b: number | null } {
-    const prev = previous?.sets[setNumber - 1];
+  // Row types, done sets first then drafts; same order as the rows on screen.
+  const types = [...doneSets.map((s) => s.setType), ...drafts.map((d) => d.type)];
+
+  function suggestion(index: number): { a: number | null; b: number | null } {
+    const prev = previous && matchingSet(previous.sets, types, index);
     if (isCardio) {
       const src = prev ?? lastDone;
       return {
@@ -328,8 +331,8 @@ function ExerciseCard({
     setDrafts((prev) => prev.map((d) => (d.key === key ? { ...d, ...patch } : d)));
   }
 
-  async function handleDone(draft: DraftRow, setNumber: number) {
-    const s = suggestion(setNumber);
+  async function handleDone(draft: DraftRow, index: number) {
+    const s = suggestion(index);
     const a = toNumberOrNull(draft.a) ?? s.a;
     const b = toNumberOrNull(draft.b) ?? s.b;
     if (a == null && b == null) return;
@@ -392,7 +395,7 @@ function ExerciseCard({
   }
 
   function handleDeleteSet(set: WorkoutSet, label: string) {
-    Alert.alert(`Delete set ${label}?`, 'This set will be removed from the workout.', [
+    Alert.alert(label === 'W' ? 'Delete warm-up set?' : `Delete set ${label}?`, 'This set will be removed from the workout.', [
       { text: 'Cancel', style: 'cancel' },
       {
         text: 'Delete',
@@ -429,8 +432,8 @@ function ExerciseCard({
     await onChanged();
   }
 
-  function previousText(setNumber: number): string {
-    const prev = previous?.sets[setNumber - 1];
+  function previousText(index: number): string {
+    const prev = previous && matchingSet(previous.sets, types, index);
     if (!prev) return '—';
     if (isCardio) {
       const parts = [];
@@ -460,7 +463,7 @@ function ExerciseCard({
       : null;
 
   const [labelA, labelB] = isCardio ? ['min', 'km'] : ['kg', 'reps'];
-  const labels = setLabels([...doneSets.map((s) => s.setType), ...drafts.map((d) => d.type)]);
+  const labels = setLabels(types);
 
   return (
     <View style={styles.card}>
@@ -498,7 +501,7 @@ function ExerciseCard({
           <Text style={[styles.cell, styles.colSet, set.setType === 'warmup' && styles.warmupText]}>
             {labels[index]}
           </Text>
-          <Text style={[styles.prevCell, styles.colPrev]}>{previousText(index + 1)}</Text>
+          <Text style={[styles.prevCell, styles.colPrev]}>{previousText(index)}</Text>
           <Text style={[styles.doneValue, styles.colInput]}>
             {isCardio
               ? set.durationS != null ? Math.round(set.durationS / 60) : '—'
@@ -519,10 +522,10 @@ function ExerciseCard({
       ))}
 
       {drafts.map((draft, i) => {
-        const setNumber = doneSets.length + i + 1;
-        const s = suggestion(setNumber);
+        const index = doneSets.length + i;
+        const s = suggestion(index);
         const warmup = draft.type === 'warmup';
-        const label = labels[doneSets.length + i];
+        const label = labels[index];
         return (
           <View key={draft.key} style={styles.row}>
             {isCardio ? (
@@ -533,13 +536,13 @@ function ExerciseCard({
                 onPress={() => updateDraft(draft.key, { type: warmup ? 'normal' : 'warmup' })}
                 hitSlop={6}
                 accessibilityRole="button"
-                accessibilityLabel={`Set type: ${warmup ? 'warm-up' : 'normal'}`}
-                accessibilityHint="Tap to change."
+                accessibilityLabel={`Set ${label}, ${warmup ? 'warm-up' : 'working set'}`}
+                accessibilityHint={warmup ? 'Tap to make it a working set' : 'Tap to mark as warm-up'}
               >
                 <Text style={[styles.cell, styles.setBadge, warmup && styles.warmupText]}>{label}</Text>
               </Pressable>
             )}
-            <Text style={[styles.prevCell, styles.colPrev]}>{previousText(setNumber)}</Text>
+            <Text style={[styles.prevCell, styles.colPrev]}>{previousText(index)}</Text>
             <TextInput
               style={[styles.input, styles.colInput]}
               value={draft.a}
@@ -558,7 +561,7 @@ function ExerciseCard({
             />
             <Pressable
               style={styles.check}
-              onPress={() => handleDone(draft, setNumber)}
+              onPress={() => handleDone(draft, index)}
               disabled={savingKey != null}
             >
               {savingKey === draft.key ? (
@@ -648,7 +651,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.border,
     overflow: 'hidden',
   },
-  warmupText: { color: colors.warning },
+  warmupText: { color: colors.warningText },
   prevCell: { fontSize: 13, color: colors.muted },
   doneValue: { fontSize: 15, color: colors.text, paddingVertical: 8 },
   input: {

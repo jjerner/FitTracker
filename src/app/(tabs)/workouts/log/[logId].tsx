@@ -160,7 +160,7 @@ export default function WorkoutSummary() {
   function handleDeleteSet() {
     if (!editing) return;
     const { set, label } = editing;
-    Alert.alert(`Delete set ${label}?`, undefined, [
+    Alert.alert(label === 'W' ? 'Delete warm-up set?' : `Delete set ${label}?`, undefined, [
       { text: 'Cancel', style: 'cancel' },
       {
         text: 'Delete',
@@ -242,7 +242,7 @@ export default function WorkoutSummary() {
                   onPress={() => openEdit(set, e.exercise.category === 'cardio', label)}
                 >
                   <Text style={styles.setText}>
-                    Set {label}: {formatSet(set)} <Text style={styles.editHint}>✎</Text>
+                    {label === 'W' ? 'Warm-up' : `Set ${label}`}: {formatSet(set)} <Text style={styles.editHint}>✎</Text>
                   </Text>
                 </Pressable>
               );
@@ -259,7 +259,9 @@ export default function WorkoutSummary() {
       >
         <Pressable style={styles.modalBackdrop} onPress={() => setEditing(null)}>
           <Pressable style={styles.modalCard}>
-            <Text style={styles.modalTitle}>Edit set {editing?.label}</Text>
+            <Text style={styles.modalTitle}>
+              {editing?.label === 'W' ? 'Edit warm-up set' : `Edit set ${editing?.label}`}
+            </Text>
             {editing && !editing.cardio ? (
               <View style={styles.chipRow}>
                 {(['normal', 'warmup'] as const).map((t) => (

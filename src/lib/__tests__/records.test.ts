@@ -1,4 +1,4 @@
-import { bestOf, findNewRecords, setLabels, trackedStats, workingSets } from '../records';
+import { bestOf, findNewRecords, matchingSet, setLabels, trackedStats, workingSets } from '../records';
 import type { ExerciseSession, SetType } from '../../types/domain';
 
 type TestSet = { weightKg: number; reps: number; setType?: SetType };
@@ -112,5 +112,21 @@ describe('setLabels', () => {
     expect(setLabels(['warmup', 'warmup', 'normal', 'normal'])).toEqual(['W', 'W', '1', '2']);
     expect(setLabels(['normal', 'warmup', 'normal'])).toEqual(['1', 'W', '2']);
     expect(setLabels([])).toEqual([]);
+  });
+});
+
+describe('matchingSet', () => {
+  // Last time: W 40, W 60, 1: 80, 2: 85
+  const last = session('2026-10-10', [warmup(40, 10), warmup(60, 5), { weightKg: 80, reps: 5 }, { weightKg: 85, reps: 5 }]).sets;
+
+  it('matches working rows to last working sets and warm-ups to last warm-ups', () => {
+    const types: SetType[] = ['warmup', 'normal', 'normal'];
+    expect(matchingSet(last, types, 0)?.weightKg).toBe(40);
+    expect(matchingSet(last, types, 1)?.weightKg).toBe(80);
+    expect(matchingSet(last, types, 2)?.weightKg).toBe(85);
+  });
+
+  it('returns undefined past the end of that type', () => {
+    expect(matchingSet(last, ['warmup', 'warmup', 'warmup'], 2)).toBeUndefined();
   });
 });

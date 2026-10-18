@@ -12,6 +12,14 @@ export function setLabels(types: SetType[]): string[] {
   return types.map((t) => (t === 'warmup' ? 'W' : String(++n)));
 }
 
+// Last time's set for row `index`: same position among sets of the same type,
+// so working set 1 matches last time's working set 1 even if warm-ups came first.
+export function matchingSet(previous: WorkoutSet[], types: SetType[], index: number): WorkoutSet | undefined {
+  const warmup = types[index] === 'warmup';
+  const position = types.slice(0, index).filter((t) => (t === 'warmup') === warmup).length;
+  return previous.filter((s) => (s.setType === 'warmup') === warmup)[position];
+}
+
 // Estimated one-rep max (Epley formula). A single rep is the weight itself.
 export function estimate1RM(weightKg: number, reps: number): number {
   if (weightKg <= 0 || reps <= 0) return 0;
