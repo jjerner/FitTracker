@@ -20,7 +20,11 @@ export default function Profile() {
   const { data: savedName, isLoading, saveName, isSaving } = useDisplayName();
 
   return (
-    <ScrollView style={settingsStyles.container} contentContainerStyle={settingsStyles.content}>
+    <ScrollView
+      style={settingsStyles.container}
+      contentContainerStyle={settingsStyles.content}
+      keyboardShouldPersistTaps="handled"
+    >
       <View>
         <Text style={styles.label}>Name</Text>
         {isLoading ? (
@@ -82,6 +86,7 @@ function NameEditor({
       <TextInput
         style={styles.nameInput}
         placeholder="Your name"
+        accessibilityLabel="Name"
         value={name}
         onChangeText={setName}
       />

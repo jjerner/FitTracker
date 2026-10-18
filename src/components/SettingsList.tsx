@@ -6,6 +6,11 @@ import { colors, radius, spacing } from '../theme';
 
 type Icon = ComponentProps<typeof SymbolView>['name'];
 
+// Web uses the same Material names as Android.
+function webIcon(icon: Icon): Icon {
+  return typeof icon === 'object' && 'android' in icon ? { web: icon.android, ...icon } : icon;
+}
+
 // Shared look for the Profile settings screens: grouped rows with hairlines between them.
 export function SettingsGroup({ children }: { children: ReactNode }) {
   return (
@@ -36,7 +41,8 @@ export function SettingsRow({
   const content = (
     <>
       {icon ? (
-        <SymbolView name={icon} tintColor={colors.primary} size={22} />
+        // web key needed: without it SymbolView renders nothing on web
+        <SymbolView name={webIcon(icon)} tintColor={colors.primary} size={22} />
       ) : (
         <View style={styles.iconSpacer} />
       )}
@@ -44,7 +50,7 @@ export function SettingsRow({
       {children}
       {chevron ? (
         <SymbolView
-          name={{ ios: 'chevron.right', android: 'chevron_right' }}
+          name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' }}
           tintColor={colors.muted}
           size={22}
         />
