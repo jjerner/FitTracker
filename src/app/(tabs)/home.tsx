@@ -1,7 +1,16 @@
-import { useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import * as Application from 'expo-application';
 import { router, useFocusEffect } from 'expo-router';
-import { useCallback } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useCallback, useState } from 'react';
+import {
+  ActivityIndicator,
+  Linking,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 
 import { CalorieRing, MacroBar } from '../../components/CalorieRing';
 import { useDiaryDate } from '../../context/DiaryDateProvider';
@@ -10,6 +19,7 @@ import { useFoodDiary } from '../../hooks/useFoodDiary';
 import { useNutritionGoals } from '../../hooks/useNutritionGoals';
 import { useDailyNutrition, useWorkoutDates } from '../../hooks/useProgress';
 import { useWorkoutHistory } from '../../hooks/useWorkouts';
+import { getLatestRelease, isNewer } from '../../lib/appRelease';
 import { addDays, mondayOf, todayLocalDate } from '../../lib/dateUtils';
 import { goalStreak } from '../../lib/progress';
 import { colors, radius, spacing } from '../../theme';
@@ -26,6 +36,14 @@ export default function Home() {
   const { data: history } = useWorkoutHistory();
   const { data: days } = useDailyNutrition();
   const { setDate } = useDiaryDate();
+  // Null on web, so no request and no banner there. A failed request just means no banner.
+  const { data: latestRelease } = useQuery({
+    queryKey: ['latestRelease'],
+    queryFn: getLatestRelease,
+    enabled: Application.nativeBuildVersion != null,
+  });
+  // Hidden until the next app start only; it comes back while the APK is still old.
+  const [releaseHidden, setReleaseHidden] = useState(false);
 
   // Workouts and food may have changed on other tabs since Home was last shown.
   useFocusEffect(
@@ -92,6 +110,28 @@ export default function Home() {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+      {latestRelease && !releaseHidden && isNewer(Application.nativeBuildVersion, latestRelease) ? (
+        <View style={styles.banner}>
+          <Pressable
+            style={styles.bannerLink}
+            accessibilityRole="link"
+            onPress={() => Linking.openURL(latestRelease.installUrl)}
+          >
+            <Text style={styles.bannerTitle}>New version available → Download</Text>
+            {latestRelease.notes ? (
+              <Text style={styles.bannerNotes}>{latestRelease.notes}</Text>
+            ) : null}
+          </Pressable>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Hide update banner"
+            hitSlop={10}
+            onPress={() => setReleaseHidden(true)}
+          >
+            <Text style={styles.bannerClose}>✕</Text>
+          </Pressable>
+        </View>
+      ) : null}
       <Text style={styles.greeting}>{name ? `Hi, ${name}!` : 'Hi!'}</Text>
 
       <Pressable style={styles.card} onPress={openDiary}>
@@ -169,6 +209,18 @@ export default function Home() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.surface },
   content: { padding: spacing.lg, gap: spacing.lg },
+  banner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    backgroundColor: colors.primary,
+    borderRadius: radius.lg,
+    padding: spacing.lg,
+  },
+  bannerLink: { flex: 1, gap: spacing.xs },
+  bannerTitle: { color: colors.onPrimary, fontSize: 16, fontWeight: '600' },
+  bannerNotes: { color: colors.onPrimary, fontSize: 13 },
+  bannerClose: { color: colors.onPrimary, fontSize: 16, paddingHorizontal: spacing.xs },
   greeting: { fontSize: 24, fontWeight: '700', color: colors.text },
   card: {
     backgroundColor: colors.background,

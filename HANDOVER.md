@@ -111,6 +111,11 @@ Migrations live in `supabase/migrations/*.sql`, applied manually by pasting into
 
 For any new tables, write new numbered migration files and ask the user to run them the same way.
 
+### After each `eas build` (1.12 update banner, needs `0020_app_releases.sql`)
+- Paste one row per new APK into the Supabase SQL editor; phones on an older build then see "New version available → Download" on Home. The `versionCode` is on the EAS build page or from `npx eas-cli build:version:get -p android`.
+  `insert into public.app_releases (version_code, install_url, notes) values (<versionCode>, 'https://expo.dev/accounts/jjerner/projects/FitTrack/builds/<build-id>', '<short note>');`
+- **Phone test after the first APK with the banner:** install it, insert its row → no banner; insert a test row with `version_code` one higher → banner shows, tap opens the link, ✕ hides it until the app restarts, TalkBack reads it as a link; then delete the test row.
+
 ## Known gotchas hit this session
 
 - **Updates must match the installed APK's runtime (checked 2026-10-18).** The APK on the phones (build 2026-10-11) has runtime `9b3806424e…`. Since 1.11 web testing (Oct 12) the app config also lists `"web"` as a platform, which changes the fingerprint, so every update from Oct 12 to Oct 18 went to runtime `f59ad7ee…` and **never reached the phones**. Fixed on 2026-10-18 by publishing once to `9b38064…`. **Until the next APK build, publish like this:** temporarily add `"platforms": ["ios", "android"]` under `expo` in `app.json`, check `npx eas-cli@latest fingerprint:compare 9b3806424e09b94e953d24b2dc87aa7b860ae825` says they match, run `eas update ... --platform android`, then `git checkout app.json`. Also keep `eas.json` with LF line endings (CRLF changes the fingerprint too). After the next `eas build` the new APK includes "web" and this workaround is no longer needed.
