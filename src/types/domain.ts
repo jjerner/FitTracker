@@ -84,6 +84,8 @@ export type WorkoutTemplateExercise = {
   targetSets: number | null;
   targetReps: number | null;
   targetWeightKg: number | null;
+  // Rest timer for this exercise in this routine; null = the default from Profile.
+  restSeconds: number | null;
 };
 
 export type WorkoutTemplate = {
