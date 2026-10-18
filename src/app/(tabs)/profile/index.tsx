@@ -1,151 +1,67 @@
-import { Link } from 'expo-router';
+import { router } from 'expo-router';
 import { useState } from 'react';
-import { SymbolView } from 'expo-symbols';
 import {
   ActivityIndicator,
-  Alert,
   Pressable,
   ScrollView,
   StyleSheet,
-  Switch,
   Text,
   TextInput,
   View,
 } from 'react-native';
 
+import { SettingsGroup, SettingsRow, settingsStyles } from '../../../components/SettingsList';
 import { useSession } from '../../../context/AuthProvider';
 import { useDisplayName } from '../../../hooks/useDisplayName';
-import { useDefaultRest } from '../../../hooks/useDefaultRest';
-import { useFoodReminder } from '../../../hooks/useFoodReminder';
-import { useMealReminder } from '../../../hooks/useMealReminder';
-import { useRestVibration } from '../../../hooks/useRestVibration';
-import { supabase } from '../../../lib/supabase';
 import { colors, radius, spacing } from '../../../theme';
 
 export default function Profile() {
   const { session } = useSession();
   const { data: savedName, isLoading, saveName, isSaving } = useDisplayName();
-  const restVibration = useRestVibration();
-  const foodReminder = useFoodReminder();
-  const mealReminder = useMealReminder();
-  const defaultRest = useDefaultRest();
-
-  async function handleReminderToggle(setEnabled: (enabled: boolean) => Promise<boolean>, enabled: boolean) {
-    const allowed = await setEnabled(enabled);
-    if (!allowed) {
-      Alert.alert('Notifications are off', 'Allow notifications for Plucky in your phone settings.');
-    }
-  }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <Text style={styles.label}>Name</Text>
-      {isLoading ? (
-        <ActivityIndicator />
-      ) : (
-        <NameEditor savedName={savedName ?? ''} onSave={saveName} isSaving={isSaving} />
-      )}
-      <Text style={styles.email}>{session?.user.email}</Text>
-
-      <Text style={styles.label}>Settings</Text>
-      <Link href="/(tabs)/profile/goals" asChild>
-        <Pressable style={styles.row}>
-          <SymbolView
-            name={{ ios: 'target', android: 'target' }}
-            tintColor={colors.primary}
-            size={22}
-          />
-          <Text style={styles.rowText}>Nutrition Goals</Text>
-          <SymbolView
-            name={{ ios: 'chevron.right', android: 'chevron_right' }}
-            tintColor={colors.muted}
-            size={22}
-          />
-        </Pressable>
-      </Link>
-      <View style={[styles.row, styles.rowSpaced]}>
-        <SymbolView
-          name={{ ios: 'iphone.radiowaves.left.and.right', android: 'vibration' }}
-          tintColor={colors.primary}
-          size={22}
-        />
-        <Text style={styles.rowText}>Vibrate when rest ends</Text>
-        <Switch value={restVibration.enabled} onValueChange={restVibration.setEnabled} />
-      </View>
-      <View style={[styles.row, styles.rowSpaced]}>
-        <Text style={styles.rowText}>Default rest time</Text>
-        <Pressable
-          style={styles.stepButton}
-          onPress={() => defaultRest.setSeconds(Math.max(15, defaultRest.seconds - 15))}
-        >
-          <Text style={styles.stepButtonText}>−</Text>
-        </Pressable>
-        <Text style={styles.timeText}>{formatRest(defaultRest.seconds)}</Text>
-        <Pressable
-          style={styles.stepButton}
-          onPress={() => defaultRest.setSeconds(Math.min(600, defaultRest.seconds + 15))}
-        >
-          <Text style={styles.stepButtonText}>+</Text>
-        </Pressable>
-      </View>
-      <View style={[styles.row, styles.rowSpaced]}>
-        <SymbolView
-          name={{ ios: 'bell.fill', android: 'notifications' }}
-          tintColor={colors.primary}
-          size={22}
-        />
-        <Text style={styles.rowText}>Remind me if no food logged</Text>
-        <Switch
-          value={foodReminder.enabled}
-          onValueChange={(on) => handleReminderToggle(foodReminder.setEnabled, on)}
-        />
-      </View>
-      {foodReminder.enabled ? (
-        <View style={[styles.row, styles.rowSpaced]}>
-          <Text style={styles.rowText}>Reminder time</Text>
-          <Pressable
-            style={styles.stepButton}
-            onPress={() => foodReminder.setMinutes((foodReminder.minutes + 24 * 60 - 30) % (24 * 60))}
-          >
-            <Text style={styles.stepButtonText}>−</Text>
-          </Pressable>
-          <Text style={styles.timeText}>{formatMinutes(foodReminder.minutes)}</Text>
-          <Pressable
-            style={styles.stepButton}
-            onPress={() => foodReminder.setMinutes((foodReminder.minutes + 30) % (24 * 60))}
-          >
-            <Text style={styles.stepButtonText}>+</Text>
-          </Pressable>
-        </View>
-      ) : null}
-      <View style={[styles.row, styles.rowSpaced]}>
-        <SymbolView
-          name={{ ios: 'bell.fill', android: 'notifications' }}
-          tintColor={colors.primary}
-          size={22}
-        />
-        <Text style={styles.rowText}>Remind me about missing meals (20:30)</Text>
-        <Switch
-          value={mealReminder.enabled}
-          onValueChange={(on) => handleReminderToggle(mealReminder.setEnabled, on)}
-        />
+    <ScrollView style={settingsStyles.container} contentContainerStyle={settingsStyles.content}>
+      <View>
+        <Text style={styles.label}>Name</Text>
+        {isLoading ? (
+          <ActivityIndicator />
+        ) : (
+          <NameEditor savedName={savedName ?? ''} onSave={saveName} isSaving={isSaving} />
+        )}
+        <Text style={styles.email}>{session?.user.email}</Text>
       </View>
 
-      <Pressable style={styles.signOutButton} onPress={() => supabase.auth.signOut()}>
-        <Text style={styles.signOutButtonText}>Sign Out</Text>
-      </Pressable>
+      <SettingsGroup>
+        <SettingsRow
+          icon={{ ios: 'target', android: 'target' }}
+          label="Goals"
+          chevron
+          onPress={() => router.push('/(tabs)/profile/goals')}
+        />
+        <SettingsRow
+          icon={{ ios: 'dumbbell.fill', android: 'fitness_center' }}
+          label="Workouts"
+          chevron
+          onPress={() => router.push('/(tabs)/profile/workouts')}
+        />
+        <SettingsRow
+          icon={{ ios: 'bell.fill', android: 'notifications' }}
+          label="Reminders"
+          chevron
+          onPress={() => router.push('/(tabs)/profile/reminders')}
+        />
+      </SettingsGroup>
+
+      <SettingsGroup>
+        <SettingsRow
+          icon={{ ios: 'person.crop.circle', android: 'account_circle' }}
+          label="Account"
+          chevron
+          onPress={() => router.push('/(tabs)/profile/account')}
+        />
+      </SettingsGroup>
     </ScrollView>
   );
-}
-
-function formatMinutes(minutes: number): string {
-  const h = String(Math.floor(minutes / 60)).padStart(2, '0');
-  const m = String(minutes % 60).padStart(2, '0');
-  return `${h}:${m}`;
-}
-
-function formatRest(seconds: number): string {
-  return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
 }
 
 function NameEditor({
@@ -185,14 +101,11 @@ function NameEditor({
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
-  content: { padding: spacing.lg },
   label: {
     fontSize: 13,
     fontWeight: '600',
     color: colors.muted,
     textTransform: 'uppercase',
-    marginTop: spacing.xl,
     marginBottom: spacing.sm,
   },
   nameRow: { flexDirection: 'row', gap: spacing.sm },
@@ -214,33 +127,4 @@ const styles = StyleSheet.create({
   saveButtonDisabled: { opacity: 0.5 },
   saveButtonText: { color: colors.onPrimary, fontSize: 16, fontWeight: '600' },
   email: { fontSize: 14, color: colors.muted, marginTop: spacing.sm },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    padding: spacing.lg,
-  },
-  rowSpaced: { marginTop: spacing.sm, paddingVertical: spacing.sm },
-  rowText: { flex: 1, fontSize: 16, fontWeight: '600', color: colors.text },
-  stepButton: {
-    width: 36,
-    height: 36,
-    borderRadius: radius.md,
-    backgroundColor: colors.background,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  stepButtonText: { fontSize: 20, fontWeight: '600', color: colors.primary },
-  timeText: { fontSize: 16, fontWeight: '600', color: colors.text, minWidth: 52, textAlign: 'center' },
-  signOutButton: {
-    borderWidth: 1,
-    borderColor: colors.danger,
-    borderRadius: radius.md,
-    padding: spacing.md,
-    alignItems: 'center',
-    marginTop: 40,
-  },
-  signOutButtonText: { color: colors.danger, fontSize: 16, fontWeight: '600' },
 });
