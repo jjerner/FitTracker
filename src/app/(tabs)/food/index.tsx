@@ -22,7 +22,7 @@ import { useNutritionGoals } from '../../../hooks/useNutritionGoals';
 import { localDateOf, todayLocalDate } from '../../../lib/dateUtils';
 import { copyEntriesToDate, saveMealFromEntries } from '../../../lib/foods';
 import type { FoodLogEntry, MealType, NutritionGoals } from '../../../types/domain';
-import { colors } from '../../../theme';
+import { colors, radius } from '../../../theme';
 
 const MEAL_TYPES: MealType[] = ['breakfast', 'lunch', 'dinner', 'snack'];
 const MEAL_LABELS: Record<MealType, string> = {
@@ -82,17 +82,33 @@ export default function FoodDiary() {
   const [savingMeal, setSavingMeal] = useState<MealType | null>(null);
   const [mealName, setMealName] = useState('');
   const [isSavingMeal, setIsSavingMeal] = useState(false);
+  // Entry ids the user unticked in the popup; empty = all ticked.
+  const [excluded, setExcluded] = useState<Set<string>>(new Set());
+  // Quick-add entries have no food, so they cannot be part of a saved meal.
+  const saveCandidates = (entries ?? []).filter(
+    (e) => e.mealType === savingMeal && e.foodId != null
+  );
+  const selected = saveCandidates.filter((e) => !excluded.has(e.id));
+
+  function openSaveMeal(mealType: MealType) {
+    setSavingMeal(mealType);
+    setExcluded(new Set());
+  }
+
+  function toggleExcluded(id: string) {
+    setExcluded((prev) => {
+      const next = new Set(prev);
+      if (!next.delete(id)) next.add(id);
+      return next;
+    });
+  }
 
   async function handleSaveMeal() {
     const name = mealName.trim();
-    if (!session || !savingMeal || !name || isSavingMeal) return;
+    if (!session || !savingMeal || !name || selected.length === 0 || isSavingMeal) return;
     setIsSavingMeal(true);
     try {
-      await saveMealFromEntries(
-        session.user.id,
-        name,
-        (entries ?? []).filter((e) => e.mealType === savingMeal)
-      );
+      await saveMealFromEntries(session.user.id, name, selected);
       await queryClient.invalidateQueries({ queryKey: ['savedMeals', session.user.id] });
       setSavingMeal(null);
       setMealName('');
@@ -174,10 +190,37 @@ export default function FoodDiary() {
               onChangeText={setMealName}
               autoFocus
             />
+            <ScrollView style={styles.saveList} keyboardShouldPersistTaps="handled">
+              {saveCandidates.map((e) => {
+                const checked = !excluded.has(e.id);
+                return (
+                  <Pressable
+                    key={e.id}
+                    style={styles.entryRow}
+                    onPress={() => toggleExcluded(e.id)}
+                    accessibilityRole="checkbox"
+                    accessibilityState={{ checked }}
+                  >
+                    <View style={[styles.tickBox, checked && styles.tickBoxOn]}>
+                      {checked && <Text style={styles.tickText}>✓</Text>}
+                    </View>
+                    <Text style={[styles.entryName, !checked && styles.unticked]}>
+                      {e.foodName}
+                    </Text>
+                    <Text style={[styles.entryCalories, !checked && styles.unticked]}>
+                      {Math.round(e.caloriesKcal)} kcal
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </ScrollView>
             <Pressable
-              style={[styles.logButton, !mealName.trim() && styles.buttonDisabled]}
+              style={[
+                styles.logButton,
+                (!mealName.trim() || selected.length === 0) && styles.buttonDisabled,
+              ]}
               onPress={handleSaveMeal}
-              disabled={!mealName.trim() || isSavingMeal}
+              disabled={!mealName.trim() || selected.length === 0 || isSavingMeal}
             >
               {isSavingMeal ? (
                 <ActivityIndicator color={colors.onPrimary} />
@@ -201,7 +244,7 @@ export default function FoodDiary() {
           previousEntries={previousEntries ?? []}
           onCopyMeal={copyMeal}
           isCopying={isCopying}
-          onSaveMeal={setSavingMeal}
+          onSaveMeal={openSaveMeal}
         />
       )}
     </ScrollView>
@@ -493,6 +536,19 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   buttonDisabled: { opacity: 0.5 },
+  saveList: { maxHeight: 300, marginTop: 8 },
+  tickBox: {
+    width: 24,
+    height: 24,
+    borderRadius: radius.sm,
+    borderWidth: 2,
+    borderColor: colors.borderStrong,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  tickBoxOn: { backgroundColor: colors.success, borderColor: colors.success },
+  tickText: { fontSize: 14, color: colors.onPrimary, fontWeight: '700' },
+  unticked: { color: colors.subtle },
   modalTodayButton: { alignItems: 'center', paddingTop: 12 },
   modalTodayText: { color: colors.primary, fontSize: 15, fontWeight: '600' },
   content: { padding: 16, paddingBottom: 40 },
