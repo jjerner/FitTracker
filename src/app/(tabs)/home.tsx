@@ -110,8 +110,8 @@ export default function Home() {
           <View style={styles.foodRow}>
             <CalorieRing eaten={totals.calories} goal={goals?.caloriesKcal ?? null} />
             <View style={styles.macroList}>
-              <MacroBar label="Protein" value={totals.protein} goal={goals?.proteinG} />
               <MacroBar label="Carbs" value={totals.carbs} goal={goals?.carbsG} />
+              <MacroBar label="Protein" value={totals.protein} goal={goals?.proteinG} />
               <MacroBar label="Fat" value={totals.fat} goal={goals?.fatG} />
             </View>
           </View>
@@ -177,8 +177,8 @@ const styles = StyleSheet.create({
   cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   cardTitle: { fontSize: 16, fontWeight: '600', color: colors.text },
   muted: { fontSize: 13, color: colors.muted },
-  foodRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.lg },
-  macroList: { flex: 1, gap: spacing.md },
+  foodRow: { gap: spacing.lg },
+  macroList: { flexDirection: 'row', gap: spacing.md },
   streak: { fontSize: 13, fontWeight: '600', color: colors.streak },
   weekRow: { flexDirection: 'row', justifyContent: 'space-between' },
   weekDay: { alignItems: 'center', gap: spacing.xs },

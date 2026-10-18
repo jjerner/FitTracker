@@ -287,8 +287,8 @@ function DiaryContent({
       <View style={styles.totalsCard}>
         <CalorieRing eaten={totals.calories} goal={goals?.caloriesKcal ?? null} />
         <View style={styles.macroList}>
-          <MacroBar label="Protein" value={totals.protein} goal={goals?.proteinG} />
           <MacroBar label="Carbs" value={totals.carbs} goal={goals?.carbsG} />
+          <MacroBar label="Protein" value={totals.protein} goal={goals?.proteinG} />
           <MacroBar label="Fat" value={totals.fat} goal={goals?.fatG} />
         </View>
       </View>
@@ -557,11 +557,9 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 16,
     marginBottom: 20,
-    flexDirection: 'row',
-    alignItems: 'center',
     gap: 16,
   },
-  macroList: { flex: 1, gap: 12 },
+  macroList: { flexDirection: 'row', gap: 12 },
   addButton: {
     width: 28,
     height: 28,
