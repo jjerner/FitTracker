@@ -303,7 +303,11 @@ function MuscleSetsCard() {
           <View style={styles.tableRow}>
             <Text style={styles.tableLabel} />
             {WEEK_LABELS.map((label, i) => (
-              <Text key={label} style={[styles.tableHeader, i === thisWeek && styles.thisWeek]}>
+              <Text
+                key={label}
+                numberOfLines={1}
+                style={[styles.tableHeader, i === thisWeek && styles.thisWeek]}
+              >
                 {label}
               </Text>
             ))}
@@ -312,13 +316,22 @@ function MuscleSetsCard() {
             <View key={group} style={styles.tableRow}>
               <Text style={styles.tableLabel}>{group[0].toUpperCase() + group.slice(1)}</Text>
               {counts.map((count, i) => (
-                <Text key={i} style={[styles.tableCell, i === thisWeek && styles.thisWeek]}>
+                <Text
+                  key={i}
+                  style={[
+                    styles.tableCell,
+                    i === thisWeek && styles.thisWeek,
+                    count === 0 && styles.zeroSets,
+                  ]}
+                >
                   {count}
                 </Text>
               ))}
             </View>
           ))}
-          <Text style={styles.cardSubtitle}>Weeks start Monday. Finished workouts only.</Text>
+          <Text style={[styles.cardSubtitle, styles.muscleFootnote]}>
+            Weeks start Monday. Finished workouts only.
+          </Text>
         </View>
       )}
     </View>
@@ -426,6 +439,9 @@ const styles = StyleSheet.create({
   tableHeader: { flex: 1, fontSize: 13, color: colors.muted, textAlign: 'right' },
   tableCell: { flex: 1, fontSize: 14, fontWeight: '600', textAlign: 'right' },
   thisWeek: { color: colors.primary },
+  // Dimmed so a skipped muscle group stands out.
+  zeroSets: { color: colors.subtle },
+  muscleFootnote: { marginTop: 8 },
   tableFootnote: { flex: 1, fontSize: 11, color: colors.subtle, textAlign: 'right' },
   countRow: { flexDirection: 'row', alignItems: 'baseline', gap: 6 },
   countValue: { fontSize: 28, fontWeight: '700' },
