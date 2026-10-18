@@ -62,7 +62,7 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
   input: {
     width: 48,
-    minHeight: 40,
+    minHeight: 44,
     backgroundColor: colors.background,
     borderWidth: 1,
     borderColor: colors.borderStrong,
