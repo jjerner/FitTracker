@@ -286,6 +286,7 @@ Withings scale sync is B5 in section 0 (deprioritised: new feature, do after the
 | 5.5 | **Export my data** (CSV of food log, workouts, weight) via share sheet. | M |
 | 5.6 | Dark mode (after 1.8). **Built on branch `dark-mode`, not merged (see 0c).** 🔁 | M |
 | 5.7 | Change password / delete account (from Profile). | S–M |
+| 5.8 | **Swedish language** (added 2026-10-18, user's request, later). Move all on-screen text into translation files (English + Swedish) and pick the language from the phone setting, maybe with a switch in Profile. Open: which i18n library (check Expo docs, e.g. `expo-localization` + i18n-js; may need 🔁 if it adds native code), whether food names/notifications/emails are translated too, number/date format (decimal comma, see F4). Best done before the store release. | M–L |
 
 ### 6. Deliberately not proposed
 Social feed/friends (Hevy), diet-pattern scores (Lifesum), 80+ micronutrients (Cronometer), coaching programs (StrengthLog), wearables — too big or not useful for a single user.
