@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { router, useLocalSearchParams } from 'expo-router';
+import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
@@ -147,6 +147,7 @@ export default function FoodSearch() {
 
   return (
     <View style={styles.container}>
+      {recipe ? <Stack.Screen options={{ title: 'Add Ingredient' }} /> : null}
       <TextInput
         style={styles.input}
         placeholder="Search foods..."

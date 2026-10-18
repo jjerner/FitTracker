@@ -409,7 +409,7 @@ export default function FoodDetail() {
           <ActivityIndicator color={colors.onPrimary} />
         ) : (
           <Text style={styles.saveButtonText}>
-            {params.recipe ? 'Add to recipe' : entryId ? 'Save changes' : 'Add to Diary'}
+            {params.recipe ? 'Add to Recipe' : entryId ? 'Save changes' : 'Add to Diary'}
           </Text>
         )}
       </Pressable>

@@ -2,4 +2,4 @@
 -- Normal saved meals keep portions = 1 and log as before.
 
 alter table public.saved_meals
-  add column portions numeric not null default 1 check (portions > 0);
+  add column portions numeric not null default 1 check (portions > 0 and portions <= 1000);

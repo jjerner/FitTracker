@@ -108,7 +108,7 @@ export default function SavedMeals() {
         <Pressable style={styles.modalBackdrop} onPress={() => setAskingMeal(null)}>
           <Pressable style={styles.modalCard}>
             <Text style={styles.modalTitle}>
-              How many portions? (of {askingMeal?.portions})
+              {askingMeal?.name}: how many portions? (of {askingMeal?.portions})
             </Text>
             <TextInput
               style={styles.modalInput}
@@ -134,6 +134,9 @@ export default function SavedMeals() {
               }}
             >
               <Text style={styles.logButtonText}>Log</Text>
+            </Pressable>
+            <Pressable style={styles.cancelButton} onPress={() => setAskingMeal(null)}>
+              <Text style={styles.cancelText}>Cancel</Text>
             </Pressable>
           </Pressable>
         </Pressable>
@@ -162,7 +165,8 @@ export default function SavedMeals() {
           keyExtractor={(m) => m.id}
           ListEmptyComponent={
             <Text style={styles.empty}>
-              No saved meals yet. On the diary, tap &quot;Save as meal&quot; on a meal to create one.
+              No saved meals yet. Tap &quot;New recipe&quot; above, or on the diary tap &quot;Save as
+              meal&quot; on a meal.
             </Text>
           }
           renderItem={({ item }) => (
@@ -189,13 +193,18 @@ export default function SavedMeals() {
               </Pressable>
               <Pressable
                 onPress={() => router.push(`/(tabs)/food/recipe?id=${item.id}`)}
-                hitSlop={10}
+                style={styles.iconButton}
                 accessibilityRole="button"
                 accessibilityLabel={`Edit ${item.name}`}
               >
                 <Text style={styles.edit}>Edit</Text>
               </Pressable>
-              <Pressable onPress={() => confirmDelete(item)} hitSlop={10}>
+              <Pressable
+                onPress={() => confirmDelete(item)}
+                style={styles.iconButton}
+                accessibilityRole="button"
+                accessibilityLabel={`Delete ${item.name}`}
+              >
                 <Text style={styles.delete}>✕</Text>
               </Pressable>
             </View>
@@ -237,6 +246,9 @@ const styles = StyleSheet.create({
   add: { fontSize: 15, color: colors.primary, fontWeight: '600' },
   delete: { fontSize: 16, color: colors.subtle, paddingHorizontal: 4 },
   edit: { fontSize: 14, color: colors.primary },
+  iconButton: { minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' },
+  cancelButton: { alignItems: 'center', paddingTop: 12 },
+  cancelText: { color: colors.muted, fontSize: 15, fontWeight: '600' },
   newRecipe: {
     borderWidth: 1,
     borderColor: colors.primary,
