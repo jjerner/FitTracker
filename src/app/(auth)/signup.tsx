@@ -1,4 +1,4 @@
-import { Link, router } from 'expo-router';
+import { Link, router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import {
   ActivityIndicator,
@@ -14,11 +14,13 @@ import { supabase } from '../../lib/supabase';
 import { colors } from '../../theme';
 
 export default function Signup() {
-  const [email, setEmail] = useState('');
+  // Set by login when the email isn't confirmed yet: open the code screen directly.
+  const params = useLocalSearchParams<{ email?: string; error?: string }>();
+  const [email, setEmail] = useState(params.email ?? '');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(params.error ?? null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [confirmationSent, setConfirmationSent] = useState(false);
+  const [confirmationSent, setConfirmationSent] = useState(!!params.email);
   const [code, setCode] = useState('');
 
   async function handleSignup() {

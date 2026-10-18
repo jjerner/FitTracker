@@ -26,6 +26,25 @@ export default function Login() {
       email: email.trim(),
       password,
     });
+
+    // Unconfirmed email: send a fresh code and open the code screen instead of a dead end.
+    if (signInError?.code === 'email_not_confirmed') {
+      const { error: resendError } = await supabase.auth.resend({
+        type: 'signup',
+        email: email.trim(),
+      });
+      setIsSubmitting(false);
+      router.push({
+        pathname: '/(auth)/signup',
+        params: {
+          email: email.trim(),
+          ...(resendError && {
+            error: `We couldn't send a new code (${resendError.message}). Use the code from your earlier email, or tap "Send again" in a minute.`,
+          }),
+        },
+      });
+      return;
+    }
     setIsSubmitting(false);
 
     if (signInError) {
