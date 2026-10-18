@@ -8,9 +8,10 @@ import { useDiaryDate } from '../../context/DiaryDateProvider';
 import { useDisplayName } from '../../hooks/useDisplayName';
 import { useFoodDiary } from '../../hooks/useFoodDiary';
 import { useNutritionGoals } from '../../hooks/useNutritionGoals';
-import { useWorkoutDates } from '../../hooks/useProgress';
+import { useDailyNutrition, useWorkoutDates } from '../../hooks/useProgress';
 import { useWorkoutHistory } from '../../hooks/useWorkouts';
-import { localDateOf, todayLocalDate } from '../../lib/dateUtils';
+import { addDays, localDateOf, todayLocalDate } from '../../lib/dateUtils';
+import { goalStreak } from '../../lib/progress';
 import { colors, radius, spacing } from '../../theme';
 
 const WEEKDAYS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
@@ -23,11 +24,6 @@ function mondayOf(date: string): string {
   return localDateOf(day);
 }
 
-function addDays(date: string, days: number): string {
-  const [y, m, d] = date.split('-').map(Number);
-  return localDateOf(new Date(y, m - 1, d + days));
-}
-
 export default function Home() {
   const queryClient = useQueryClient();
   const { data: name } = useDisplayName();
@@ -36,15 +32,19 @@ export default function Home() {
   const { data: goals } = useNutritionGoals();
   const { data: workoutDates } = useWorkoutDates();
   const { data: history } = useWorkoutHistory();
+  const { data: days } = useDailyNutrition();
   const { setDate } = useDiaryDate();
 
-  // Workouts may have been finished or started since Home was last shown.
+  // Workouts and food may have changed on other tabs since Home was last shown.
   useFocusEffect(
     useCallback(() => {
       queryClient.invalidateQueries({ queryKey: ['workoutDates'] });
       queryClient.invalidateQueries({ queryKey: ['workoutHistory'] });
+      queryClient.invalidateQueries({ queryKey: ['dailyNutrition'] });
     }, [queryClient])
   );
+
+  const foodStreak = goals && days ? goalStreak(days, goals, today) : 0;
 
   const totals = (entries ?? []).reduce(
     (acc, e) => ({
@@ -103,7 +103,17 @@ export default function Home() {
       <Text style={styles.greeting}>{name ? `Hi, ${name}!` : 'Hi!'}</Text>
 
       <Pressable style={styles.card} onPress={openDiary}>
-        <Text style={styles.cardTitle}>Today&apos;s food</Text>
+        <View style={styles.cardHeader}>
+          <Text style={styles.cardTitle}>Today&apos;s food</Text>
+          {foodStreak > 0 ? (
+            <Text
+              style={styles.streak}
+              accessibilityLabel={`${foodStreak} ${foodStreak === 1 ? 'day' : 'days'} on target`}
+            >
+              🎯 {foodStreak} {foodStreak === 1 ? 'day' : 'days'} on target
+            </Text>
+          ) : null}
+        </View>
         {isLoading ? (
           <ActivityIndicator />
         ) : (
