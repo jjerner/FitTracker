@@ -15,6 +15,7 @@ import {
 import { LabeledInput } from '../../../../components/LabeledInput';
 import { useSession } from '../../../../context/AuthProvider';
 import { useWorkoutHistory, useWorkoutLog } from '../../../../hooks/useWorkouts';
+import { toNumberOrNull } from '../../../../lib/numbers';
 import { bestOf, bestOfSessions, findNewRecords } from '../../../../lib/records';
 import {
   deleteSet,
@@ -25,11 +26,6 @@ import {
 } from '../../../../lib/workouts';
 import { colors } from '../../../../theme';
 import type { WorkoutSet } from '../../../../types/domain';
-
-function toNumberOrNull(value: string): number | null {
-  const n = Number(value.replace(',', '.'));
-  return value.trim() === '' || Number.isNaN(n) ? null : n;
-}
 
 function logVolume(exercises: { sets: { weightKg: number | null; reps: number | null }[] }[]) {
   return exercises.reduce(

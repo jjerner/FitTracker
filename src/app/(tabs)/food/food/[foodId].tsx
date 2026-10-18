@@ -25,6 +25,7 @@ import {
   updateFoodLogEntry,
   updateFoodServing,
 } from '../../../../lib/foods';
+import { toNumberOrNull } from '../../../../lib/numbers';
 import { LabeledInput } from '../../../../components/LabeledInput';
 import type { MealType } from '../../../../types/domain';
 import { colors } from '../../../../theme';
@@ -147,7 +148,7 @@ export default function FoodDetail() {
 
   async function handleSaveServing() {
     if (!food || !userId) return;
-    const size = Number(servingSize);
+    const size = toNumberOrNull(servingSize) ?? 0;
     try {
       if (editor === 'add') {
         if (!(size > 0)) return;
@@ -201,7 +202,7 @@ export default function FoodDetail() {
     ]);
   }
 
-  const amountNumber = Number(amount) || 0;
+  const amountNumber = toNumberOrNull(amount) ?? 0;
   const preview = useMemo(() => {
     if (!food) return null;
     const grams = selected ? amountNumber * selected.grams : amountNumber;

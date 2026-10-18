@@ -41,6 +41,7 @@ import {
   usePendingSets,
   usePendingSync,
 } from '../../../lib/pendingSets';
+import { toNumberOrNull } from '../../../lib/numbers';
 import { bestOf, findNewRecords } from '../../../lib/records';
 import { colors, radius, spacing } from '../../../theme';
 import type {
@@ -49,11 +50,6 @@ import type {
   WorkoutSet,
   WorkoutTemplateExercise,
 } from '../../../types/domain';
-
-function toNumberOrNull(value: string): number | null {
-  const n = Number(value.replace(',', '.'));
-  return value.trim() === '' || Number.isNaN(n) ? null : n;
-}
 
 function formatDuration(totalSeconds: number): string {
   const s = Math.max(0, Math.floor(totalSeconds));
