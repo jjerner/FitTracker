@@ -169,6 +169,8 @@ For any new tables, write new numbered migration files and ask the user to run t
 
 ## Proposed roadmap (for review — not approved yet)
 
+> **Moved 2026-10-18:** open items now live on the GitHub Project board "Plucky roadmap" (https://github.com/users/jjerner/projects/1, issues #8–#36). The board is the source of truth; the tables below are history and background detail. New items go on the board, not here.
+
 Made 2026-10-02 from our known gaps + a look at MyFitnessPal, Lifesum, MacroFactor, Cronometer, Strong, Hevy and StrengthLog.
 Effort: **S** = under an hour, **M** = a session, **L** = several sessions.
 🔁 = native change → needs a new APK build (`eas build`). Everything else ships with `eas update`.

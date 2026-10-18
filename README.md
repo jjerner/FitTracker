@@ -11,7 +11,7 @@ Built with [Expo](https://expo.dev) SDK 57 (React Native + TypeScript, Expo Rout
 - **Progress:** body weight with 7-day trend, workout history, nutrition over time
 - **Account:** email sign-up with a code, password reset
 
-Roadmap and session notes: `HANDOVER.md`.
+Roadmap: [Plucky roadmap board](https://github.com/users/jjerner/projects/1). Session notes: `HANDOVER.md`.
 
 ## Setup
 

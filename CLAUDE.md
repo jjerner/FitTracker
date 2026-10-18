@@ -14,6 +14,6 @@ Setup details and known web limits: HANDOVER.md → "Testing the app on web".
 
 ## Roadmap (read by /pm)
 
-- Roadmap: HANDOVER.md → "Proposed roadmap" (item IDs like B1, C8, 1.12; 🗄 = SQL migration the user pastes into Supabase, 🔁 = needs a new APK build).
+- Roadmap: GitHub Project "Plucky roadmap" (https://github.com/users/jjerner/projects/1), one issue per item in `jjerner/FitTracker`. Read it with `gh project item-list 1 --owner jjerner --format json` (fields: Status Todo/In Progress/Done, Area, Effort, Roadmap ID). Labels: `sql` = migration the user pastes into Supabase, `apk-build` = needs a new APK build, `needs-decision` = open question first, `beta-feedback`. Item ids are the "Roadmap ID" (e.g. B1, 5.8) or the issue number. Add new items as issues on the board. HANDOVER.md → "Proposed roadmap" is the older history (done items, background).
 - New feedback: the newest `beta_test_feedback_*.md` (unchecked `- [ ]` lines).
 - Shipping is `eas update` / `eas build` (see HANDOVER.md). Only run them when the user says so.
