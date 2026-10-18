@@ -31,7 +31,7 @@ export function PlateCalculator({
             onPress={onClose}
             style={styles.doneButton}
             accessibilityRole="button"
-            accessibilityLabel="Close plate calculator"
+            accessibilityLabel="Done"
           >
             <Text style={styles.link}>Done</Text>
           </Pressable>
@@ -47,7 +47,7 @@ export function PlateCalculator({
                 onChangeText={setKgText}
                 placeholder="e.g. 60"
                 placeholderTextColor={colors.muted}
-                keyboardType="numeric"
+                keyboardType="decimal-pad"
                 returnKeyType="done"
                 selectTextOnFocus
                 maxLength={7}
@@ -62,7 +62,7 @@ export function PlateCalculator({
                 onChangeText={setBarText}
                 placeholder={String(DEFAULT_BAR_KG)}
                 placeholderTextColor={colors.muted}
-                keyboardType="numeric"
+                keyboardType="decimal-pad"
                 returnKeyType="done"
                 selectTextOnFocus
                 maxLength={6}
@@ -96,7 +96,9 @@ function Result({ kg, barKg }: { kg: number | null; barKg: number | null }) {
   return (
     <View style={styles.result}>
       <Text style={styles.resultText} selectable>
-        {perSide.length === 0 ? 'Just the bar' : `${perSide.join(' + ')} per side`}
+        {perSide.length > 0
+          ? `${perSide.join(' + ')} per side`
+          : `Just the bar (${barKg} kg)${kg < barKg ? ` — that's more than ${kg} kg` : ''}`}
       </Text>
       {leftoverKg > 0 ? (
         <Text style={styles.leftover} selectable>
@@ -137,5 +139,5 @@ const styles = StyleSheet.create({
   resultText: { fontSize: 22, fontWeight: '700', color: colors.text, fontVariant: ['tabular-nums'] },
   leftover: { fontSize: 14, color: colors.warning },
   hint: { fontSize: 15, color: colors.muted },
-  note: { fontSize: 13, color: colors.subtle },
+  note: { fontSize: 13, color: colors.muted },
 });

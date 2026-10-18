@@ -13,6 +13,12 @@ describe('platesPerSide', () => {
     expect(platesPerSide(62.5)).toEqual({ perSide: [20, 1.25], leftoverKg: 0 });
     expect(platesPerSide(22.5)).toEqual({ perSide: [1.25], leftoverKg: 0 });
     expect(platesPerSide(47.5)).toEqual({ perSide: [10, 2.5, 1.25], leftoverKg: 0 });
+    // Odd hundredths can't split evenly over two sides.
+    expect(platesPerSide(62.51)).toEqual({ perSide: [20, 1.25], leftoverKg: 0.01 });
+  });
+
+  it('handles heavy loads', () => {
+    expect(platesPerSide(500)).toEqual({ perSide: [...Array(9).fill(25), 15], leftoverKg: 0 });
   });
 
   it('is just the bar at or below the bar weight', () => {
@@ -31,6 +37,7 @@ describe('platesPerSide', () => {
   it('uses a changed bar weight', () => {
     expect(platesPerSide(100, 15)).toEqual({ perSide: [25, 15, 2.5], leftoverKg: 0 });
     expect(platesPerSide(15, 15)).toEqual({ perSide: [], leftoverKg: 0 });
+    expect(platesPerSide(50, 100)).toEqual({ perSide: [], leftoverKg: 0 });
     expect(platesPerSide(40, 0)).toEqual({ perSide: [20], leftoverKg: 0 });
     expect(platesPerSide(30, 7.5)).toEqual({ perSide: [10, 1.25], leftoverKg: 0 });
   });

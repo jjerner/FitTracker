@@ -465,24 +465,28 @@ function ExerciseCard({
     <View style={styles.card}>
       <View style={styles.cardHeader}>
         <Text style={styles.cardTitle}>{logExercise.exercise.name}</Text>
-        <Pressable onPress={() => setSwapOpen(true)} hitSlop={8}>
-          <Text style={styles.swapText}>⇄ Swap</Text>
-        </Pressable>
-        {isBarbell ? (
-          <Pressable
-            onPress={() => setPlatesOpen(true)}
-            hitSlop={{ top: 12, bottom: 12, left: 4, right: 4 }}
-            accessibilityRole="button"
-            accessibilityLabel={`Plate calculator for ${logExercise.exercise.name}`}
-          >
-            <Text style={styles.swapText}>Plates</Text>
+        {/* Wraps under a long title on narrow phones. */}
+        <View style={styles.headerLinks}>
+          <Pressable onPress={() => setSwapOpen(true)} hitSlop={8}>
+            <Text style={styles.swapText}>⇄ Swap</Text>
           </Pressable>
-        ) : null}
-        {doneSets.length === 0 ? (
-          <Pressable onPress={handleRemoveExercise} hitSlop={8}>
-            <Text style={styles.removeText}>Remove</Text>
-          </Pressable>
-        ) : null}
+          {isBarbell ? (
+            <Pressable
+              onPress={() => setPlatesOpen(true)}
+              style={styles.linkButton}
+              accessibilityRole="button"
+              accessibilityLabel={`Plate calculator for ${logExercise.exercise.name}`}
+            >
+              <Text style={styles.swapText}>Plates</Text>
+            </Pressable>
+          ) : null}
+          {doneSets.length === 0 ? (
+            // Extra space: Remove acts at once, so keep it clear of Plates.
+            <Pressable onPress={handleRemoveExercise} hitSlop={8} style={styles.removeButton}>
+              <Text style={styles.removeText}>Remove</Text>
+            </Pressable>
+          ) : null}
+        </View>
       </View>
       {targetText ? <Text style={styles.targetText}>{targetText}</Text> : null}
       {waitingCount > 0 ? (
@@ -609,8 +613,16 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     marginBottom: spacing.md,
   },
-  cardHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
-  cardTitle: { fontSize: 16, fontWeight: '600', flex: 1, color: colors.text },
+  cardHeader: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    columnGap: spacing.md,
+  },
+  cardTitle: { fontSize: 16, fontWeight: '600', flexGrow: 1, flexShrink: 1, color: colors.text },
+  headerLinks: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  linkButton: { minHeight: 44, minWidth: 44, alignItems: 'center', justifyContent: 'center' },
+  removeButton: { marginLeft: spacing.md },
   swapText: { color: colors.primary, fontSize: 15 },
   removeText: { color: colors.danger, fontSize: 15 },
   waitingText: { fontSize: 12, color: colors.warning, marginBottom: 6 },
