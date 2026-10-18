@@ -57,7 +57,15 @@ export function missingMealsMessage(logged: Set<string>): string | null {
 // Schedules one notification per day for the next two weeks (a repeating one can't skip a day),
 // for both reminders. Today's is left out or reworded from what is already logged. Call again
 // whenever food is logged or deleted, a setting changes, or the app opens — that keeps it fresh.
-export async function refreshFoodReminders(): Promise<void> {
+// Calls run one at a time, so an older run can't overwrite the schedule from a newer diary.
+let queue: Promise<void> = Promise.resolve();
+export function refreshFoodReminders(): Promise<void> {
+  const run = queue.then(refresh);
+  queue = run.catch(() => {}); // a failed run must not block the next one
+  return run;
+}
+
+async function refresh(): Promise<void> {
   const [{ enabled, minutes }, mealEnabled] = await Promise.all([getFoodReminder(), getMealReminder()]);
   const wanted = (enabled || mealEnabled) && (await Notifications.getPermissionsAsync()).granted;
   // Read before cancelling: offline, the current schedule beats one built from "nothing logged".
