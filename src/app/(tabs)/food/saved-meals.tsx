@@ -95,7 +95,11 @@ export default function SavedMeals() {
 
   return (
     <View style={styles.container}>
-      <Pressable style={styles.newRecipe} onPress={() => router.push('/(tabs)/food/recipe')}>
+      <Pressable
+        style={styles.newRecipe}
+        onPress={() => router.push('/(tabs)/food/recipe')}
+        accessibilityRole="button"
+      >
         <Text style={styles.newRecipeText}>New recipe</Text>
       </Pressable>
 
@@ -114,7 +118,8 @@ export default function SavedMeals() {
               style={styles.modalInput}
               value={eaten}
               onChangeText={setEaten}
-              keyboardType="numeric"
+              keyboardType="decimal-pad"
+              accessibilityLabel="Portions eaten"
               selectTextOnFocus
               autoFocus
             />

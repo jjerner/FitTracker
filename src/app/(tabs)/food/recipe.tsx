@@ -77,7 +77,8 @@ function RecipeForm({ meal }: { meal?: SavedMeal }) {
   // Once, on open: throw away foods left in the draft by a recipe that was never finished.
   useState(takePendingRecipeItems);
   const [name, setName] = useState(meal?.name ?? '');
-  const [portions, setPortions] = useState(String(meal?.portions ?? 1));
+  // Empty for a new recipe: a pre-filled "1" turned a typed "12" into "112".
+  const [portions, setPortions] = useState(meal ? String(meal.portions) : '');
   const [rows, setRows] = useState<Row[]>(() => meal?.items.map(toRow) ?? []);
   const [dirty, setDirty] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
