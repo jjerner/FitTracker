@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 
 import { ExercisePicker } from '../../../components/workouts/ExercisePicker';
+import { PlateCalculator } from '../../../components/workouts/PlateCalculator';
 import { SwapExercisePicker } from '../../../components/workouts/SwapExercisePicker';
 import { useSession } from '../../../context/AuthProvider';
 import { useDefaultRest } from '../../../hooks/useDefaultRest';
@@ -305,6 +306,8 @@ function ExerciseCard({
   });
   const [savingKey, setSavingKey] = useState<number | null>(null);
   const [swapOpen, setSwapOpen] = useState(false);
+  const [platesOpen, setPlatesOpen] = useState(false);
+  const isBarbell = !logExercise.exercise.isCustom && logExercise.exercise.equipment === 'barbell';
 
   // Suggested values shown greyed out; used when the input is left empty.
   function suggestion(setNumber: number): { a: number | null; b: number | null } {
@@ -465,6 +468,16 @@ function ExerciseCard({
         <Pressable onPress={() => setSwapOpen(true)} hitSlop={8}>
           <Text style={styles.swapText}>⇄ Swap</Text>
         </Pressable>
+        {isBarbell ? (
+          <Pressable
+            onPress={() => setPlatesOpen(true)}
+            hitSlop={{ top: 12, bottom: 12, left: 4, right: 4 }}
+            accessibilityRole="button"
+            accessibilityLabel={`Plate calculator for ${logExercise.exercise.name}`}
+          >
+            <Text style={styles.swapText}>Plates</Text>
+          </Pressable>
+        ) : null}
         {doneSets.length === 0 ? (
           <Pressable onPress={handleRemoveExercise} hitSlop={8}>
             <Text style={styles.removeText}>Remove</Text>
@@ -573,6 +586,13 @@ function ExerciseCard({
         onClose={() => setSwapOpen(false)}
         onSelect={handleSwap}
       />
+      {platesOpen ? (
+        <PlateCalculator
+          // First unsaved row: what was typed, else the grey suggestion.
+          initialKg={toNumberOrNull(drafts[0]?.a ?? '') ?? suggestion(doneSets.length + 1).a}
+          onClose={() => setPlatesOpen(false)}
+        />
+      ) : null}
     </View>
   );
 }
