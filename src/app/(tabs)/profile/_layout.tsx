@@ -8,6 +8,8 @@ export default function ProfileLayout() {
       <Stack.Screen name="workouts" options={{ title: 'Workouts' }} />
       <Stack.Screen name="reminders" options={{ title: 'Reminders' }} />
       <Stack.Screen name="account" options={{ title: 'Account' }} />
+      <Stack.Screen name="password" options={{ title: 'Change password' }} />
+      <Stack.Screen name="delete-account" options={{ title: 'Delete account' }} />
     </Stack>
   );
 }

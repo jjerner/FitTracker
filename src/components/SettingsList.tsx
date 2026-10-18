@@ -29,6 +29,7 @@ export function SettingsRow({
   label,
   onPress,
   chevron,
+  destructive,
   children,
 }: {
   icon?: Icon;
@@ -36,17 +37,23 @@ export function SettingsRow({
   onPress?: () => void;
   // Set on rows that open another screen.
   chevron?: boolean;
+  // Red text and icon, for rows that delete things.
+  destructive?: boolean;
   children?: ReactNode;
 }) {
   const content = (
     <>
       {icon ? (
         // web key needed: without it SymbolView renders nothing on web
-        <SymbolView name={webIcon(icon)} tintColor={colors.primary} size={22} />
+        <SymbolView
+          name={webIcon(icon)}
+          tintColor={destructive ? colors.danger : colors.primary}
+          size={22}
+        />
       ) : (
         <View style={styles.iconSpacer} />
       )}
-      <Text style={styles.rowText}>{label}</Text>
+      <Text style={[styles.rowText, destructive && styles.rowTextDestructive]}>{label}</Text>
       {children}
       {chevron ? (
         <SymbolView
@@ -127,6 +134,7 @@ const styles = StyleSheet.create({
   rowPressed: { backgroundColor: colors.border },
   iconSpacer: { width: 22 },
   rowText: { flex: 1, fontSize: 16, fontWeight: '600', color: colors.text },
+  rowTextDestructive: { color: colors.danger },
   // 36 dp visible, hitSlop 6 makes the tap area 48 dp.
   stepButton: {
     width: 36,
