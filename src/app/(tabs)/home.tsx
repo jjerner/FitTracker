@@ -106,7 +106,10 @@ export default function Home() {
         <View style={styles.cardHeader}>
           <Text style={styles.cardTitle}>Today&apos;s food</Text>
           {foodStreak > 0 ? (
-            <Text style={styles.streak}>
+            <Text
+              style={styles.streak}
+              accessibilityLabel={`${foodStreak} ${foodStreak === 1 ? 'day' : 'days'} on target`}
+            >
               🎯 {foodStreak} {foodStreak === 1 ? 'day' : 'days'} on target
             </Text>
           ) : null}

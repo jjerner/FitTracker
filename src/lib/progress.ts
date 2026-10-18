@@ -104,7 +104,7 @@ export function goalStreak(days: DailyNutrition[], goals: NutritionGoals, today:
     days
       .filter(
         (d) =>
-          Math.abs(d.caloriesKcal - goals.caloriesKcal) <= goals.caloriesKcal * 0.1 &&
+          Math.abs(d.caloriesKcal - goals.caloriesKcal) * 10 <= goals.caloriesKcal && // × 10, not × 0.1: exact at the edge
           d.proteinG >= goals.proteinG
       )
       .map((d) => d.date)

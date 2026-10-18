@@ -37,6 +37,10 @@ describe('goalStreak', () => {
     expect(goalStreak([...hitsToYesterday, day(today)], goals, today)).toBe(4);
   });
 
+  test('today alone counts as 1', () => {
+    expect(goalStreak([day(today)], goals, today)).toBe(1);
+  });
+
   test('a day with nothing logged breaks the streak', () => {
     const days = [day('2026-10-13'), day('2026-10-14'), day('2026-10-16'), day('2026-10-17')];
     expect(goalStreak(days, goals, today)).toBe(2);
