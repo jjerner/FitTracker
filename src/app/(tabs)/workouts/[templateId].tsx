@@ -42,6 +42,8 @@ export default function TemplateScreen() {
 
 // Text inputs hold strings; converted to numbers on save.
 type DraftExercise = {
+  // Stable list key, so inputs that keep their own state stay with their exercise when moved or removed.
+  key: number;
   exercise: WorkoutTemplateExercise['exercise'];
   sets: string;
   reps: string;
@@ -52,6 +54,8 @@ type DraftExercise = {
   restSeconds: number | null;
 };
 
+let nextDraftKey = 0;
+
 function TemplateForm({ template }: { template: WorkoutTemplate | null }) {
   const { session } = useSession();
   const queryClient = useQueryClient();
@@ -59,12 +63,13 @@ function TemplateForm({ template }: { template: WorkoutTemplate | null }) {
   const [name, setName] = useState(template?.name ?? '');
   const [exercises, setExercises] = useState<DraftExercise[]>(
     (template?.exercises ?? []).map((te) => ({
+      key: nextDraftKey++,
       exercise: te.exercise,
       sets: te.targetSets?.toString() ?? '',
       reps: te.targetReps?.toString() ?? '',
       weight: te.targetWeightKg?.toString() ?? '',
       showTargets: te.targetSets != null || te.targetReps != null || te.targetWeightKg != null,
-      restSeconds: te.restSeconds ?? null,
+      restSeconds: te.restSeconds,
     }))
   );
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -198,7 +203,7 @@ function TemplateForm({ template }: { template: WorkoutTemplate | null }) {
       <Text style={styles.label}>Exercises</Text>
       {exercises.length === 0 ? <Text style={styles.emptyText}>No exercises yet</Text> : null}
       {exercises.map((e, index) => (
-        <View key={`${e.exercise.id}-${index}`} style={styles.exerciseCard}>
+        <View key={e.key} style={styles.exerciseCard}>
           <View style={styles.exerciseHeader}>
             <Text style={styles.exerciseName}>{e.exercise.name}</Text>
             <Pressable
@@ -228,22 +233,15 @@ function TemplateForm({ template }: { template: WorkoutTemplate | null }) {
           </View>
           {e.exercise.category === 'strength' ? (
             <>
-              {!e.showTargets || e.restSeconds == null ? (
-                <View style={styles.addLinksRow}>
-                  {!e.showTargets ? (
-                    <Pressable onPress={() => updateExercise(index, { showTargets: true })} hitSlop={8}>
-                      <Text style={styles.addTargetsText}>+ Targets</Text>
-                    </Pressable>
-                  ) : null}
-                  {e.restSeconds == null ? (
-                    <Pressable
-                      onPress={() => updateExercise(index, { restSeconds: defaultRest.seconds })}
-                      hitSlop={8}
-                    >
-                      <Text style={styles.addTargetsText}>+ Rest time</Text>
-                    </Pressable>
-                  ) : null}
-                </View>
+              {!e.showTargets ? (
+                <Pressable
+                  style={styles.linkButton}
+                  onPress={() => updateExercise(index, { showTargets: true })}
+                  hitSlop={12}
+                  accessibilityRole="button"
+                >
+                  <Text style={styles.addTargetsText}>+ Targets</Text>
+                </Pressable>
               ) : null}
               {e.showTargets ? (
                 <View style={styles.targetsRow}>
@@ -253,9 +251,18 @@ function TemplateForm({ template }: { template: WorkoutTemplate | null }) {
                 </View>
               ) : null}
               {e.restSeconds == null ? (
-                <Text style={styles.defaultRestText}>
-                  Uses your default rest ({formatRest(defaultRest.seconds)})
-                </Text>
+                <View style={styles.defaultRestRow}>
+                  <Text style={styles.defaultRestText}>
+                    Uses your default rest ({formatRest(defaultRest.seconds)})
+                  </Text>
+                  <Pressable
+                    onPress={() => updateExercise(index, { restSeconds: defaultRest.seconds })}
+                    hitSlop={12}
+                    accessibilityRole="button"
+                  >
+                    <Text style={styles.addTargetsText}>+ Rest time</Text>
+                  </Pressable>
+                </View>
               ) : (
                 <View style={styles.restRow}>
                   <Text style={styles.restLabel}>Rest</Text>
@@ -267,8 +274,9 @@ function TemplateForm({ template }: { template: WorkoutTemplate | null }) {
                   />
                   <Pressable
                     onPress={() => updateExercise(index, { restSeconds: null })}
-                    hitSlop={8}
+                    hitSlop={12}
                     accessibilityRole="button"
+                    accessibilityLabel="Use default rest"
                   >
                     <Text style={styles.useDefaultText}>✕ Use default</Text>
                   </Pressable>
@@ -322,7 +330,15 @@ function TemplateForm({ template }: { template: WorkoutTemplate | null }) {
         onSelect={(exercise) =>
           setExercises((prev) => [
             ...prev,
-            { exercise, sets: '', reps: '', weight: '', showTargets: false, restSeconds: null },
+            {
+              key: nextDraftKey++,
+              exercise,
+              sets: '',
+              reps: '',
+              weight: '',
+              showTargets: false,
+              restSeconds: null,
+            },
           ])
         }
       />
@@ -377,7 +393,8 @@ const styles = StyleSheet.create({
   moveButton: { paddingHorizontal: 8, paddingVertical: 2 },
   moveText: { fontSize: 18, color: colors.primary },
   moveTextDisabled: { fontSize: 18, color: colors.borderStrong },
-  addLinksRow: { flexDirection: 'row', gap: 20 },
+  linkButton: { alignSelf: 'flex-start' },
+  defaultRestRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', columnGap: 20 },
   addTargetsText: { color: colors.primary, fontSize: 14, marginTop: 6 },
   defaultRestText: { color: colors.muted, fontSize: 13, marginTop: 6 },
   restLabel: { fontSize: 12, color: colors.textSecondary },
