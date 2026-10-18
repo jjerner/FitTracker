@@ -190,7 +190,7 @@ export default function FoodDiary() {
               onChangeText={setMealName}
               autoFocus
             />
-            <ScrollView style={styles.saveList}>
+            <ScrollView style={styles.saveList} keyboardShouldPersistTaps="handled">
               {saveCandidates.map((e) => {
                 const checked = !excluded.has(e.id);
                 return (
