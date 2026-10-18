@@ -15,6 +15,7 @@ import {
 import { ExercisePicker } from '../../../components/workouts/ExercisePicker';
 import { useSession } from '../../../context/AuthProvider';
 import { useWorkoutTemplate } from '../../../hooks/useWorkouts';
+import { toNumberOrNull } from '../../../lib/numbers';
 import { deleteTemplate, saveTemplate, setTemplateArchived } from '../../../lib/workouts';
 import type { WorkoutTemplate, WorkoutTemplateExercise } from '../../../types/domain';
 import { colors } from '../../../theme';
@@ -45,11 +46,6 @@ type DraftExercise = {
   // Targets are optional; the inputs stay hidden until asked for.
   showTargets: boolean;
 };
-
-function toNumberOrNull(value: string): number | null {
-  const n = Number(value.replace(',', '.'));
-  return value.trim() === '' || Number.isNaN(n) ? null : n;
-}
 
 function TemplateForm({ template }: { template: WorkoutTemplate | null }) {
   const { session } = useSession();

@@ -13,6 +13,7 @@ import {
 import { LabeledInput } from '../../../../components/LabeledInput';
 import { useSession } from '../../../../context/AuthProvider';
 import { createCustomFood } from '../../../../lib/foods';
+import { toNumberOrNull } from '../../../../lib/numbers';
 import { colors } from '../../../../theme';
 
 export default function NewCustomFood() {
@@ -29,7 +30,17 @@ export default function NewCustomFood() {
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
-  const isValid = name.trim().length > 0 && calories !== '' && protein !== '' && carbs !== '' && fat !== '';
+  const caloriesNumber = toNumberOrNull(calories);
+  const proteinNumber = toNumberOrNull(protein);
+  const carbsNumber = toNumberOrNull(carbs);
+  const fatNumber = toNumberOrNull(fat);
+  const servingNumber = toNumberOrNull(servingSize) ?? 0;
+  const isValid =
+    name.trim().length > 0 &&
+    caloriesNumber !== null &&
+    proteinNumber !== null &&
+    carbsNumber !== null &&
+    fatNumber !== null;
 
   async function handleSave() {
     if (!session || !isValid) return;
@@ -38,13 +49,13 @@ export default function NewCustomFood() {
     try {
       const food = await createCustomFood({
         name: name.trim(),
-        caloriesKcal: Number(calories),
-        proteinG: Number(protein),
-        carbsG: Number(carbs),
-        fatG: Number(fat),
-        fiberG: fiber !== '' ? Number(fiber) : null,
-        servingSizeG: Number(servingSize) > 0 ? Number(servingSize) : null,
-        servingDescription: Number(servingSize) > 0 && servingName.trim() ? servingName.trim() : null,
+        caloriesKcal: caloriesNumber,
+        proteinG: proteinNumber,
+        carbsG: carbsNumber,
+        fatG: fatNumber,
+        fiberG: toNumberOrNull(fiber),
+        servingSizeG: servingNumber > 0 ? servingNumber : null,
+        servingDescription: servingNumber > 0 && servingName.trim() ? servingName.trim() : null,
         userId: session.user.id,
         barcode,
       });

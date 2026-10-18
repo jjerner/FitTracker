@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 
 import { useNutritionGoals } from '../../../hooks/useNutritionGoals';
+import { toNumberOrNull } from '../../../lib/numbers';
 import type { NutritionGoals } from '../../../types/domain';
 import { colors } from '../../../theme';
 
@@ -52,10 +53,13 @@ function GoalsForm({
   const [fat, setFat] = useState(String(initialGoals.fatG));
   const [isSaving, setIsSaving] = useState(false);
 
-  const isValid = protein !== '' && carbs !== '' && fat !== '';
+  const proteinNumber = toNumberOrNull(protein);
+  const carbsNumber = toNumberOrNull(carbs);
+  const fatNumber = toNumberOrNull(fat);
+  const isValid = proteinNumber !== null && carbsNumber !== null && fatNumber !== null;
   // Calories follow from the macros: 4 kcal/g protein and carbs, 9 kcal/g fat.
   const calories = Math.round(
-    (Number(protein) || 0) * 4 + (Number(carbs) || 0) * 4 + (Number(fat) || 0) * 9
+    (proteinNumber ?? 0) * 4 + (carbsNumber ?? 0) * 4 + (fatNumber ?? 0) * 9
   );
 
   function handleSave() {
@@ -64,9 +68,9 @@ function GoalsForm({
     onSave(
       {
         caloriesKcal: calories,
-        proteinG: Number(protein),
-        carbsG: Number(carbs),
-        fatG: Number(fat),
+        proteinG: proteinNumber,
+        carbsG: carbsNumber,
+        fatG: fatNumber,
         fiberG: null,
       },
       {
