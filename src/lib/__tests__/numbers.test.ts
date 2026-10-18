@@ -12,5 +12,7 @@ describe('toNumberOrNull', () => {
     expect(toNumberOrNull('')).toBeNull();
     expect(toNumberOrNull('  ')).toBeNull();
     expect(toNumberOrNull('abc')).toBeNull();
+    expect(toNumberOrNull('Infinity')).toBeNull();
+    expect(toNumberOrNull('1,2,3')).toBeNull();
   });
 });
