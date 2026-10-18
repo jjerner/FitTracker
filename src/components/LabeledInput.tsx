@@ -1,3 +1,4 @@
+import { SymbolView } from 'expo-symbols';
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, TextInputProps, View } from 'react-native';
 
@@ -5,7 +6,7 @@ import { colors, radius, spacing } from '../theme';
 
 type Props = TextInputProps & {
   label: string;
-  // Password field: hides the text, with a Show/Hide toggle.
+  // Password field: hides the text, with an eye toggle to show it.
   password?: boolean;
 };
 
@@ -25,8 +26,22 @@ export function LabeledInput({ label, password, style, ...rest }: Props) {
           secureTextEntry={password && !revealed}
         />
         {password && (
-          <Pressable style={styles.toggle} onPress={() => setRevealed((r) => !r)} hitSlop={8}>
-            <Text style={styles.toggleText}>{revealed ? 'Hide' : 'Show'}</Text>
+          <Pressable
+            style={styles.toggle}
+            onPress={() => setRevealed((r) => !r)}
+            accessibilityRole="button"
+            accessibilityLabel={revealed ? 'Hide password' : 'Show password'}
+          >
+            {/* web key needed: without it SymbolView renders nothing on web */}
+            <SymbolView
+              name={
+                revealed
+                  ? { ios: 'eye.slash', android: 'visibility_off', web: 'visibility_off' }
+                  : { ios: 'eye', android: 'visibility', web: 'visibility' }
+              }
+              tintColor={colors.primary}
+              size={22}
+            />
           </Pressable>
         )}
       </View>
@@ -46,7 +61,15 @@ const styles = StyleSheet.create({
     color: colors.text,
     backgroundColor: colors.background,
   },
-  inputWithToggle: { paddingRight: 64 },
-  toggle: { position: 'absolute', right: 14, top: 0, bottom: 0, justifyContent: 'center' },
-  toggleText: { color: colors.primary, fontWeight: '600' },
+  inputWithToggle: { paddingRight: 48 },
+  // 44pt wide, full input height: a comfortable touch target.
+  toggle: {
+    position: 'absolute',
+    right: 2,
+    top: 0,
+    bottom: 0,
+    width: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
 });
