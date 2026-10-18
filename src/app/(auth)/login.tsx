@@ -20,12 +20,27 @@ export default function Login() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   async function handleLogin() {
+    const trimmed = email.trim();
     setError(null);
     setIsSubmitting(true);
     const { error: signInError } = await supabase.auth.signInWithPassword({
-      email: email.trim(),
+      email: trimmed,
       password,
     });
+
+    // Unconfirmed email: send a fresh code and open the code screen instead of a dead end.
+    if (signInError?.code === 'email_not_confirmed') {
+      const { error: resendError } = await supabase.auth.resend({
+        type: 'signup',
+        email: trimmed,
+      });
+      setIsSubmitting(false);
+      router.push({
+        pathname: '/(auth)/signup',
+        params: { email: trimmed, ...(resendError && { resendFailed: '1' }) },
+      });
+      return;
+    }
     setIsSubmitting(false);
 
     if (signInError) {
