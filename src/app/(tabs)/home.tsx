@@ -10,19 +10,11 @@ import { useFoodDiary } from '../../hooks/useFoodDiary';
 import { useNutritionGoals } from '../../hooks/useNutritionGoals';
 import { useDailyNutrition, useWorkoutDates } from '../../hooks/useProgress';
 import { useWorkoutHistory } from '../../hooks/useWorkouts';
-import { addDays, localDateOf, todayLocalDate } from '../../lib/dateUtils';
+import { addDays, mondayOf, todayLocalDate } from '../../lib/dateUtils';
 import { goalStreak } from '../../lib/progress';
 import { colors, radius, spacing } from '../../theme';
 
 const WEEKDAYS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
-
-// "YYYY-MM-DD" of the Monday in the same week as the given date.
-function mondayOf(date: string): string {
-  const [y, m, d] = date.split('-').map(Number);
-  const day = new Date(y, m - 1, d);
-  day.setDate(day.getDate() - ((day.getDay() + 6) % 7));
-  return localDateOf(day);
-}
 
 export default function Home() {
   const queryClient = useQueryClient();

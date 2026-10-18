@@ -18,12 +18,13 @@ import { ExercisePicker } from '../../components/workouts/ExercisePicker';
 import {
   useBodyWeights,
   useDailyNutrition,
+  useMuscleSets,
   useTrackedExercises,
   useWorkoutDates,
 } from '../../hooks/useProgress';
 import { useExerciseHistory, useExercises } from '../../hooks/useWorkouts';
-import { localDateDaysAgo, todayLocalDate } from '../../lib/dateUtils';
-import { weightTrend } from '../../lib/progress';
+import { addDays, localDateDaysAgo, mondayOf, todayLocalDate } from '../../lib/dateUtils';
+import { weeklyMuscleSets, weightTrend } from '../../lib/progress';
 import { trackedStats } from '../../lib/records';
 import { colors } from '../../theme';
 
@@ -51,6 +52,7 @@ export default function Progress() {
       queryClient.invalidateQueries({ queryKey: ['dailyNutrition'] });
       queryClient.invalidateQueries({ queryKey: ['workoutDates'] });
       queryClient.invalidateQueries({ queryKey: ['exerciseHistory'] });
+      queryClient.invalidateQueries({ queryKey: ['muscleSets'] });
     }, [queryClient])
   );
 
@@ -59,6 +61,7 @@ export default function Progress() {
       <WeightCard chartWidth={chartWidth} />
       <NutritionAveragesCard />
       <WorkoutsCard />
+      <MuscleSetsCard />
       <TrackedExercisesCard />
     </ScrollView>
   );
@@ -277,6 +280,64 @@ function WorkoutsCard() {
   );
 }
 
+// Oldest week first; the last column is this week.
+const WEEK_LABELS = ['3 wk ago', '2 wk', 'Last', 'This'];
+
+function MuscleSetsCard() {
+  const { data, isLoading } = useMuscleSets();
+  const thisMonday = mondayOf(todayLocalDate());
+  const weekStarts = [-21, -14, -7, 0].map((days) => addDays(thisMonday, days));
+  const groups = weeklyMuscleSets(data ?? [], weekStarts);
+  const thisWeek = WEEK_LABELS.length - 1;
+
+  return (
+    <View style={styles.card}>
+      <Text style={styles.cardTitle}>Sets per muscle group</Text>
+
+      {isLoading ? (
+        <ActivityIndicator />
+      ) : groups.length === 0 ? (
+        <Text style={styles.empty}>No strength sets logged in the last 4 weeks.</Text>
+      ) : (
+        <View>
+          <View style={styles.tableRow}>
+            <Text style={styles.tableLabel} />
+            {WEEK_LABELS.map((label, i) => (
+              <Text
+                key={label}
+                numberOfLines={1}
+                style={[styles.tableHeader, i === thisWeek && styles.thisWeek]}
+              >
+                {label}
+              </Text>
+            ))}
+          </View>
+          {groups.map(({ group, counts }) => (
+            <View key={group} style={styles.tableRow}>
+              <Text style={styles.tableLabel}>{group[0].toUpperCase() + group.slice(1)}</Text>
+              {counts.map((count, i) => (
+                <Text
+                  key={i}
+                  style={[
+                    styles.tableCell,
+                    i === thisWeek && styles.thisWeek,
+                    count === 0 && styles.zeroSets,
+                  ]}
+                >
+                  {count}
+                </Text>
+              ))}
+            </View>
+          ))}
+          <Text style={[styles.cardSubtitle, styles.muscleFootnote]}>
+            Weeks start Monday. Finished workouts only.
+          </Text>
+        </View>
+      )}
+    </View>
+  );
+}
+
 function formatChange(change: number | null): string {
   if (change === null) return '–';
   if (change === 0) return '±0 kg';
@@ -377,6 +438,10 @@ const styles = StyleSheet.create({
   tableLabel: { flex: 1.2, fontSize: 14, color: colors.textSecondary },
   tableHeader: { flex: 1, fontSize: 13, color: colors.muted, textAlign: 'right' },
   tableCell: { flex: 1, fontSize: 14, fontWeight: '600', textAlign: 'right' },
+  thisWeek: { color: colors.primary },
+  // Dimmed so a skipped muscle group stands out.
+  zeroSets: { color: colors.subtle },
+  muscleFootnote: { marginTop: 8 },
   tableFootnote: { flex: 1, fontSize: 11, color: colors.subtle, textAlign: 'right' },
   countRow: { flexDirection: 'row', alignItems: 'baseline', gap: 6 },
   countValue: { fontSize: 28, fontWeight: '700' },
