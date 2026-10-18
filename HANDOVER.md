@@ -112,6 +112,7 @@ Migrations live in `supabase/migrations/*.sql`, applied manually by pasting into
 For any new tables, write new numbered migration files and ask the user to run them the same way.
 
 ### After each `eas build` (1.12 update banner, needs `0020_app_releases.sql`)
+- **Before the next `eas build`:** add `"autoIncrement": true` to the `preview` profile in `eas.json` (left out of PR 1.12 on purpose: it changes the fingerprint, so the banner could ship to today's APK via `eas update`). Without it every build keeps the same versionCode and the banner can't tell builds apart.
 - Paste one row per new APK into the Supabase SQL editor; phones on an older build then see "New version available → Download" on Home. The `versionCode` is on the EAS build page or from `npx eas-cli build:version:get -p android`.
   `insert into public.app_releases (version_code, install_url, notes) values (<versionCode>, 'https://expo.dev/accounts/jjerner/projects/FitTrack/builds/<build-id>', '<short note>');`
 - **Phone test after the first APK with the banner:** install it, insert its row → no banner; insert a test row with `version_code` one higher → banner shows, tap opens the link, ✕ hides it until the app restarts, TalkBack reads it as a link; then delete the test row.
