@@ -8,7 +8,7 @@ import { getByBarcode } from '../../../lib/openFoodFacts';
 import { colors } from '../../../theme';
 
 export default function ScanBarcode() {
-  const { meal } = useLocalSearchParams<{ meal?: string }>();
+  const { meal, recipe } = useLocalSearchParams<{ meal?: string; recipe?: string }>();
   const [permission, requestPermission] = useCameraPermissions();
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -22,12 +22,16 @@ export default function ScanBarcode() {
       const off = await getByBarcode(barcode);
 
       if (!off) {
-        router.replace(`/(tabs)/food/custom-food/new?barcode=${encodeURIComponent(barcode)}`);
+        router.replace(
+          `/(tabs)/food/custom-food/new?barcode=${encodeURIComponent(barcode)}${recipe ? '&recipe=1' : ''}`
+        );
         return;
       }
 
       const saved = await upsertOffFood(off);
-      router.replace(`/(tabs)/food/food/${saved.id}${meal ? `?meal=${meal}` : ''}`);
+      router.replace(
+        `/(tabs)/food/food/${saved.id}${recipe ? '?recipe=1' : meal ? `?meal=${meal}` : ''}`
+      );
     } catch {
       setError('Lookup failed. Point the camera at the barcode again.');
       setIsProcessing(false);

@@ -9,6 +9,7 @@ import type {
   MealType,
   NutritionGoals,
   SavedMeal,
+  SavedMealItem,
 } from '../types/domain';
 
 function mapFoodRow(row: any): Food {
@@ -437,7 +438,9 @@ export async function updateQuickEntry(input: QuickEntryInput & { entryId: strin
 export async function getSavedMeals(userId: string): Promise<SavedMeal[]> {
   const { data, error } = await supabase
     .from('saved_meals')
-    .select('id, name, saved_meal_items(quantity, quantity_unit, serving_g, position, foods(*))')
+    .select(
+      'id, name, portions, saved_meal_items(quantity, quantity_unit, serving_g, position, foods(*))'
+    )
     .eq('user_id', userId)
     .order('name', { ascending: true });
 
@@ -445,6 +448,7 @@ export async function getSavedMeals(userId: string): Promise<SavedMeal[]> {
   return (data ?? []).map((row: any) => ({
     id: row.id,
     name: row.name,
+    portions: Number(row.portions),
     items: [...row.saved_meal_items]
       .sort((a, b) => a.position - b.position)
       .map((item: any) => ({
@@ -494,19 +498,80 @@ export async function deleteSavedMeal(id: string): Promise<void> {
   if (error) throw error;
 }
 
+// A recipe makes `portions` portions; eating `eaten` of them is that share of every item.
+export function scaleSavedMealItems(meal: SavedMeal, eaten: number): SavedMealItem[] {
+  return meal.items.map((item) => ({ ...item, quantity: (item.quantity * eaten) / meal.portions }));
+}
+
+function savedMealItemRows(mealId: string, items: SavedMealItem[]) {
+  return items.map((item, position) => ({
+    meal_id: mealId,
+    food_id: item.food.id,
+    quantity: item.quantity,
+    quantity_unit: item.quantityUnit,
+    serving_g: item.servingG,
+    position,
+  }));
+}
+
+// Creates a recipe (or saved meal), or replaces the name, portions and items of an existing one.
+export async function saveRecipe(
+  userId: string,
+  recipe: { id?: string; name: string; portions: number; items: SavedMealItem[] }
+): Promise<void> {
+  if (!recipe.id) {
+    const { data: meal, error } = await supabase
+      .from('saved_meals')
+      .insert({ user_id: userId, name: recipe.name, portions: recipe.portions })
+      .select('id')
+      .single();
+    if (error) throw error;
+    const { error: itemsError } = await supabase
+      .from('saved_meal_items')
+      .insert(savedMealItemRows(meal.id, recipe.items));
+    if (itemsError) {
+      await supabase.from('saved_meals').delete().eq('id', meal.id);
+      throw itemsError;
+    }
+    return;
+  }
+
+  const { error } = await supabase
+    .from('saved_meals')
+    .update({ name: recipe.name, portions: recipe.portions })
+    .eq('id', recipe.id);
+  if (error) throw error;
+  // New items first, then remove the old ones: a failure leaves duplicates, never an empty recipe.
+  const { data: inserted, error: itemsError } = await supabase
+    .from('saved_meal_items')
+    .insert(savedMealItemRows(recipe.id, recipe.items))
+    .select('id');
+  if (itemsError) throw itemsError;
+  const { error: deleteError } = await supabase
+    .from('saved_meal_items')
+    .delete()
+    .eq('meal_id', recipe.id)
+    .not('id', 'in', `(${inserted.map((row) => row.id).join(',')})`);
+  if (deleteError) throw deleteError;
+}
+
 // One diary entry per food, with nutrition worked out from the foods as they are now.
+// `eaten` is how many of the recipe's portions to log; by default all of it.
 export async function logSavedMeal(
   userId: string,
   meal: SavedMeal,
   loggedDate: string,
-  mealType: MealType
+  mealType: MealType,
+  eaten = meal.portions
 ): Promise<void> {
   if (meal.items.length === 0) return;
   const groupId = newSetId();
+  const groupName =
+    meal.portions !== 1 ? `${meal.name} · ${eaten} portion${eaten === 1 ? '' : 's'}` : meal.name;
   const { error } = await supabase.from('food_log_entries').insert(
-    meal.items.map((item) => ({
+    scaleSavedMealItems(meal, eaten).map((item) => ({
       group_id: groupId,
-      group_name: meal.name,
+      group_name: groupName,
       user_id: userId,
       food_id: item.food.id,
       food_name: item.food.name,

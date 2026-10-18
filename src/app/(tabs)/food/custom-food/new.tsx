@@ -18,7 +18,11 @@ import { colors } from '../../../../theme';
 
 export default function NewCustomFood() {
   const { session } = useSession();
-  const { barcode, meal } = useLocalSearchParams<{ barcode?: string; meal?: string }>();
+  const { barcode, meal, recipe } = useLocalSearchParams<{
+    barcode?: string;
+    meal?: string;
+    recipe?: string;
+  }>();
   const [name, setName] = useState('');
   const [calories, setCalories] = useState('');
   const [protein, setProtein] = useState('');
@@ -59,7 +63,9 @@ export default function NewCustomFood() {
         userId: session.user.id,
         barcode,
       });
-      router.replace(`/(tabs)/food/food/${food.id}${meal ? `?meal=${meal}` : ''}`);
+      router.replace(
+        `/(tabs)/food/food/${food.id}${recipe ? '?recipe=1' : meal ? `?meal=${meal}` : ''}`
+      );
     } catch {
       setError('Could not save this food. Try again.');
       setIsSaving(false);
