@@ -1,6 +1,6 @@
 import { supabase } from './supabase';
-import { localDateOf } from './dateUtils';
-import type { BodyWeight, DailyNutrition } from '../types/domain';
+import { addDays, localDateOf } from './dateUtils';
+import type { BodyWeight, DailyNutrition, NutritionGoals } from '../types/domain';
 
 export async function getBodyWeights(userId: string, sinceDate: string): Promise<BodyWeight[]> {
   const { data, error } = await supabase
@@ -94,6 +94,28 @@ export async function getWorkoutDates(userId: string, sinceDate: string): Promis
 
   if (error) throw error;
   return (data ?? []).map((row) => localDateOf(new Date(row.started_at)));
+}
+
+// Days in a row that hit the goals: calories within ±10 % and protein at or above goal.
+// A day with nothing logged breaks it; today only counts once it is a hit.
+// Past days are judged against the current goal (goals have no history).
+export function goalStreak(days: DailyNutrition[], goals: NutritionGoals, today: string): number {
+  const hits = new Set(
+    days
+      .filter(
+        (d) =>
+          Math.abs(d.caloriesKcal - goals.caloriesKcal) <= goals.caloriesKcal * 0.1 &&
+          d.proteinG >= goals.proteinG
+      )
+      .map((d) => d.date)
+  );
+  let date = hits.has(today) ? today : addDays(today, -1);
+  let streak = 0;
+  while (hits.has(date)) {
+    streak += 1;
+    date = addDays(date, -1);
+  }
+  return streak;
 }
 
 // For each weigh-in, the average of all weigh-ins in the 7 days up to and including it.
