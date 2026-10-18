@@ -15,10 +15,15 @@ import { colors } from '../../theme';
 
 export default function Signup() {
   // Set by login when the email isn't confirmed yet: open the code screen directly.
-  const params = useLocalSearchParams<{ email?: string; error?: string }>();
+  const params = useLocalSearchParams<{ email?: string; resendFailed?: string }>();
   const [email, setEmail] = useState(params.email ?? '');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState<string | null>(params.error ?? null);
+  const [error, setError] = useState<string | null>(
+    params.resendFailed
+      ? `We couldn't send a new code. Use the code from your earlier email, or tap "Send again" in a minute.`
+      : null,
+  );
+  const [notice, setNotice] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [confirmationSent, setConfirmationSent] = useState(!!params.email);
   const [code, setCode] = useState('');
@@ -48,6 +53,7 @@ export default function Signup() {
 
   async function handleVerify() {
     setError(null);
+    setNotice(null);
     setIsSubmitting(true);
     // A valid code confirms the email and signs the user in.
     const { error: verifyError } = await supabase.auth.verifyOtp({
@@ -65,6 +71,7 @@ export default function Signup() {
 
   async function handleResend() {
     setError(null);
+    setNotice(null);
     setIsSubmitting(true);
     const { error: resendError } = await supabase.auth.resend({
       type: 'signup',
@@ -72,6 +79,7 @@ export default function Signup() {
     });
     setIsSubmitting(false);
     if (resendError) setError(resendError.message);
+    else setNotice('New code sent.');
   }
 
   if (confirmationSent) {
@@ -81,7 +89,10 @@ export default function Signup() {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <Text style={styles.title}>Check your email</Text>
-        <Text style={styles.info}>We sent a code to {email.trim()}. Enter it below.</Text>
+        <Text style={styles.info}>
+          {params.email ? "Your email isn't confirmed yet. " : ''}We sent a code to {email.trim()}.
+          Enter it below.
+        </Text>
         <LabeledInput
           label="Code from email"
           placeholder="123456"
@@ -91,6 +102,7 @@ export default function Signup() {
         />
 
         {error ? <Text style={styles.error}>{error}</Text> : null}
+        {notice ? <Text style={styles.info}>{notice}</Text> : null}
 
         <Pressable style={styles.button} onPress={handleVerify} disabled={isSubmitting}>
           {isSubmitting ? (
