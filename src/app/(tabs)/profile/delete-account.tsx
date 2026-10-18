@@ -53,7 +53,13 @@ export default function DeleteAccount() {
     });
     if (signInError) {
       setIsSubmitting(false);
-      setError('Wrong password. Nothing was deleted.');
+      const wrongPassword =
+        signInError.code === 'invalid_credentials' || signInError.status === 400;
+      setError(
+        wrongPassword
+          ? 'Wrong password. Nothing was deleted.'
+          : "Couldn't check your password. Check your connection and try again.",
+      );
       return;
     }
     if (!(await confirmDelete())) {
@@ -63,7 +69,7 @@ export default function DeleteAccount() {
     const { error: deleteError } = await supabase.rpc('delete_my_account');
     if (deleteError) {
       setIsSubmitting(false);
-      setError('Could not delete account. Check your connection and try again.');
+      setError("Couldn't delete your account. Try again later.");
       return;
     }
     // Local only: the server sessions are already gone with the user. The tabs layout then
@@ -80,7 +86,7 @@ export default function DeleteAccount() {
       keyboardShouldPersistTaps="handled"
     >
       <View style={styles.info}>
-        <Text style={styles.heading}>This deletes your account forever</Text>
+        <Text style={styles.heading} accessibilityRole="header">This deletes your account forever</Text>
         <Text style={styles.body}>
           Everything you have saved in Plucky is removed: your food diary, workouts, weights, goals,
           routines, custom foods and exercises, and saved meals.
@@ -94,12 +100,19 @@ export default function DeleteAccount() {
           accessibilityLabel="Password"
           password
           autoCapitalize="none"
+          autoComplete="current-password"
+          textContentType="password"
           value={password}
           onChangeText={setPassword}
         />
 
         {error ? (
-          <Text style={styles.error} selectable>
+          <Text
+            style={styles.error}
+            selectable
+            accessibilityRole="alert"
+            accessibilityLiveRegion="polite"
+          >
             {error}
           </Text>
         ) : null}

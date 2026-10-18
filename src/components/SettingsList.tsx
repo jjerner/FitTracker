@@ -134,7 +134,7 @@ const styles = StyleSheet.create({
   rowPressed: { backgroundColor: colors.border },
   iconSpacer: { width: 22 },
   rowText: { flex: 1, fontSize: 16, fontWeight: '600', color: colors.text },
-  rowTextDestructive: { color: colors.danger },
+  rowTextDestructive: { color: colors.dangerDark },
   // 36 dp visible, hitSlop 6 makes the tap area 48 dp.
   stepButton: {
     width: 36,

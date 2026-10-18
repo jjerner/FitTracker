@@ -38,7 +38,13 @@ export default function ChangePassword() {
     });
     if (signInError) {
       setIsSubmitting(false);
-      setError('Current password is wrong.');
+      const wrongPassword =
+        signInError.code === 'invalid_credentials' || signInError.status === 400;
+      setError(
+        wrongPassword
+          ? 'Current password is wrong.'
+          : "Couldn't check your password. Check your connection and try again.",
+      );
       return;
     }
     // Minimum length is Supabase's rule, same as at sign-up; its message is shown.
@@ -65,6 +71,8 @@ export default function ChangePassword() {
           accessibilityLabel="Current password"
           password
           autoCapitalize="none"
+          autoComplete="current-password"
+          textContentType="password"
           value={current}
           onChangeText={setCurrent}
         />
@@ -73,6 +81,8 @@ export default function ChangePassword() {
           accessibilityLabel="New password"
           password
           autoCapitalize="none"
+          autoComplete="new-password"
+          textContentType="newPassword"
           value={next}
           onChangeText={setNext}
         />
@@ -81,16 +91,27 @@ export default function ChangePassword() {
           accessibilityLabel="Confirm new password"
           password
           autoCapitalize="none"
+          autoComplete="new-password"
+          textContentType="newPassword"
           value={confirm}
           onChangeText={setConfirm}
         />
 
         {error ? (
-          <Text style={styles.error} selectable>
+          <Text
+            style={styles.error}
+            selectable
+            accessibilityRole="alert"
+            accessibilityLiveRegion="polite"
+          >
             {error}
           </Text>
         ) : null}
-        {done ? <Text style={styles.success}>Password changed.</Text> : null}
+        {done ? (
+          <Text style={styles.success} accessibilityRole="alert" accessibilityLiveRegion="polite">
+            Password changed.
+          </Text>
+        ) : null}
 
         <Pressable
           style={[styles.button, !canSave && styles.buttonDisabled]}

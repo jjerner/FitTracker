@@ -7,6 +7,7 @@ export const colors = {
   successBg: '#dcfce7',
   danger: '#dc2626',
   dangerLight: '#f87171',
+  dangerDark: '#b91c1c',
   warning: '#b45309',
   warningText: '#92400e',
   warningBg: '#fef3c7',
