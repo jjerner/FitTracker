@@ -157,7 +157,8 @@ function GoalsForm({
         </Pressable>
         {/* Hidden, not unmounted, so the helper's choices survive closing it. */}
         <View style={!helperOpen && styles.hidden}>
-          <GoalHelper weightKg={weightKg} onApply={handleApply} />
+          {/* Keyed on weight so a weigh-in logged while this screen stays open refills it. */}
+          <GoalHelper key={weightKg} weightKg={weightKg} onApply={handleApply} />
         </View>
       </View>
 
