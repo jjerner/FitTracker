@@ -178,14 +178,17 @@ function GoalsForm({
             From your estimated maintenance: {suggestion.maintenance} kcal/day, {suggestion.pace.label} → ≈{' '}
             {suggestion.kcal} kcal. Check the numbers, then tap Save Goals.
           </Text>
-          <Chips
-            labels={hasGoal ? SPLITS : SPLITS.slice(0, 1)}
-            selected={splitIndex}
-            onSelect={(i) => {
-              setSplitIndex(i);
-              fill(splits[i]);
-            }}
-          />
+          {/* Without a saved goal there is no current split to scale, so no choice to make. */}
+          {hasGoal ? (
+            <Chips
+              labels={SPLITS}
+              selected={splitIndex}
+              onSelect={(i) => {
+                setSplitIndex(i);
+                fill(splits[i]);
+              }}
+            />
+          ) : null}
         </View>
       ) : null}
 
