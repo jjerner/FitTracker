@@ -96,19 +96,30 @@ describe('scaleMacros', () => {
 });
 
 describe('suggestionFromParams', () => {
-  it('reads valid params', () => {
-    expect(suggestionFromParams({ kcal: '1800', maintenance: '2350', kgPerWeek: '-0.5' })).toEqual({
+  it('reads valid params and recomputes the target', () => {
+    expect(suggestionFromParams({ maintenance: '2350', kgPerWeek: '-0.5' })).toEqual({
       kcal: 1800,
       maintenance: 2350,
       pace: PACES[1],
     });
   });
 
-  it('gives null for missing, non-number, out-of-range or unknown pace params', () => {
+  it('applies the floor for the sex', () => {
+    expect(suggestionFromParams({ maintenance: '1700', kgPerWeek: '-0.75' }, 'male')?.kcal).toBe(1500);
+    expect(suggestionFromParams({ maintenance: '1700', kgPerWeek: '-0.75' })?.kcal).toBe(1200);
+  });
+
+  it('accepts maintenance from 800 to 6000', () => {
+    expect(suggestionFromParams({ maintenance: '800', kgPerWeek: '0' })).not.toBeNull();
+    expect(suggestionFromParams({ maintenance: '6000', kgPerWeek: '0' })).not.toBeNull();
+    expect(suggestionFromParams({ maintenance: '799', kgPerWeek: '0' })).toBeNull();
+    expect(suggestionFromParams({ maintenance: '6001', kgPerWeek: '0' })).toBeNull();
+  });
+
+  it('gives null for missing, non-number or unknown pace params', () => {
     expect(suggestionFromParams({})).toBeNull();
-    expect(suggestionFromParams({ kcal: 'abc', maintenance: '2350', kgPerWeek: '0' })).toBeNull();
-    expect(suggestionFromParams({ kcal: '99999', maintenance: '2350', kgPerWeek: '0' })).toBeNull();
-    expect(suggestionFromParams({ kcal: '2000', maintenance: '2350', kgPerWeek: '-3' })).toBeNull();
-    expect(suggestionFromParams({ kcal: '2000', maintenance: '2350', kgPerWeek: '' })).toBeNull();
+    expect(suggestionFromParams({ maintenance: 'abc', kgPerWeek: '0' })).toBeNull();
+    expect(suggestionFromParams({ maintenance: '2350', kgPerWeek: '-3' })).toBeNull();
+    expect(suggestionFromParams({ maintenance: '2350', kgPerWeek: '' })).toBeNull();
   });
 });

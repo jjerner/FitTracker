@@ -164,6 +164,30 @@ describe('estimateMaintenance', () => {
     });
   });
 
+  test('a day exactly at half the median is kept, just under is skipped', () => {
+    const days = [
+      ...food(fourWeeks.slice(0, 20)),
+      ...food(fourWeeks.slice(20, 21), 1000),
+      ...food(fourWeeks.slice(21, 22), 999),
+    ];
+    expect(estimateMaintenance(weighIns(0), days, today)).toMatchObject({ loggedDays: 21, skippedDays: 1 });
+  });
+
+  test('an even number of days uses the mean of the middle two as the median', () => {
+    // Median (1000 + 3000) / 2 = 2000, so the 900s fall under half and the 1000s don't.
+    const days = [
+      ...food(fourWeeks.slice(0, 2), 900),
+      ...food(fourWeeks.slice(2, 9), 1000),
+      ...food(fourWeeks.slice(9, 18), 3000),
+    ];
+    expect(estimateMaintenance(weighIns(0), days, today)).toMatchObject({ loggedDays: 16, skippedDays: 2 });
+  });
+
+  test('food 28 days back is in the window, 29 days back is not', () => {
+    expect(estimateMaintenance(weighIns(0), food(span(28, 1)), today)?.loggedDays).toBe(28);
+    expect(estimateMaintenance(weighIns(0), food(span(29, 1)), today)?.loggedDays).toBe(28);
+  });
+
   test('skipped days do not count toward the 14', () => {
     const days = [...food(fourWeeks.slice(0, 13)), ...food(fourWeeks.slice(13, 16), 500)];
     expect(estimateMaintenance(weighIns(0), days, today)).toBeNull();

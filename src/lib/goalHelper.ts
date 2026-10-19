@@ -92,13 +92,13 @@ export function scaleMacros(
 }
 
 // Route params from the maintenance card on Progress. They come from a URL, so anything
-// missing, not a number, out of range or not one of PACES gives null.
-export function suggestionFromParams(params: { kcal?: string; maintenance?: string; kgPerWeek?: string }) {
-  const kcal = Number(params.kcal);
+// missing, not a number, out of range or not one of PACES gives null. The target is
+// recomputed here so a hand-made URL can't show one that doesn't match.
+export function suggestionFromParams(params: { maintenance?: string; kgPerWeek?: string }, sex?: Sex) {
   const maintenance = Number(params.maintenance);
   const pace = PACES.find((p) => params.kgPerWeek && p.kgPerWeek === Number(params.kgPerWeek));
-  const sane = (n: number) => n >= 500 && n <= 8000; // false for NaN
-  return pace && sane(kcal) && sane(maintenance)
-    ? { kcal: Math.round(kcal), maintenance: Math.round(maintenance), pace }
-    : null;
+  if (!pace || !(maintenance >= 800 && maintenance <= 6000)) return null; // false for NaN
+  const rounded = Math.round(maintenance);
+  const { kcal } = targetKcal({ maintenanceKcal: rounded, kgPerWeek: pace.kgPerWeek, sex });
+  return { kcal, maintenance: rounded, pace };
 }

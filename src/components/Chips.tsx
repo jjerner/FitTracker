@@ -1,4 +1,4 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
 
 import { colors, spacing } from '../theme';
 
@@ -7,13 +7,15 @@ export function Chips({
   labels,
   selected,
   onSelect,
+  style,
 }: {
   labels: readonly string[];
   selected: number | null;
   onSelect: (index: number) => void;
+  style?: StyleProp<ViewStyle>;
 }) {
   return (
-    <View style={styles.chipRow}>
+    <View style={[styles.chipRow, style]}>
       {labels.map((label, i) => (
         <Pressable
           key={label}

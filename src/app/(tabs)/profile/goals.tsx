@@ -56,7 +56,7 @@ export default function NutritionGoalsScreen() {
   // Loaded here so the helper can prefill its fields when it mounts.
   const body = useBodyProfile();
   // Set when opened from the maintenance card on Progress.
-  const params = useLocalSearchParams<{ kcal?: string; maintenance?: string; kgPerWeek?: string }>();
+  const params = useLocalSearchParams<{ maintenance?: string; kgPerWeek?: string }>();
 
   if (isLoading || weights.isLoading || body.isLoading) {
     return (
@@ -69,8 +69,9 @@ export default function NutritionGoalsScreen() {
   return (
     <GoalsForm
       initialGoals={goals ?? DEFAULT_GOALS}
+      hasGoal={!!goals}
       weightKg={weightTrend(weights.data ?? []).at(-1)}
-      suggestion={suggestionFromParams(params)}
+      suggestion={suggestionFromParams(params, body.data?.sex ?? undefined)}
       onSave={(next, options) => saveGoals(next, options)}
     />
   );
@@ -78,17 +79,19 @@ export default function NutritionGoalsScreen() {
 
 function GoalsForm({
   initialGoals,
+  hasGoal,
   weightKg,
   suggestion,
   onSave,
 }: {
   initialGoals: NutritionGoals;
+  hasGoal: boolean;
   // Newest 7-day trend weight, undefined without weigh-ins.
   weightKg: number | undefined;
   suggestion: Suggestion | null;
   onSave: (goals: NutritionGoals, options: { onSuccess: () => void; onSettled: () => void }) => void;
 }) {
-  // Suggested split needs a weight for its g/kg, so without weigh-ins the suggestion is ignored.
+  // Suggested split needs a weight for its g/kg, so without weigh-ins nothing is pre-filled.
   const splits =
     suggestion && weightKg
       ? [
@@ -147,7 +150,12 @@ function GoalsForm({
         fiberG: null,
       },
       {
-        onSuccess: () => router.back(),
+        onSuccess: () => {
+          if (!suggestion) return router.back();
+          // Opened from the Progress card: reset this stack to Profile, then show Progress again.
+          router.dismissAll();
+          router.navigate('/(tabs)/progress');
+        },
         onSettled: () => setIsSaving(false),
       }
     );
@@ -161,14 +169,17 @@ function GoalsForm({
       keyboardShouldPersistTaps="handled"
     >
       {/* Hidden once the helper fills the fields, so it never explains numbers it did not make. */}
+      {suggestion && !splits ? (
+        <Text style={styles.suggestionText}>Couldn&apos;t pre-fill: log a weigh-in first.</Text>
+      ) : null}
       {suggestion && splits && !filled ? (
         <View>
           <Text style={styles.suggestionText}>
-            From your estimated maintenance: {suggestion.maintenance} kcal/day, {suggestion.pace.label} →{' '}
+            From your estimated maintenance: {suggestion.maintenance} kcal/day, {suggestion.pace.label} → ≈{' '}
             {suggestion.kcal} kcal. Check the numbers, then tap Save Goals.
           </Text>
           <Chips
-            labels={SPLITS}
+            labels={hasGoal ? SPLITS : SPLITS.slice(0, 1)}
             selected={splitIndex}
             onSelect={(i) => {
               setSplitIndex(i);
