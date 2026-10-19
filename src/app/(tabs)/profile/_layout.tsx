@@ -1,5 +1,8 @@
 import { Stack } from 'expo-router';
 
+// Keeps Profile below Goals when it is opened from another tab (the Progress card).
+export const unstable_settings = { anchor: 'index' };
+
 export default function ProfileLayout() {
   return (
     <Stack>

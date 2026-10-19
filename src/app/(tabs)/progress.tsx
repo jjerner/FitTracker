@@ -13,8 +13,11 @@ import {
 } from 'react-native';
 import { LineChart } from 'react-native-gifted-charts';
 
+import { Chips } from '../../components/Chips';
 import { MonthCalendar } from '../../components/MonthCalendar';
 import { ExercisePicker } from '../../components/workouts/ExercisePicker';
+import { useBodyProfile } from '../../hooks/useBodyProfile';
+import { useNutritionGoals } from '../../hooks/useNutritionGoals';
 import {
   useBodyWeights,
   useDailyNutrition,
@@ -24,7 +27,8 @@ import {
 } from '../../hooks/useProgress';
 import { useExerciseHistory, useExercises } from '../../hooks/useWorkouts';
 import { addDays, localDateDaysAgo, mondayOf, todayLocalDate } from '../../lib/dateUtils';
-import { weeklyMuscleSets, weightTrend } from '../../lib/progress';
+import { MIN_KCAL, PACES, targetKcal } from '../../lib/goalHelper';
+import { estimateMaintenance, weeklyMuscleSets, weightTrend } from '../../lib/progress';
 import { trackedStats } from '../../lib/records';
 import { colors } from '../../theme';
 
@@ -59,6 +63,7 @@ export default function Progress() {
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <WeightCard chartWidth={chartWidth} />
+      <MaintenanceCard />
       <NutritionAveragesCard />
       <WorkoutsCard />
       <MuscleSetsCard />
@@ -177,6 +182,99 @@ function WeightCard({ chartWidth }: { chartWidth: number }) {
             <Text style={styles.legendTrend}>━</Text> 7-day average{'   '}
             <Text style={styles.legendDaily}>━</Text> daily weigh-ins
           </Text>
+        </>
+      )}
+    </View>
+  );
+}
+
+const KEEP_INDEX = PACES.findIndex((p) => p.kgPerWeek === 0);
+// Macros are rounded to 5 g, so a saved goal lands a few kcal off the suggestion.
+const GOAL_MATCH_KCAL = 50;
+
+function MaintenanceCard() {
+  const weights = useBodyWeights();
+  const days = useDailyNutrition();
+  const { data: goals, isLoading: goalsLoading } = useNutritionGoals();
+  const { data: body, isLoading: bodyLoading } = useBodyProfile();
+  const [paceIndex, setPaceIndex] = useState(KEEP_INDEX);
+
+  const estimate = estimateMaintenance(weights.data ?? [], days.data ?? [], todayLocalDate());
+  const pace = PACES[paceIndex];
+  const sex = body?.sex ?? undefined;
+  const target = estimate && targetKcal({ maintenanceKcal: estimate.kcal, kgPerWeek: pace.kgPerWeek, sex });
+  const change = estimate ? Math.round(estimate.trendChangeKg * 10) / 10 : 0;
+  const changeText = `${change > 0 ? '+' : change < 0 ? '−' : '±'}${Math.abs(change)} kg`;
+  const goalMatches = !!goals && !!target && Math.abs(goals.caloriesKcal - target.kcal) <= GOAL_MATCH_KCAL;
+
+  return (
+    <View style={styles.card}>
+      <Text style={styles.cardTitle}>Estimated maintenance</Text>
+      {weights.isLoading || days.isLoading || goalsLoading || bodyLoading ? (
+        <ActivityIndicator />
+      ) : weights.isError || days.isError ? (
+        <Text style={styles.empty}>Couldn&apos;t load your data. Try again later.</Text>
+      ) : !estimate || !target ? (
+        <Text style={styles.empty}>
+          Needs 14 days of food logged and weigh-ins at least 14 days apart, within the last 4 weeks. Half-logged
+          days don&apos;t count.
+        </Text>
+      ) : (
+        <>
+          <View
+            style={styles.countRow}
+            accessible
+            accessibilityLabel={`About ${estimate.kcal} kilocalories per day`}
+          >
+            <Text style={styles.countValue} selectable>
+              ≈ {estimate.kcal}
+            </Text>
+            <Text style={styles.cardSubtitle}>kcal / day</Text>
+          </View>
+          <Text style={styles.cardSubtitle}>
+            From {estimate.loggedDays} logged days and your weight trend ({changeText}) over{' '}
+            {Math.round(estimate.daysBetween)} days.
+          </Text>
+          {estimate.skippedDays > 0 ? (
+            <Text style={styles.cardSubtitle}>
+              {estimate.skippedDays} {estimate.skippedDays === 1 ? 'day' : 'days'} skipped (looked incomplete)
+            </Text>
+          ) : null}
+          {goals ? <Text style={styles.goalLine}>Your goal: {goals.caloriesKcal} kcal</Text> : null}
+
+          <Text style={styles.goalLine}>Pace for your goal</Text>
+          {/* The card's gap already spaces the next line. */}
+          <Chips
+            labels={PACES.map((p) => p.label)}
+            selected={paceIndex}
+            onSelect={setPaceIndex}
+            style={{ marginBottom: 0 }}
+          />
+          {target.clamped ? (
+            <Text style={styles.clampNote}>
+              Raised to the {MIN_KCAL[sex ?? 'female']} kcal minimum. A slower pace is easier to keep.
+            </Text>
+          ) : null}
+          {goalMatches ? (
+            <Text style={styles.goalLine}>Your goal already matches this.</Text>
+          ) : (
+            <Pressable
+              style={[styles.button, styles.applyButton]}
+              accessibilityRole="button"
+              onPress={() =>
+                router.push(
+                  {
+                    pathname: '/(tabs)/profile/goals',
+                    params: { maintenance: estimate.kcal, kgPerWeek: pace.kgPerWeek },
+                  },
+                  // Puts Profile under Goals so the stack has a back arrow.
+                  { withAnchor: true }
+                )
+              }
+            >
+              <Text style={styles.buttonText}>Use {target.kcal} kcal as my goal</Text>
+            </Pressable>
+          )}
         </>
       )}
     </View>
@@ -478,5 +576,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   buttonDisabled: { opacity: 0.5 },
+  applyButton: { minHeight: 44, alignItems: 'center' },
+  goalLine: { fontSize: 14, color: colors.textSecondary },
+  clampNote: { fontSize: 13, color: colors.warningText },
   buttonText: { color: colors.onPrimary, fontSize: 16, fontWeight: '600' },
 });

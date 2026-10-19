@@ -1,5 +1,6 @@
 import { supabase } from './supabase';
 import { addDays, localDateOf, mondayOf } from './dateUtils';
+import { KCAL_PER_KG } from './goalHelper';
 import type { BodyWeight, DailyNutrition, NutritionGoals } from '../types/domain';
 
 export async function getBodyWeights(userId: string, sinceDate: string): Promise<BodyWeight[]> {
@@ -178,4 +179,54 @@ export function weightTrend(points: BodyWeight[]): number[] {
       .filter((q) => dayNumber(p.date) - dayNumber(q.date) < 7);
     return window.reduce((sum, q) => sum + Number(q.weightKg), 0) / window.length;
   });
+}
+
+export type MaintenanceEstimate = {
+  kcal: number;
+  loggedDays: number;
+  skippedDays: number;
+  daysBetween: number;
+  trendChangeKg: number;
+};
+
+const MAINTENANCE_WINDOW_DAYS = 28;
+const MAINTENANCE_MIN_DAYS = 14;
+
+// Daily burn from intake and the weight trend over the 28 days before today (today is still
+// being logged). Days under half the median intake look half-logged and are skipped.
+// Null without at least 14 counted food days and two weigh-ins 14+ days apart.
+export function estimateMaintenance(
+  weights: BodyWeight[],
+  days: DailyNutrition[],
+  today: string
+): MaintenanceEstimate | null {
+  const start = addDays(today, -MAINTENANCE_WINDOW_DAYS);
+  const inWindow = (date: string) => date >= start && date < today;
+
+  const logged = days.filter((d) => inWindow(d.date));
+  const sorted = logged.map((d) => d.caloriesKcal).sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+  const median = sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+  const counted = logged.filter((d) => d.caloriesKcal >= median / 2);
+  if (counted.length < MAINTENANCE_MIN_DAYS) return null;
+
+  // Trend over everything fetched, so the first weigh-in in the window still has a week behind it.
+  const trend = weightTrend(weights);
+  const indexes = weights.flatMap((w, i) => (inWindow(w.date) ? [i] : []));
+  if (indexes.length === 0) return null;
+  const first = indexes[0];
+  const last = indexes[indexes.length - 1];
+  const daysBetween = (Date.parse(weights[last].date) - Date.parse(weights[first].date)) / 86_400_000;
+  if (daysBetween < MAINTENANCE_MIN_DAYS) return null;
+
+  const trendChangeKg = trend[last] - trend[first];
+  const avgIntake = counted.reduce((sum, d) => sum + d.caloriesKcal, 0) / counted.length;
+  const kcal = avgIntake - (trendChangeKg * KCAL_PER_KG) / daysBetween;
+  return {
+    kcal: Math.round(kcal / 10) * 10,
+    loggedDays: counted.length,
+    skippedDays: logged.length - counted.length,
+    daysBetween,
+    trendChangeKg,
+  };
 }
