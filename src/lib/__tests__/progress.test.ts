@@ -1,5 +1,5 @@
-import { mondayOf } from '../dateUtils';
-import { goalStreak, weeklyMuscleSets, weightTrend } from '../progress';
+import { addDays, mondayOf } from '../dateUtils';
+import { estimateMaintenance, goalStreak, weeklyMuscleSets, weightTrend } from '../progress';
 
 jest.mock('../supabase', () => ({ supabase: {} }));
 
@@ -106,5 +106,82 @@ describe('weeklyMuscleSets', () => {
       weeks
     );
     expect(result).toEqual([{ group: 'legs', counts: [0, 0, 3, 0] }]);
+  });
+});
+
+describe('estimateMaintenance', () => {
+  const today = '2026-10-19';
+  // One entry per day from `from` to `to` days ago (inclusive), oldest first.
+  const span = (from: number, to: number) =>
+    Array.from({ length: from - to + 1 }, (_, i) => addDays(today, -(from - i)));
+  const food = (dates: string[], caloriesKcal = 2000) =>
+    dates.map((date) => ({ date, caloriesKcal, proteinG: 0, carbsG: 0, fatG: 0 }));
+  // Weigh-ins from 40 days ago, changing `kgPerDay` each day.
+  const weighIns = (kgPerDay: number) =>
+    span(40, 1).map((date, i) => ({ date, weightKg: 80 + i * kgPerDay }));
+  const fourWeeks = span(28, 1);
+
+  test('flat weight gives the average intake', () => {
+    const days = [...food(fourWeeks.slice(0, 14), 1800), ...food(fourWeeks.slice(14), 2200)];
+    expect(estimateMaintenance(weighIns(0), days, today)).toEqual({
+      kcal: 2000,
+      loggedDays: 28,
+      skippedDays: 0,
+      daysBetween: 27,
+      trendChangeKg: 0,
+    });
+  });
+
+  test('a falling trend adds change × 7700 / days', () => {
+    // Trend falls 0.1 kg/day over 27 days: 2.7 × 7700 / 27 = 770.
+    const result = estimateMaintenance(weighIns(-0.1), food(fourWeeks), today);
+    expect(result?.trendChangeKg).toBeCloseTo(-2.7);
+    expect(result?.kcal).toBe(2770);
+  });
+
+  test('a rising trend takes it off', () => {
+    expect(estimateMaintenance(weighIns(0.1), food(fourWeeks), today)?.kcal).toBe(1230);
+  });
+
+  test("today's food and weigh-in are left out", () => {
+    const weights = [...weighIns(0), { date: today, weightKg: 60 }];
+    const result = estimateMaintenance(weights, [...food(fourWeeks), ...food([today], 5000)], today);
+    expect(result?.kcal).toBe(2000);
+    expect(result?.trendChangeKg).toBe(0);
+  });
+
+  test('days with nothing logged are skipped, not counted as 0', () => {
+    const result = estimateMaintenance(weighIns(0), food(fourWeeks.slice(0, 20)), today);
+    expect(result).toMatchObject({ kcal: 2000, loggedDays: 20, skippedDays: 0 });
+  });
+
+  test('days under half the median are skipped and counted as skipped', () => {
+    const days = [...food(fourWeeks.slice(0, 20)), ...food(fourWeeks.slice(20, 22), 500)];
+    expect(estimateMaintenance(weighIns(0), days, today)).toMatchObject({
+      kcal: 2000,
+      loggedDays: 20,
+      skippedDays: 2,
+    });
+  });
+
+  test('skipped days do not count toward the 14', () => {
+    const days = [...food(fourWeeks.slice(0, 13)), ...food(fourWeeks.slice(13, 16), 500)];
+    expect(estimateMaintenance(weighIns(0), days, today)).toBeNull();
+  });
+
+  test('fewer than 14 food days gives null', () => {
+    expect(estimateMaintenance(weighIns(0), food(fourWeeks.slice(0, 13)), today)).toBeNull();
+    expect(estimateMaintenance(weighIns(0), food(fourWeeks.slice(0, 14)), today)).not.toBeNull();
+  });
+
+  test('weigh-ins under 14 days apart give null', () => {
+    const weights = (from: number) => [from, 1].map((d) => ({ date: addDays(today, -d), weightKg: 80 }));
+    expect(estimateMaintenance(weights(14), food(fourWeeks), today)).toBeNull();
+    expect(estimateMaintenance(weights(15), food(fourWeeks), today)?.daysBetween).toBe(14);
+  });
+
+  test('no weigh-ins in the window gives null', () => {
+    expect(estimateMaintenance([], food(fourWeeks), today)).toBeNull();
+    expect(estimateMaintenance(span(60, 29).map((date) => ({ date, weightKg: 80 })), food(fourWeeks), today)).toBeNull();
   });
 });

@@ -76,3 +76,29 @@ export function macrosFor(input: {
   const carbsG = round5(Math.max(0, (input.kcal - proteinG * 4 - fatG * 9) / 4));
   return { proteinG, carbsG, fatG };
 }
+
+// The current split with every macro scaled by the same factor to reach `kcal`, rounded to 5 g.
+export function scaleMacros(
+  current: { proteinG: number; carbsG: number; fatG: number },
+  kcal: number
+): { proteinG: number; carbsG: number; fatG: number } {
+  // `|| 1`: an all-zero split stays zero instead of dividing by 0.
+  const factor = kcal / (current.proteinG * 4 + current.carbsG * 4 + current.fatG * 9 || 1);
+  return {
+    proteinG: round5(current.proteinG * factor),
+    carbsG: round5(current.carbsG * factor),
+    fatG: round5(current.fatG * factor),
+  };
+}
+
+// Route params from the maintenance card on Progress. They come from a URL, so anything
+// missing, not a number, out of range or not one of PACES gives null.
+export function suggestionFromParams(params: { kcal?: string; maintenance?: string; kgPerWeek?: string }) {
+  const kcal = Number(params.kcal);
+  const maintenance = Number(params.maintenance);
+  const pace = PACES.find((p) => params.kgPerWeek && p.kgPerWeek === Number(params.kgPerWeek));
+  const sane = (n: number) => n >= 500 && n <= 8000; // false for NaN
+  return pace && sane(kcal) && sane(maintenance)
+    ? { kcal: Math.round(kcal), maintenance: Math.round(maintenance), pace }
+    : null;
+}
