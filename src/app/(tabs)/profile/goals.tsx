@@ -3,7 +3,6 @@ import { SymbolView } from 'expo-symbols';
 import { useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -12,6 +11,7 @@ import {
   View,
 } from 'react-native';
 
+import { Chips } from '../../../components/Chips';
 import { LabeledInput } from '../../../components/LabeledInput';
 import { Stepper } from '../../../components/SettingsList';
 import { useBodyProfile } from '../../../hooks/useBodyProfile';
@@ -23,6 +23,7 @@ import {
   MIN_KCAL,
   PACES,
   PROTEIN_PER_KG,
+  ageFromBirthYear,
   macroDefaults,
   macrosFor,
   maintenanceKcal,
@@ -82,6 +83,7 @@ function GoalsForm({
   const [fat, setFat] = useState(String(initialGoals.fatG));
   const [isSaving, setIsSaving] = useState(false);
   const [helperOpen, setHelperOpen] = useState(false);
+  const [filled, setFilled] = useState(false);
 
   const proteinNumber = toNumberOrNull(protein);
   const carbsNumber = toNumberOrNull(carbs);
@@ -106,6 +108,7 @@ function GoalsForm({
     setCarbs(String(macros.carbsG));
     setFat(String(macros.fatG));
     setHelperOpen(false);
+    setFilled(true);
   }
 
   function handleSave() {
@@ -152,7 +155,10 @@ function GoalsForm({
             size={22}
           />
         </Pressable>
-        {helperOpen ? <GoalHelper weightKg={weightKg} onApply={handleApply} /> : null}
+        {/* Hidden, not unmounted, so the helper's choices survive closing it. */}
+        <View style={!helperOpen && styles.hidden}>
+          <GoalHelper weightKg={weightKg} onApply={handleApply} />
+        </View>
       </View>
 
       <Text style={styles.label}>Protein (g)</Text>
@@ -161,16 +167,32 @@ function GoalsForm({
         keyboardType="numeric"
         value={protein}
         onChangeText={setProtein}
+        accessibilityLabel="Protein (g)"
       />
       {macroDetail(proteinNumber, 4)}
 
       <Text style={styles.label}>Carbs (g)</Text>
-      <TextInput style={styles.input} keyboardType="numeric" value={carbs} onChangeText={setCarbs} />
+      <TextInput
+        style={styles.input}
+        keyboardType="numeric"
+        value={carbs}
+        onChangeText={setCarbs}
+        accessibilityLabel="Carbs (g)"
+      />
       {macroDetail(carbsNumber, 4)}
 
       <Text style={styles.label}>Fat (g)</Text>
-      <TextInput style={styles.input} keyboardType="numeric" value={fat} onChangeText={setFat} />
+      <TextInput
+        style={styles.input}
+        keyboardType="numeric"
+        value={fat}
+        onChangeText={setFat}
+        accessibilityLabel="Fat (g)"
+      />
       {macroDetail(fatNumber, 9)}
+      {filled ? (
+        <Text style={styles.hint}>Filled in from the helper. Check the numbers, then tap Save Goals.</Text>
+      ) : null}
 
       <Text style={styles.label}>Daily Calories</Text>
       <Text style={styles.calories}>{calories} kcal</Text>
@@ -193,9 +215,10 @@ function GoalsForm({
 
 const SEXES: Sex[] = ['male', 'female'];
 
-// One step of a g/kg stepper, kept inside its range and to one decimal.
-function stepped(value: number, delta: number, range: { min: number; max: number }) {
-  return Math.min(range.max, Math.max(range.min, Math.round((value + delta) * 10) / 10));
+// Hint for a number field: null when it is filled in and inside min–max.
+function rangeHint(value: number | null, min: number, max: number, empty: string, outside: string) {
+  if (value === null) return empty;
+  return value >= min && value <= max ? null : outside;
 }
 
 function GoalHelper({
@@ -220,17 +243,24 @@ function GoalHelper({
   const heightCm = toNumberOrNull(height);
   const weightKg = toNumberOrNull(weight);
   const [now] = useState(Date.now);
-  const currentYear = new Date(now).getFullYear();
-  const validYear =
-    yearNumber !== null && Number.isInteger(yearNumber) && yearNumber > 1900 && yearNumber < currentYear;
+  const ageYears = yearNumber === null ? null : ageFromBirthYear(yearNumber, now);
+
+  // First thing still missing or implausible; Fill stays off until this is null.
+  const missing =
+    (sex === null && 'Pick your sex.') ||
+    rangeHint(ageYears, 15, 100, 'Enter your birth year.', 'Birth year should make you 15–100 years old.') ||
+    rangeHint(heightCm, 100, 250, 'Enter your height.', 'Height should be 100–250 cm.') ||
+    rangeHint(weightKg, 30, 300, 'Enter your weight.', 'Weight should be 30–300 kg.') ||
+    (activityIndex === null && 'Pick an activity level.') ||
+    (paceIndex === null && 'Pick a goal.') ||
+    null;
 
   const target =
-    sex && validYear && heightCm && heightCm > 0 && weightKg && weightKg > 0 && activityIndex !== null && paceIndex !== null
+    !missing && sex && ageYears !== null && heightCm && weightKg && activityIndex !== null && paceIndex !== null
       ? targetKcal({
           maintenanceKcal: maintenanceKcal({
             sex,
-            // Birth year is saved as 1 July, so count from mid-year.
-            ageYears: (now - Date.parse(`${yearNumber}-07-01`)) / (365.25 * 86_400_000),
+            ageYears,
             heightCm,
             weightKg,
             activityFactor: ACTIVITY_LEVELS[activityIndex].factor,
@@ -245,15 +275,16 @@ function GoalHelper({
     setPerKg(macroDefaults(PACES[index].kgPerWeek));
   }
 
+  // One g/kg stepper tap, kept inside its range and to one decimal.
+  const step = (key: keyof typeof perKg, range: typeof PROTEIN_PER_KG, sign: 1 | -1) => () =>
+    setPerKg((p) => ({
+      ...p,
+      [key]: Math.min(range.max, Math.max(range.min, Math.round((p[key] + sign * range.step) * 10) / 10)),
+    }));
+
   function handleFill() {
     if (!target || !sex || !heightCm || !weightKg || !yearNumber) return;
-    saveBody(
-      { sex, heightCm, birthYear: yearNumber },
-      {
-        onError: () =>
-          Alert.alert('Could not remember your details', 'The suggestion is still filled in.'),
-      }
-    );
+    saveBody({ sex, heightCm, birthYear: yearNumber });
     onApply(macrosFor({ kcal: target.kcal, weightKg, ...perKg }));
   }
 
@@ -262,9 +293,19 @@ function GoalHelper({
       <Text style={styles.helperLabel}>Sex (for the formula)</Text>
       <Chips labels={['Male', 'Female']} selected={sexIndex} onSelect={setSexIndex} />
 
-      <LabeledInput label="Birth year" keyboardType="numeric" value={birthYear} onChangeText={setBirthYear} />
+      <LabeledInput
+        label="Birth year"
+        keyboardType="numeric"
+        placeholder="e.g. 1990"
+        maxLength={4}
+        value={birthYear}
+        onChangeText={setBirthYear}
+      />
       <LabeledInput label="Height (cm)" keyboardType="numeric" value={height} onChangeText={setHeight} />
       <LabeledInput label="Weight (kg)" keyboardType="numeric" value={weight} onChangeText={setWeight} />
+      {trendWeightKg === undefined ? (
+        <Text style={styles.weightHint}>Log a weigh-in on Progress to fill this in automatically.</Text>
+      ) : null}
 
       <Text style={styles.helperLabel}>Activity</Text>
       <Chips labels={ACTIVITY_LEVELS.map((a) => a.label)} selected={activityIndex} onSelect={setActivityIndex} />
@@ -278,8 +319,8 @@ function GoalHelper({
           value={perKg.proteinPerKg.toFixed(1)}
           decreaseLabel="Less protein"
           increaseLabel="More protein"
-          onDecrease={() => setPerKg((p) => ({ ...p, proteinPerKg: stepped(p.proteinPerKg, -PROTEIN_PER_KG.step, PROTEIN_PER_KG) }))}
-          onIncrease={() => setPerKg((p) => ({ ...p, proteinPerKg: stepped(p.proteinPerKg, PROTEIN_PER_KG.step, PROTEIN_PER_KG) }))}
+          onDecrease={step('proteinPerKg', PROTEIN_PER_KG, -1)}
+          onIncrease={step('proteinPerKg', PROTEIN_PER_KG, 1)}
         />
       </View>
       <View style={styles.stepRow}>
@@ -288,8 +329,8 @@ function GoalHelper({
           value={perKg.fatPerKg.toFixed(1)}
           decreaseLabel="Less fat"
           increaseLabel="More fat"
-          onDecrease={() => setPerKg((p) => ({ ...p, fatPerKg: stepped(p.fatPerKg, -FAT_PER_KG.step, FAT_PER_KG) }))}
-          onIncrease={() => setPerKg((p) => ({ ...p, fatPerKg: stepped(p.fatPerKg, FAT_PER_KG.step, FAT_PER_KG) }))}
+          onDecrease={step('fatPerKg', FAT_PER_KG, -1)}
+          onIncrease={step('fatPerKg', FAT_PER_KG, 1)}
         />
       </View>
 
@@ -300,41 +341,17 @@ function GoalHelper({
       ) : null}
 
       <Pressable
-        style={[styles.saveButton, !target && styles.saveButtonDisabled]}
+        style={[styles.fillButton, !target && styles.saveButtonDisabled]}
         onPress={handleFill}
         disabled={!target}
         accessibilityRole="button"
         accessibilityState={{ disabled: !target }}
+        accessibilityHint={missing ?? undefined}
       >
-        <Text style={styles.saveButtonText}>Fill in suggestion</Text>
+        <Text style={styles.fillButtonText}>Fill in suggestion</Text>
       </Pressable>
+      {missing ? <Text style={styles.hint}>{missing}</Text> : null}
       <Text style={styles.hint}>Estimate only, not medical advice.</Text>
-    </View>
-  );
-}
-
-function Chips({
-  labels,
-  selected,
-  onSelect,
-}: {
-  labels: readonly string[];
-  selected: number | null;
-  onSelect: (index: number) => void;
-}) {
-  return (
-    <View style={styles.chipRow}>
-      {labels.map((label, i) => (
-        <Pressable
-          key={label}
-          style={[styles.chip, selected === i && styles.chipActive]}
-          onPress={() => onSelect(i)}
-          accessibilityRole="button"
-          accessibilityState={{ selected: selected === i }}
-        >
-          <Text style={selected === i ? styles.chipTextActive : styles.chipText}>{label}</Text>
-        </Pressable>
-      ))}
     </View>
   );
 }
@@ -350,6 +367,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 14,
     fontSize: 16,
+    color: colors.text,
   },
   calories: { fontSize: 20, fontWeight: '700' },
   hint: { fontSize: 13, color: colors.muted, marginTop: 4 },
@@ -372,17 +390,18 @@ const styles = StyleSheet.create({
   helperTitle: { flex: 1, fontSize: 16, fontWeight: '600', color: colors.text },
   helperBody: { paddingHorizontal: spacing.lg, paddingBottom: spacing.lg },
   helperLabel: { fontSize: 14, fontWeight: '600', color: colors.text, marginBottom: spacing.xs },
-  chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: spacing.md },
-  chip: {
+  hidden: { display: 'none' },
+  // Pulled up under the Weight box it explains (LabeledInput adds space below itself).
+  weightHint: { fontSize: 13, color: colors.muted, marginTop: -spacing.sm, marginBottom: spacing.md },
+  fillButton: {
     borderWidth: 1,
-    borderColor: colors.borderStrong,
-    borderRadius: 20,
-    paddingVertical: 8,
-    paddingHorizontal: 16,
+    borderColor: colors.primary,
+    borderRadius: 8,
+    padding: 14,
+    alignItems: 'center',
+    marginTop: spacing.md,
   },
-  chipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
-  chipText: { color: colors.textSecondary },
-  chipTextActive: { color: colors.onPrimary },
+  fillButtonText: { color: colors.primary, fontSize: 16, fontWeight: '600' },
   stepRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, minHeight: 48 },
   stepLabel: { flex: 1, fontSize: 14, fontWeight: '600', color: colors.text },
   clampNote: { fontSize: 13, color: colors.warningText, marginTop: spacing.sm },

@@ -45,14 +45,20 @@ export function maintenanceKcal(input: {
   return Math.round(bmr * input.activityFactor);
 }
 
+// Age in years from a birth year saved as 1 July of that year.
+export function ageFromBirthYear(year: number, now: number): number {
+  return (now - Date.UTC(year, 6, 1)) / (365.25 * 86_400_000);
+}
+
 // Maintenance plus the pace's daily change, never below the floor for the sex.
 export function targetKcal(input: {
   maintenanceKcal: number;
   kgPerWeek: number;
-  sex: Sex;
+  sex?: Sex;
 }): { kcal: number; clamped: boolean } {
   const kcal = Math.round(input.maintenanceKcal + (input.kgPerWeek * KCAL_PER_KG) / 7);
-  const floor = MIN_KCAL[input.sex];
+  // Unknown sex gets the lower (female) floor.
+  const floor = MIN_KCAL[input.sex ?? 'female'];
   return kcal < floor ? { kcal: floor, clamped: true } : { kcal, clamped: false };
 }
 

@@ -1,4 +1,4 @@
-import { KCAL_PER_KG, PACES, macroDefaults, macrosFor, maintenanceKcal, targetKcal } from '../goalHelper';
+import { PACES, ageFromBirthYear, macroDefaults, macrosFor, maintenanceKcal, targetKcal } from '../goalHelper';
 
 const MAN = { sex: 'male' as const, ageYears: 30, heightCm: 180, weightKg: 80, activityFactor: 1.55 };
 
@@ -16,7 +16,6 @@ describe('maintenanceKcal', () => {
 
 describe('targetKcal', () => {
   it('shifts maintenance by pace × 7700 / 7', () => {
-    expect(KCAL_PER_KG).toBe(7700);
     const kcal = (kgPerWeek: number) => targetKcal({ maintenanceKcal: 2759, kgPerWeek, sex: 'male' }).kcal;
     expect(PACES.map((p) => kcal(p.kgPerWeek))).toEqual([2759 - 825, 2759 - 550, 2759 - 275, 2759, 2759 + 275]);
   });
@@ -25,6 +24,22 @@ describe('targetKcal', () => {
     expect(targetKcal({ maintenanceKcal: 1700, kgPerWeek: -0.75, sex: 'female' })).toEqual({ kcal: 1200, clamped: true });
     expect(targetKcal({ maintenanceKcal: 1700, kgPerWeek: -0.75, sex: 'male' })).toEqual({ kcal: 1500, clamped: true });
     expect(targetKcal({ maintenanceKcal: 1700, kgPerWeek: -0.25, sex: 'female' })).toEqual({ kcal: 1425, clamped: false });
+  });
+
+  it('uses the 1200 kcal floor when the sex is unknown', () => {
+    expect(targetKcal({ maintenanceKcal: 1700, kgPerWeek: -0.75 })).toEqual({ kcal: 1200, clamped: true });
+  });
+
+  it('clamps a small, older woman losing fast to 1200 kcal', () => {
+    const small = maintenanceKcal({ sex: 'female', ageYears: 70, heightCm: 150, weightKg: 45, activityFactor: 1.2 });
+    expect(targetKcal({ maintenanceKcal: small, kgPerWeek: -0.75, sex: 'female' }).kcal).toBe(1200);
+  });
+});
+
+describe('ageFromBirthYear', () => {
+  it('counts from 1 July of the birth year', () => {
+    expect(ageFromBirthYear(1990, Date.UTC(2020, 6, 1))).toBeCloseTo(30, 1);
+    expect(ageFromBirthYear(1990, Date.UTC(2021, 0, 1))).toBeCloseTo(30.5, 1);
   });
 });
 
@@ -46,10 +61,7 @@ describe('macrosFor', () => {
     });
   });
 
-  it('never gives negative carbs', () => {
-    const small = maintenanceKcal({ sex: 'female', ageYears: 70, heightCm: 150, weightKg: 45, activityFactor: 1.2 });
-    const { kcal } = targetKcal({ maintenanceKcal: small, kgPerWeek: -0.75, sex: 'female' });
-    expect(kcal).toBe(1200);
+  it('gives 0 carbs when protein and fat already exceed the calories', () => {
     expect(macrosFor({ kcal: 800, weightKg: 150, proteinPerKg: 2.6, fatPerKg: 0.8 }).carbsG).toBe(0);
   });
 
