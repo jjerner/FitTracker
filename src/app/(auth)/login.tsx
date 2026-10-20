@@ -1,17 +1,11 @@
 import { Link, router } from 'expo-router';
 import { useState } from 'react';
-import {
-  ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  StyleSheet,
-  Text,
-} from 'react-native';
+import { KeyboardAvoidingView, Platform, StyleSheet, Text } from 'react-native';
 
+import { Button } from '../../components/Button';
 import { LabeledInput } from '../../components/LabeledInput';
 import { supabase } from '../../lib/supabase';
-import { colors } from '../../theme';
+import { colors, spacing } from '../../theme';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -76,13 +70,7 @@ export default function Login() {
 
       {error ? <Text style={styles.error}>{error}</Text> : null}
 
-      <Pressable style={styles.button} onPress={handleLogin} disabled={isSubmitting}>
-        {isSubmitting ? (
-          <ActivityIndicator color={colors.onPrimary} />
-        ) : (
-          <Text style={styles.buttonText}>Log In</Text>
-        )}
-      </Pressable>
+      <Button title="Log In" onPress={handleLogin} loading={isSubmitting} style={styles.button} />
 
       <Link href="/(auth)/forgot-password" style={styles.link}>
         <Text>Forgot password?</Text>
@@ -108,18 +96,7 @@ const styles = StyleSheet.create({
     marginBottom: 32,
     textAlign: 'center',
   },
-  button: {
-    backgroundColor: colors.primary,
-    borderRadius: 8,
-    padding: 14,
-    alignItems: 'center',
-    marginTop: 8,
-  },
-  buttonText: {
-    color: colors.onPrimary,
-    fontSize: 16,
-    fontWeight: '600',
-  },
+  button: { marginTop: spacing.sm },
   error: {
     color: colors.danger,
     marginBottom: 12,
