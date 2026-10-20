@@ -63,10 +63,11 @@ Use `<AppText variant="...">` (`src/components/AppText.tsx`), not `fontSize`. Th
 | `Button`     | Full-width or stand-alone actions. `variant`: `primary` (the main action: one per screen, or one per card on dashboard screens like Home and Progress), `secondary` (other actions; white with an outline), `danger` (delete or irreversible). Handles the pressed look, `disabled`, and `loading` (shows a spinner, keeps its width, blocks taps). At least 48 dp tall. `style` is for layout only. |
 | `Card`       | A white rounded box grouping one topic on a grey screen. Pass content as children. Don't wrap every list row in a card: use list rows with separators for that. |
 | `EmptyState` | "Nothing here yet" text, with optional children for one action below it (usually a `Button`). Only for *empty*, never for loading or errors. |
+| `TextLink`   | A blue text link (`label` in `primary`) with a 48 dp tap area that hugs the text. Read by TalkBack as "…, link". Handles the pressed look and `disabled`. Pass `onPress` (e.g. `router.navigate(href)`). `style` is for layout only. |
 
-There is **no small button size or link component yet**. Compact in-row buttons (like Progress's
-"Log" next to the weight box) and text links stay as they are, until a migration ticket adds
-`size="sm"` or a link brick. Do that through the system, not by hand in one screen.
+There is **no small button size yet**. Compact in-row buttons (like Progress's "Log" next to the
+weight box) stay as they are, until a migration ticket adds `size="sm"`. Do that through the system,
+not by hand in one screen.
 
 Older shared pieces are still in use: `LabeledInput`, `Chips`, `SettingsList`, `CalorieRing`,
 `MonthCalendar`, `RestTimeInput`, `src/components/workouts/*`.
@@ -114,6 +115,6 @@ offer undo right after. Never delete on a single tap.
 ## Moving old screens over
 
 Most screens still use hand-made buttons, cards and font sizes. They move over one area at a time
-through the "[DS] Design system: migrate …" issues on the Plucky roadmap (#64–#68). So far only
-**Login's button** and **Progress's cards and empty texts** have moved. The rest of those two screens
-is still old style, so don't copy them as examples.
+through the "[DS] Design system: migrate …" issues on the Plucky roadmap (#64–#68). So far
+**Auth (Login, Signup, Forgot password)** and **Progress's cards and empty texts** have moved. The
+rest of Progress is still old style, so don't copy it as an example.

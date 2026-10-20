@@ -1,9 +1,11 @@
-import { Link, router } from 'expo-router';
+import { router } from 'expo-router';
 import { useState } from 'react';
-import { KeyboardAvoidingView, Platform, StyleSheet, Text } from 'react-native';
+import { KeyboardAvoidingView, Platform, StyleSheet } from 'react-native';
 
+import { AppText } from '../../components/AppText';
 import { Button } from '../../components/Button';
 import { LabeledInput } from '../../components/LabeledInput';
+import { TextLink } from '../../components/TextLink';
 import { supabase } from '../../lib/supabase';
 import { colors, spacing } from '../../theme';
 
@@ -50,7 +52,9 @@ export default function Login() {
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <Text style={styles.title}>Plucky</Text>
+      <AppText variant="title" accessibilityRole="header" style={styles.title}>
+        Plucky
+      </AppText>
 
       <LabeledInput
         label="Email address"
@@ -68,17 +72,28 @@ export default function Login() {
         onChangeText={setPassword}
       />
 
-      {error ? <Text style={styles.error}>{error}</Text> : null}
+      {error ? (
+        <AppText
+          style={styles.error}
+          selectable
+          accessibilityRole="alert"
+          accessibilityLiveRegion="polite"
+        >
+          {error}
+        </AppText>
+      ) : null}
 
       <Button title="Log In" onPress={handleLogin} loading={isSubmitting} style={styles.button} />
 
-      <Link href="/(auth)/forgot-password" style={styles.link}>
-        <Text>Forgot password?</Text>
-      </Link>
-
-      <Link href="/(auth)/signup" style={styles.link}>
-        <Text>Don&apos;t have an account? Sign up</Text>
-      </Link>
+      <TextLink
+        title="Forgot password?"
+        onPress={() => router.navigate('/(auth)/forgot-password')}
+        style={styles.firstLink}
+      />
+      <TextLink
+        title="Don't have an account? Sign up"
+        onPress={() => router.navigate('/(auth)/signup')}
+      />
     </KeyboardAvoidingView>
   );
 }
@@ -87,22 +102,17 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     justifyContent: 'center',
-    paddingHorizontal: 24,
+    paddingHorizontal: spacing.xl,
     backgroundColor: colors.background,
   },
   title: {
-    fontSize: 32,
-    fontWeight: '700',
-    marginBottom: 32,
+    marginBottom: spacing.xxl,
     textAlign: 'center',
   },
   button: { marginTop: spacing.sm },
   error: {
     color: colors.danger,
-    marginBottom: 12,
+    marginBottom: spacing.md,
   },
-  link: {
-    marginTop: 20,
-    textAlign: 'center',
-  },
+  firstLink: { marginTop: spacing.sm },
 });
