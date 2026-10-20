@@ -13,7 +13,9 @@ import {
 } from 'react-native';
 import { LineChart } from 'react-native-gifted-charts';
 
+import { Card } from '../../components/Card';
 import { Chips } from '../../components/Chips';
+import { EmptyState } from '../../components/EmptyState';
 import { MonthCalendar } from '../../components/MonthCalendar';
 import { ExercisePicker } from '../../components/workouts/ExercisePicker';
 import { useBodyProfile } from '../../hooks/useBodyProfile';
@@ -119,7 +121,7 @@ function WeightCard({ chartWidth }: { chartWidth: number }) {
   const maxValue = Math.ceil(Math.max(...values)) + 1;
 
   return (
-    <View style={styles.card}>
+    <Card>
       <Text style={styles.cardTitle}>Body weight</Text>
       {latest && (
         <Text style={styles.cardSubtitle}>
@@ -153,7 +155,7 @@ function WeightCard({ chartWidth }: { chartWidth: number }) {
       {isLoading ? (
         <ActivityIndicator />
       ) : points.length < 2 ? (
-        <Text style={styles.empty}>Log your weight on at least 2 days to see a trend.</Text>
+        <EmptyState message="Log your weight on at least 2 days to see a trend." />
       ) : (
         <>
           <LineChart
@@ -184,7 +186,7 @@ function WeightCard({ chartWidth }: { chartWidth: number }) {
           </Text>
         </>
       )}
-    </View>
+    </Card>
   );
 }
 
@@ -208,17 +210,14 @@ function MaintenanceCard() {
   const goalMatches = !!goals && !!target && Math.abs(goals.caloriesKcal - target.kcal) <= GOAL_MATCH_KCAL;
 
   return (
-    <View style={styles.card}>
+    <Card>
       <Text style={styles.cardTitle}>Estimated maintenance</Text>
       {weights.isLoading || days.isLoading || goalsLoading || bodyLoading ? (
         <ActivityIndicator />
       ) : weights.isError || days.isError ? (
         <Text style={styles.empty}>Couldn&apos;t load your data. Try again later.</Text>
       ) : !estimate || !target ? (
-        <Text style={styles.empty}>
-          Needs 14 days of food logged and weigh-ins at least 14 days apart, within the last 4 weeks. Half-logged
-          days don&apos;t count.
-        </Text>
+        <EmptyState message="Needs 14 days of food logged and weigh-ins at least 14 days apart, within the last 4 weeks. Half-logged days don't count." />
       ) : (
         <>
           <View
@@ -277,7 +276,7 @@ function MaintenanceCard() {
           )}
         </>
       )}
-    </View>
+    </Card>
   );
 }
 
@@ -300,14 +299,14 @@ function NutritionAveragesCard() {
   const windows = WINDOWS.map((n) => pastDays.slice(-n));
 
   return (
-    <View style={styles.card}>
+    <Card>
       <Text style={styles.cardTitle}>Nutrition averages (per day)</Text>
       <Text style={styles.cardSubtitle}>Over your last 7 / 30 / 90 logged days, excluding today</Text>
 
       {isLoading ? (
         <ActivityIndicator />
       ) : pastDays.length === 0 ? (
-        <Text style={styles.empty}>No food logged before today yet.</Text>
+        <EmptyState message="No food logged before today yet." />
       ) : (
         <View>
           <View style={styles.tableRow}>
@@ -339,7 +338,7 @@ function NutritionAveragesCard() {
           </View>
         </View>
       )}
-    </View>
+    </Card>
   );
 }
 
@@ -358,7 +357,7 @@ function WorkoutsCard() {
   const count = dates.filter((d) => d >= rangeStart).length;
 
   return (
-    <View style={styles.card}>
+    <Card>
       <Text style={styles.cardTitle}>Workouts</Text>
 
       {isLoading ? (
@@ -374,7 +373,7 @@ function WorkoutsCard() {
           <MonthCalendar dotDays={workoutDays} maxMonthsBack={MAX_MONTHS_BACK} />
         </>
       )}
-    </View>
+    </Card>
   );
 }
 
@@ -389,13 +388,13 @@ function MuscleSetsCard() {
   const thisWeek = WEEK_LABELS.length - 1;
 
   return (
-    <View style={styles.card}>
+    <Card>
       <Text style={styles.cardTitle}>Sets per muscle group</Text>
 
       {isLoading ? (
         <ActivityIndicator />
       ) : groups.length === 0 ? (
-        <Text style={styles.empty}>No strength sets logged in the last 4 weeks.</Text>
+        <EmptyState message="No strength sets logged in the last 4 weeks." />
       ) : (
         <View>
           <View style={styles.tableRow}>
@@ -432,7 +431,7 @@ function MuscleSetsCard() {
           </Text>
         </View>
       )}
-    </View>
+    </Card>
   );
 }
 
@@ -448,14 +447,14 @@ function TrackedExercisesCard() {
   const [pickerOpen, setPickerOpen] = useState(false);
 
   return (
-    <View style={styles.card}>
+    <Card>
       <Text style={styles.cardTitle}>Tracked exercises</Text>
       <Text style={styles.cardSubtitle}>Heaviest weight you have logged</Text>
 
       {isLoading ? (
         <ActivityIndicator />
       ) : (ids ?? []).length === 0 ? (
-        <Text style={styles.empty}>Add an exercise to follow your strength.</Text>
+        <EmptyState message="Add an exercise to follow your strength." />
       ) : (
         (ids ?? []).map((id) => (
           <TrackedRow
@@ -476,7 +475,7 @@ function TrackedExercisesCard() {
         onClose={() => setPickerOpen(false)}
         onSelect={(exercise) => add(exercise.id)}
       />
-    </View>
+    </Card>
   );
 }
 
@@ -527,7 +526,6 @@ function TrackedRow({
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.surface },
   content: { padding: 16, gap: 16 },
-  card: { backgroundColor: colors.background, borderRadius: 12, padding: 16, gap: 8 },
   cardTitle: { fontSize: 16, fontWeight: '600' },
   cardSubtitle: { fontSize: 13, color: colors.muted },
   empty: { fontSize: 14, color: colors.muted, paddingVertical: 16 },
