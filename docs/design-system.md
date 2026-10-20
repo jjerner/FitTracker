@@ -42,7 +42,7 @@ Use `<AppText variant="...">` (`src/components/AppText.tsx`), not `fontSize`. Th
 | `caption` | 12 / 400 grey | hints, timestamps             |
 
 - Only the weights 400, 600 and 700 are used.
-- Screen titles come from the navigation header, not from `title`.
+- Screen titles come from the navigation header, not from `title`. Exception: the Auth screens hide the header, so their in-screen heading uses `title`.
 - To colour text, pass a token: `<AppText style={{ color: colors.danger }}>`.
 - When an old screen moves over, 15 rounds to 16 and 13 rounds to 14. Check that table columns
   still fit.
