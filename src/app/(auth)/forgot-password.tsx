@@ -1,17 +1,13 @@
-import { Link, router } from 'expo-router';
+import { router } from 'expo-router';
 import { useState } from 'react';
-import {
-  ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  StyleSheet,
-  Text,
-} from 'react-native';
+import { KeyboardAvoidingView, Platform, StyleSheet } from 'react-native';
 
+import { AppText } from '../../components/AppText';
+import { Button } from '../../components/Button';
 import { LabeledInput } from '../../components/LabeledInput';
+import { TextLink } from '../../components/TextLink';
 import { supabase } from '../../lib/supabase';
-import { colors } from '../../theme';
+import { colors, spacing } from '../../theme';
 
 // Two steps: 1) email us a reset code, 2) enter the code + a new password.
 // A code instead of a link, so it works without deep links (e.g. in Expo Go).
@@ -67,11 +63,15 @@ export default function ForgotPassword() {
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <Text style={styles.title}>Reset password</Text>
+      <AppText variant="title" accessibilityRole="header" style={styles.title}>
+        Reset password
+      </AppText>
 
       {!codeSent ? (
         <>
-          <Text style={styles.info}>Enter your email and we&apos;ll send you a reset code.</Text>
+          <AppText style={styles.info}>
+            Enter your email and we&apos;ll send you a reset code.
+          </AppText>
           <LabeledInput
             label="Email address"
             placeholder="you@example.com"
@@ -83,9 +83,9 @@ export default function ForgotPassword() {
         </>
       ) : (
         <>
-          <Text style={styles.info}>
+          <AppText style={styles.info}>
             We sent a code to {email.trim()}. Enter it below with your new password.
-          </Text>
+          </AppText>
           <LabeledInput
             label="Code from email"
             placeholder="123456"
@@ -103,29 +103,38 @@ export default function ForgotPassword() {
         </>
       )}
 
-      {error ? <Text style={styles.error}>{error}</Text> : null}
+      {error ? (
+        <AppText
+          style={styles.error}
+          selectable
+          accessibilityRole="alert"
+          accessibilityLiveRegion="polite"
+        >
+          {error}
+        </AppText>
+      ) : null}
 
-      <Pressable
-        style={styles.button}
+      <Button
+        title={codeSent ? 'Set New Password' : 'Send Code'}
         onPress={codeSent ? handleSetPassword : handleSendCode}
-        disabled={isSubmitting}
-      >
-        {isSubmitting ? (
-          <ActivityIndicator color={colors.onPrimary} />
-        ) : (
-          <Text style={styles.buttonText}>{codeSent ? 'Set New Password' : 'Send Code'}</Text>
-        )}
-      </Pressable>
+        loading={isSubmitting}
+        style={styles.button}
+      />
 
       {codeSent && (
-        <Pressable onPress={handleSendCode} disabled={isSubmitting} hitSlop={12}>
-          <Text style={styles.link}>Didn&apos;t get it? Send again</Text>
-        </Pressable>
+        <TextLink
+          title="Didn't get it? Send again"
+          onPress={handleSendCode}
+          disabled={isSubmitting}
+          style={styles.firstLink}
+        />
       )}
 
-      <Link href="/(auth)/login" style={styles.link}>
-        <Text>Back to log in</Text>
-      </Link>
+      <TextLink
+        title="Back to log in"
+        onPress={() => router.navigate('/(auth)/login')}
+        style={!codeSent && styles.firstLink}
+      />
     </KeyboardAvoidingView>
   );
 }
@@ -134,39 +143,22 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     justifyContent: 'center',
-    paddingHorizontal: 24,
+    paddingHorizontal: spacing.xl,
     backgroundColor: colors.background,
   },
   title: {
-    fontSize: 28,
-    fontWeight: '700',
-    marginBottom: 16,
+    marginBottom: spacing.lg,
     textAlign: 'center',
   },
   info: {
-    fontSize: 15,
     color: colors.textSecondary,
-    marginBottom: 16,
+    marginBottom: spacing.lg,
     textAlign: 'center',
   },
-  button: {
-    backgroundColor: colors.primary,
-    borderRadius: 8,
-    padding: 14,
-    alignItems: 'center',
-    marginTop: 8,
-  },
-  buttonText: {
-    color: colors.onPrimary,
-    fontSize: 16,
-    fontWeight: '600',
-  },
+  button: { marginTop: spacing.sm },
   error: {
     color: colors.danger,
-    marginBottom: 12,
+    marginBottom: spacing.md,
   },
-  link: {
-    marginTop: 20,
-    textAlign: 'center',
-  },
+  firstLink: { marginTop: spacing.sm },
 });
