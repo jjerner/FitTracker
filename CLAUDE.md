@@ -2,7 +2,7 @@
 
 ## Design system
 
-Before designing, building or reviewing any UI, read `docs/design-system.md`. It covers Plucky's tone, colours, text ladder, shared components (`AppText`, `Button`, `Card`, `EmptyState`) and the rules for new UI. It wins over the global ux-ui-guidelines skill.
+Before designing, building or reviewing any UI, read `docs/design-system.md`. It covers Plucky's tone, colours, text ladder, shared components (`AppText`, `Button`, `Card`, `EmptyState`) and the rules for new UI. On taste it wins over the global ux-ui-guidelines skill; that skill's hard rules still apply.
 
 ## Definition of done for every feature or fix
 

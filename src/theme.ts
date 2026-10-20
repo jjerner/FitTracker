@@ -4,8 +4,10 @@ import type { TextStyle } from 'react-native';
 export const colors = {
   primary: '#2563eb',
   primaryLight: '#93c5fd',
-  // Plucky mascot yellow: small fun touches only (streaks, badges). Text on it uses `text`, never white.
+  // Plucky mascot yellow: small fun touches only (badges, mascot moments).
   accent: '#ffd23f',
+  // Text on yellow: stays dark even when dark mode arrives.
+  onAccent: '#111827',
   onPrimary: '#fff',
   success: '#16a34a',
   successBg: '#dcfce7',
