@@ -20,7 +20,7 @@ import { useDiaryDate } from '../../../context/DiaryDateProvider';
 import { useFoodDiary } from '../../../hooks/useFoodDiary';
 import { useNutritionGoals } from '../../../hooks/useNutritionGoals';
 import { addDays, todayLocalDate } from '../../../lib/dateUtils';
-import { copyEntriesToDate, saveMealFromEntries } from '../../../lib/foods';
+import { copyEntriesToDate, saveMealFromEntries, sumEntries } from '../../../lib/foods';
 import type { FoodLogEntry, MealType, NutritionGoals } from '../../../types/domain';
 import { colors, radius } from '../../../theme';
 
@@ -113,17 +113,7 @@ export default function FoodDiary() {
     }
   }
 
-  const totals = useMemo(() => {
-    return (entries ?? []).reduce(
-      (acc, e) => ({
-        calories: acc.calories + e.caloriesKcal,
-        protein: acc.protein + e.proteinG,
-        carbs: acc.carbs + e.carbsG,
-        fat: acc.fat + e.fatG,
-      }),
-      { calories: 0, protein: 0, carbs: 0, fat: 0 }
-    );
-  }, [entries]);
+  const totals = useMemo(() => sumEntries(entries ?? []), [entries]);
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
@@ -289,15 +279,7 @@ function DiaryContent({
 
       {MEAL_TYPES.map((mealType) => {
         const mealEntries = entries.filter((e) => e.mealType === mealType);
-        const sums = mealEntries.reduce(
-          (acc, e) => ({
-            calories: acc.calories + e.caloriesKcal,
-            protein: acc.protein + e.proteinG,
-            carbs: acc.carbs + e.carbsG,
-            fat: acc.fat + e.fatG,
-          }),
-          { calories: 0, protein: 0, carbs: 0, fat: 0 }
-        );
+        const sums = sumEntries(mealEntries);
         const canCopy =
           mealEntries.length === 0 && previousEntries.some((e) => e.mealType === mealType);
         const isOpen = open.has(mealType);

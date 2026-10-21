@@ -1,5 +1,5 @@
-import { entryNutrition } from '../foods';
-import type { Food } from '../../types/domain';
+import { entryNutrition, sumEntries } from '../foods';
+import type { Food, FoodLogEntry } from '../../types/domain';
 
 // foods.ts talks to Supabase and the phone; none of that is needed to test the maths.
 jest.mock('../supabase', () => ({ supabase: {} }));
@@ -47,5 +47,38 @@ describe('entryNutrition', () => {
 
   it('keeps unknown fiber unknown instead of turning it into 0', () => {
     expect(entryNutrition({ ...food, fiberG: null }, 100, 'g', null).fiber_g).toBeNull();
+  });
+});
+
+describe('sumEntries', () => {
+  const entry: FoodLogEntry = {
+    id: 'e1',
+    foodId: 'f1',
+    foodName: 'Test food',
+    loggedDate: '2026-10-21',
+    mealType: 'lunch',
+    quantity: 100,
+    quantityUnit: 'g',
+    servingG: null,
+    caloriesKcal: 200,
+    proteinG: 10,
+    carbsG: 20,
+    fatG: 5,
+    fiberG: null,
+    groupId: null,
+    groupName: null,
+  };
+
+  it('gives zeros for no entries', () => {
+    expect(sumEntries([])).toEqual({ calories: 0, protein: 0, carbs: 0, fat: 0 });
+  });
+
+  it('adds kcal and macros and leaves fibre out', () => {
+    expect(sumEntries([entry, { ...entry, id: 'e2', caloriesKcal: 50, fiberG: 3 }])).toEqual({
+      calories: 250,
+      protein: 20,
+      carbs: 40,
+      fat: 10,
+    });
   });
 });

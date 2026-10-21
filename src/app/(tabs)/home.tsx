@@ -21,6 +21,7 @@ import { useDailyNutrition, useWorkoutDates } from '../../hooks/useProgress';
 import { useWorkoutHistory } from '../../hooks/useWorkouts';
 import { getLatestRelease, isNewer } from '../../lib/appRelease';
 import { addDays, mondayOf, todayLocalDate } from '../../lib/dateUtils';
+import { sumEntries } from '../../lib/foods';
 import { goalStreak } from '../../lib/progress';
 import { colors, radius, spacing } from '../../theme';
 
@@ -56,15 +57,7 @@ export default function Home() {
 
   const foodStreak = goals && days ? goalStreak(days, goals, today) : 0;
 
-  const totals = (entries ?? []).reduce(
-    (acc, e) => ({
-      calories: acc.calories + e.caloriesKcal,
-      protein: acc.protein + e.proteinG,
-      carbs: acc.carbs + e.carbsG,
-      fat: acc.fat + e.fatG,
-    }),
-    { calories: 0, protein: 0, carbs: 0, fat: 0 }
-  );
+  const totals = sumEntries(entries ?? []);
 
   const activeWorkout = history?.find((log) => log.completedAt == null);
 
