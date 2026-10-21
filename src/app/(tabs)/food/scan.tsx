@@ -3,7 +3,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { upsertOffFood } from '../../../lib/foods';
+import { getFoodByBarcode, upsertOffFood } from '../../../lib/foods';
 import { getByBarcode } from '../../../lib/openFoodFacts';
 import { colors } from '../../../theme';
 
@@ -19,16 +19,20 @@ export default function ScanBarcode() {
     setError(null);
 
     try {
-      const off = await getByBarcode(barcode);
+      let saved = await getFoodByBarcode(barcode);
 
-      if (!off) {
-        router.replace(
-          `/(tabs)/food/custom-food/new?barcode=${encodeURIComponent(barcode)}${recipe ? '&recipe=1' : ''}`
-        );
-        return;
+      if (!saved) {
+        const off = await getByBarcode(barcode);
+
+        if (!off) {
+          router.replace(
+            `/(tabs)/food/custom-food/new?barcode=${encodeURIComponent(barcode)}${recipe ? '&recipe=1' : ''}`
+          );
+          return;
+        }
+
+        saved = await upsertOffFood(off);
       }
-
-      const saved = await upsertOffFood(off);
       router.replace(
         `/(tabs)/food/food/${saved.id}${recipe ? '?recipe=1' : meal ? `?meal=${meal}` : ''}`
       );

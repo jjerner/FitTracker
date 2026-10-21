@@ -154,6 +154,20 @@ export async function searchBasicFoods(query: string): Promise<Food[]> {
     .slice(0, 30);
 }
 
+// A saved food with this barcode: the user's own first, else the shared one. RLS shows only
+// shared rows and the user's own, so at most two match.
+export async function getFoodByBarcode(barcode: string): Promise<Food | null> {
+  const { data, error } = await supabase
+    .from('foods')
+    .select('*')
+    .eq('barcode', barcode)
+    .order('created_by', { nullsFirst: false })
+    .limit(1)
+    .maybeSingle();
+  if (error) throw error;
+  return data ? mapFoodRow(data) : null;
+}
+
 export async function upsertOffFood(off: OffFood): Promise<Food> {
   const row = {
     source: 'off',
@@ -177,17 +191,18 @@ export async function upsertOffFood(off: OffFood): Promise<Food> {
     return mapFoodRow(data);
   }
 
-  // Skip if the barcode is already saved: the database only lets people update their own
-  // foods, and these shared rows have no owner, so an update would be refused.
-  const { error } = await supabase
-    .from('foods')
-    .upsert(row, { onConflict: 'barcode', ignoreDuplicates: true });
-  if (error) throw error;
+  // Skip if the barcode is already saved (23505 from foods_barcode_owner_key): the database only
+  // lets people update their own foods, and these shared rows have no owner, so an update would be
+  // refused. A partial index can't be an upsert target, hence insert-and-ignore.
+  const { error } = await supabase.from('foods').insert(row);
+  if (error && error.code !== '23505') throw error;
 
+  // Only the shared row: the user may also have their own custom food with this barcode.
   const { data, error: readError } = await supabase
     .from('foods')
     .select('*')
     .eq('barcode', off.barcode)
+    .is('created_by', null)
     .single();
   if (readError) throw readError;
   return mapFoodRow(data);
