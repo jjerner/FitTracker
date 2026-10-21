@@ -1,6 +1,6 @@
 import * as Notifications from 'expo-notifications';
 
-import { missingMealsMessage, refreshFoodReminders } from '../reminders';
+import { cancelAllReminders, missingMealsMessage, refreshFoodReminders } from '../reminders';
 
 // reminders.ts talks to the phone and Supabase; both are faked here.
 type Diary = { data: { meal_type: string }[] | null; error: Error | null };
@@ -22,6 +22,10 @@ jest.mock('expo-notifications', () => ({
   scheduleNotificationAsync: jest.fn(async (n: { identifier: string }) => {
     await mockTick();
     mockStore.set(n.identifier, n);
+  }),
+  cancelAllScheduledNotificationsAsync: jest.fn(async () => {
+    await mockTick();
+    mockStore.clear();
   }),
   SchedulableTriggerInputTypes: { DATE: 'date' },
 }));
@@ -104,5 +108,14 @@ describe('refreshFoodReminders', () => {
     await expect(first).rejects.toThrow('boom');
     await second;
     expect(mockStore.has('meal-reminder-1')).toBe(true);
+  });
+
+  it('sign-out cancel waits for a running refresh, so nothing is left booked', async () => {
+    mockDiaries = [{ data: [{ meal_type: 'breakfast' }], error: null }];
+    const refresh = refreshFoodReminders();
+    const cancelAll = cancelAllReminders();
+    await Promise.all([refresh, cancelAll]);
+
+    expect(mockStore.size).toBe(0);
   });
 });
