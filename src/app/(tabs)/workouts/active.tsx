@@ -102,6 +102,8 @@ export default function ActiveWorkout() {
       await queryClient.invalidateQueries({ queryKey: ['exerciseHistory'] });
       await refresh();
       router.replace(`/(tabs)/workouts/log/${log.id}`);
+    } catch {
+      Alert.alert('Could not finish', 'Check your connection and try again.');
     } finally {
       setIsFinishing(false);
     }
@@ -201,11 +203,16 @@ export default function ActiveWorkout() {
           onClose={() => setPickerOpen(false)}
           onSelect={async (exercise) => {
             const lastPosition = log.exercises.at(-1)?.position ?? -1;
-            await addExerciseToLog({
-              logId: log.id,
-              exerciseId: exercise.id,
-              position: lastPosition + 1,
-            });
+            try {
+              await addExerciseToLog({
+                logId: log.id,
+                exerciseId: exercise.id,
+                position: lastPosition + 1,
+              });
+            } catch {
+              Alert.alert('Could not add exercise', 'Check your connection and try again.');
+              return;
+            }
             await refresh();
           }}
         />
@@ -394,7 +401,12 @@ function ExerciseCard({
     const b = isCardio
       ? set.distanceM != null ? String(set.distanceM / 1000) : ''
       : set.reps?.toString() ?? '';
-    await deleteSetEverywhere(set);
+    try {
+      await deleteSetEverywhere(set);
+    } catch {
+      Alert.alert('Could not undo', 'Check your connection and try again.');
+      return;
+    }
     setDrafts((prev) => [newRow(a, b, set.setType), ...prev]);
     await onChanged();
   }
@@ -420,20 +432,30 @@ function ExerciseCard({
 
   async function handleSwap(exercise: Exercise) {
     // No sets yet: replace in place. Sets logged: keep them and add the new exercise below.
-    if (doneSets.length === 0) {
-      await swapLogExercise(logExercise.id, exercise.id);
-    } else {
-      await insertExerciseAfter({
-        logId,
-        afterPosition: logExercise.position,
-        exerciseId: exercise.id,
-      });
+    try {
+      if (doneSets.length === 0) {
+        await swapLogExercise(logExercise.id, exercise.id);
+      } else {
+        await insertExerciseAfter({
+          logId,
+          afterPosition: logExercise.position,
+          exerciseId: exercise.id,
+        });
+      }
+    } catch {
+      Alert.alert('Could not swap', 'Check your connection and try again.');
+      return;
     }
     await onChanged();
   }
 
   async function handleRemoveExercise() {
-    await removeExerciseFromLog(logExercise.id);
+    try {
+      await removeExerciseFromLog(logExercise.id);
+    } catch {
+      Alert.alert('Could not remove', 'Check your connection and try again.');
+      return;
+    }
     await onChanged();
   }
 
