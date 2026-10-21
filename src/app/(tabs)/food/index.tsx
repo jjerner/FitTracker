@@ -19,7 +19,7 @@ import { useSession } from '../../../context/AuthProvider';
 import { useDiaryDate } from '../../../context/DiaryDateProvider';
 import { useFoodDiary } from '../../../hooks/useFoodDiary';
 import { useNutritionGoals } from '../../../hooks/useNutritionGoals';
-import { localDateOf, todayLocalDate } from '../../../lib/dateUtils';
+import { addDays, todayLocalDate } from '../../../lib/dateUtils';
 import { copyEntriesToDate, saveMealFromEntries } from '../../../lib/foods';
 import type { FoodLogEntry, MealType, NutritionGoals } from '../../../types/domain';
 import { colors, radius } from '../../../theme';
@@ -40,12 +40,6 @@ function formatDay(date: string): string {
   const [year, month, day] = date.split('-').map(Number);
   const weekday = new Date(year, month - 1, day).getDay();
   return `${WEEKDAYS[weekday]} ${day} ${MONTHS[month - 1]}`;
-}
-
-// ("2026-09-23", 1) -> "2026-09-24"
-function addDays(date: string, days: number): string {
-  const [year, month, day] = date.split('-').map(Number);
-  return localDateOf(new Date(year, month - 1, day + days));
 }
 
 export default function FoodDiary() {
