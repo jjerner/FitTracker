@@ -65,6 +65,13 @@ export function refreshFoodReminders(): Promise<void> {
   return run;
 }
 
+// Sign-out: drop every booked reminder. Queued so a refresh already running can't re-book after it.
+export function cancelAllReminders(): Promise<void> {
+  const run = queue.then(() => Notifications.cancelAllScheduledNotificationsAsync());
+  queue = run.catch(() => {});
+  return run;
+}
+
 async function refresh(): Promise<void> {
   const [{ enabled, minutes }, mealEnabled] = await Promise.all([getFoodReminder(), getMealReminder()]);
   const wanted = (enabled || mealEnabled) && (await Notifications.getPermissionsAsync()).granted;
