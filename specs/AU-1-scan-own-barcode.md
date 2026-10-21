@@ -64,6 +64,15 @@ create unique index foods_barcode_owner_key
   where barcode is not null;
 
 alter table public.foods drop constraint foods_barcode_key;
+
+-- Shared OFF rows must have no owner. The old check (source = 'off' or ...) let anyone insert an
+-- 'off' row with someone else's created_by, and per-owner barcodes would let that row win the
+-- victim's scan lookup.
+drop policy "Users can insert OFF-sourced foods" on public.foods;
+create policy "Users can insert shared OFF foods or their own"
+  on public.foods for insert
+  to authenticated
+  with check ((source = 'off' and created_by is null) or created_by = auth.uid());
 ```
 
 ## Decisions
@@ -77,6 +86,7 @@ alter table public.foods drop constraint foods_barcode_key;
 - **A shared OFF row found by the lookup skips the OFF network call.** Today the flow ends on that same row anyway (the upsert ignores duplicates), so this is only faster.
 - **No lookup added to search.** Search already hides OFF hits whose barcode you own (`search.tsx:112`), and the `upsertOffFood` fix covers the rest.
 - **Keep the name `upsertOffFood`.** Renaming it would touch callers for no user gain.
+- **Insert policy tightened in the same migration (security review must-fix).** `source = 'off'` rows must have `created_by is null`. Otherwise someone could plant an 'off' row under another user's id, and the per-owner index plus "own row first" lookup would serve it on that user's scans. No client code sets `created_by` on OFF rows, so nothing breaks.
 - **Migration 0022.** `specs/3.4b-drop-sets.md` keeps 0021, which doesn't conflict, so that spec is not edited.
 
 ## Open questions
