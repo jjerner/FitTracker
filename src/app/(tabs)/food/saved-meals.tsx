@@ -176,8 +176,8 @@ export default function SavedMeals() {
             ListEmptyComponent={
               <EmptyState message='No saved meals yet. Tap "New recipe" above, or on the diary tap "Save as meal" on a meal.' />
             }
-            renderItem={({ item }) => (
-              <View style={styles.row}>
+            renderItem={({ item, index }) => (
+              <View style={[styles.row, index === (meals?.length ?? 0) - 1 && { borderBottomWidth: 0 }]}>
                 <Pressable
                   style={styles.rowTap}
                   onPress={() => {

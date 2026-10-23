@@ -56,7 +56,7 @@ export default function ScanBarcode() {
     return (
       <View style={styles.center}>
         <AppText style={{ textAlign: 'center' }}>Camera access is needed to scan barcodes.</AppText>
-        <Button title="Grant Access" onPress={requestPermission} />
+        <Button title="Grant Access" onPress={requestPermission} style={{ alignSelf: 'stretch' }} />
       </View>
     );
   }
