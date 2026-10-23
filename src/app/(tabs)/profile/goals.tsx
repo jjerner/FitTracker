@@ -1,4 +1,4 @@
-import { router, useLocalSearchParams } from 'expo-router';
+import { router } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import { useState } from 'react';
 import {
@@ -27,8 +27,6 @@ import {
   macroDefaults,
   macrosFor,
   maintenanceKcal,
-  scaleMacros,
-  suggestionFromParams,
   targetKcal,
   type Sex,
 } from '../../../lib/goalHelper';
@@ -46,17 +44,12 @@ const DEFAULT_GOALS: NutritionGoals = {
 };
 
 type Macros = { proteinG: number; carbsG: number; fatG: number };
-type Suggestion = NonNullable<ReturnType<typeof suggestionFromParams>>;
-
-const SPLITS = ['Suggested split', 'Scale my current split'];
 
 export default function NutritionGoalsScreen() {
   const { data: goals, isLoading, saveGoals } = useNutritionGoals();
   const weights = useBodyWeights();
   // Loaded here so the helper can prefill its fields when it mounts.
   const body = useBodyProfile();
-  // Set when opened from the maintenance card on Progress.
-  const params = useLocalSearchParams<{ maintenance?: string; kgPerWeek?: string }>();
 
   if (isLoading || weights.isLoading || body.isLoading) {
     return (
@@ -69,9 +62,7 @@ export default function NutritionGoalsScreen() {
   return (
     <GoalsForm
       initialGoals={goals ?? DEFAULT_GOALS}
-      hasGoal={!!goals}
       weightKg={weightTrend(weights.data ?? []).at(-1)}
-      suggestion={suggestionFromParams(params, body.data?.sex ?? undefined)}
       onSave={(next, options) => saveGoals(next, options)}
     />
   );
@@ -79,31 +70,17 @@ export default function NutritionGoalsScreen() {
 
 function GoalsForm({
   initialGoals,
-  hasGoal,
   weightKg,
-  suggestion,
   onSave,
 }: {
   initialGoals: NutritionGoals;
-  hasGoal: boolean;
   // Newest 7-day trend weight, undefined without weigh-ins.
   weightKg: number | undefined;
-  suggestion: Suggestion | null;
   onSave: (goals: NutritionGoals, options: { onSuccess: () => void; onSettled: () => void }) => void;
 }) {
-  // Suggested split needs a weight for its g/kg, so without weigh-ins nothing is pre-filled.
-  const splits =
-    suggestion && weightKg
-      ? [
-          macrosFor({ kcal: suggestion.kcal, weightKg, ...macroDefaults(suggestion.pace.kgPerWeek) }),
-          scaleMacros(initialGoals, suggestion.kcal),
-        ]
-      : null;
-  const start = splits?.[0] ?? initialGoals;
-  const [splitIndex, setSplitIndex] = useState(0);
-  const [protein, setProtein] = useState(String(start.proteinG));
-  const [carbs, setCarbs] = useState(String(start.carbsG));
-  const [fat, setFat] = useState(String(start.fatG));
+  const [protein, setProtein] = useState(String(initialGoals.proteinG));
+  const [carbs, setCarbs] = useState(String(initialGoals.carbsG));
+  const [fat, setFat] = useState(String(initialGoals.fatG));
   const [isSaving, setIsSaving] = useState(false);
   const [helperOpen, setHelperOpen] = useState(false);
   const [filled, setFilled] = useState(false);
@@ -150,12 +127,7 @@ function GoalsForm({
         fiberG: null,
       },
       {
-        onSuccess: () => {
-          if (!suggestion) return router.back();
-          // Opened from the Progress card: reset this stack to Profile, then show Progress again.
-          router.dismissAll();
-          router.navigate('/(tabs)/progress');
-        },
+        onSuccess: () => router.back(),
         onSettled: () => setIsSaving(false),
       }
     );
@@ -168,30 +140,6 @@ function GoalsForm({
       contentInsetAdjustmentBehavior="automatic"
       keyboardShouldPersistTaps="handled"
     >
-      {/* Hidden once the helper fills the fields, so it never explains numbers it did not make. */}
-      {suggestion && !splits ? (
-        <Text style={styles.suggestionText}>Couldn&apos;t pre-fill: log a weigh-in first.</Text>
-      ) : null}
-      {suggestion && splits && !filled ? (
-        <View>
-          <Text style={styles.suggestionText}>
-            From your estimated maintenance: {suggestion.maintenance} kcal/day, {suggestion.pace.label} → ≈{' '}
-            {suggestion.kcal} kcal. Check the numbers, then tap Save Goals.
-          </Text>
-          {/* Without a saved goal there is no current split to scale, so no choice to make. */}
-          {hasGoal ? (
-            <Chips
-              labels={SPLITS}
-              selected={splitIndex}
-              onSelect={(i) => {
-                setSplitIndex(i);
-                fill(splits[i]);
-              }}
-            />
-          ) : null}
-        </View>
-      ) : null}
-
       <View style={styles.helper}>
         <Pressable
           style={styles.helperToggle}
@@ -428,7 +376,6 @@ const styles = StyleSheet.create({
   },
   calories: { fontSize: 20, fontWeight: '700' },
   hint: { fontSize: 13, color: colors.muted, marginTop: 4 },
-  suggestionText: { fontSize: 14, color: colors.textSecondary, marginBottom: spacing.sm },
   saveButton: {
     backgroundColor: colors.primary,
     borderRadius: 8,
