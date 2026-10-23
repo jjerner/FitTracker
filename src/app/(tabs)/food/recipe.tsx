@@ -15,6 +15,10 @@ import {
   View,
 } from 'react-native';
 
+import { AppText } from '../../../components/AppText';
+import { Button } from '../../../components/Button';
+import { Card } from '../../../components/Card';
+import { EmptyState } from '../../../components/EmptyState';
 import { LabeledInput } from '../../../components/LabeledInput';
 import { useSession } from '../../../context/AuthProvider';
 import { entryNutrition, getSavedMeals, saveRecipe } from '../../../lib/foods';
@@ -57,7 +61,7 @@ export default function Recipe() {
     return (
       <View style={styles.center}>
         {title}
-        <Text style={styles.hint}>Couldn&apos;t load this recipe.</Text>
+        <AppText>Couldn&apos;t load this recipe.</AppText>
       </View>
     );
   }
@@ -168,97 +172,109 @@ function RecipeForm({ meal }: { meal?: SavedMeal }) {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
-        <LabeledInput
-          label="Name"
-          placeholder="e.g. Pancakes"
-          value={name}
-          onChangeText={edit(setName)}
-        />
-        <LabeledInput
-          label="Portions it makes"
-          placeholder="e.g. 12"
-          keyboardType="numeric"
-          value={portions}
-          onChangeText={edit(setPortions)}
-        />
+        {/* LabeledInput brings its own bottom margin, so no Card gap and less bottom padding. */}
+        <Card style={{ gap: 0, paddingBottom: spacing.xs }}>
+          <LabeledInput
+            label="Name"
+            placeholder="e.g. Pancakes"
+            value={name}
+            onChangeText={edit(setName)}
+          />
+          <LabeledInput
+            label="Portions it makes"
+            placeholder="e.g. 12"
+            keyboardType="numeric"
+            value={portions}
+            onChangeText={edit(setPortions)}
+          />
+        </Card>
 
-        <Text style={styles.label}>Ingredients</Text>
-        {rows.length === 0 ? (
-          <Text style={styles.hint}>No ingredients yet. Tap + Add ingredient.</Text>
-        ) : null}
-        {rows.map((row, index) => (
-          <View key={row.key} style={styles.row}>
-            <Text style={styles.rowName}>{row.item.food.name}</Text>
-            <View style={styles.rowControls}>
-              <TextInput
-                style={styles.amountInput}
-                value={row.amount}
-                onChangeText={(text) => setAmount(row.key, text)}
-                keyboardType="numeric"
-                accessibilityLabel={`Amount of ${row.item.food.name}`}
-              />
-              <Text style={styles.unit}>
-                {row.item.quantityUnit === 'g' ? 'g' : 'serving(s)'}
-              </Text>
-              <Text style={styles.rowKcal}>{Math.round(kcal[index])} kcal</Text>
-              <Pressable
-                style={styles.remove}
-                onPress={() => removeRow(row.key)}
-                accessibilityRole="button"
-                accessibilityLabel={`Remove ${row.item.food.name}`}
-              >
-                <Text style={styles.removeText}>✕</Text>
-              </Pressable>
-            </View>
-          </View>
-        ))}
-
-        <Pressable
-          style={styles.addButton}
-          onPress={() => router.push('/(tabs)/food/search?recipe=1')}
-        >
-          <Text style={styles.addButtonText}>+ Add ingredient</Text>
-        </Pressable>
-
-        <View style={styles.totalsCard}>
-          <Text style={styles.totalsMain}>{Math.round(totalKcal)} kcal in total</Text>
-          <Text style={styles.totalsSub}>
-            {portionsNumber > 0 ? `${Math.round(totalKcal / portionsNumber)} kcal per portion` : ' '}
-          </Text>
-        </View>
-
-        {missing ? <Text style={styles.missing}>{missing}</Text> : null}
-        <Pressable
-          style={[styles.saveButton, !canSave && styles.saveButtonDisabled]}
-          onPress={handleSave}
-          disabled={!canSave || isSaving}
-          accessibilityRole="button"
-          accessibilityState={{ disabled: !canSave || isSaving, busy: isSaving }}
-        >
-          {isSaving ? (
-            <ActivityIndicator color={colors.onPrimary} />
+        <Card style={{ marginTop: spacing.md }}>
+          <AppText variant="labelSmall">Ingredients</AppText>
+          {rows.length === 0 ? (
+            <EmptyState message="No ingredients yet. Tap + Add ingredient." />
           ) : (
-            <Text style={styles.saveButtonText}>Save</Text>
+            <View>
+              {rows.map((row, index) => (
+                <View key={row.key} style={styles.row}>
+                  <AppText variant="label">{row.item.food.name}</AppText>
+                  <View style={styles.rowControls}>
+                    <TextInput
+                      style={styles.amountInput}
+                      value={row.amount}
+                      onChangeText={(text) => setAmount(row.key, text)}
+                      keyboardType="numeric"
+                      accessibilityLabel={`Amount of ${row.item.food.name}`}
+                    />
+                    <AppText variant="small">
+                      {row.item.quantityUnit === 'g' ? 'g' : 'serving(s)'}
+                    </AppText>
+                    <AppText variant="small" style={styles.rowKcal}>
+                      {Math.round(kcal[index])} kcal
+                    </AppText>
+                    <Pressable
+                      style={styles.remove}
+                      onPress={() => removeRow(row.key)}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Remove ${row.item.food.name}`}
+                    >
+                      <Text style={styles.removeText}>✕</Text>
+                    </Pressable>
+                  </View>
+                </View>
+              ))}
+            </View>
           )}
-        </Pressable>
+
+          <Button
+            title="+ Add ingredient"
+            variant="secondary"
+            onPress={() => router.push('/(tabs)/food/search?recipe=1')}
+          />
+        </Card>
+
+        <Card style={{ marginTop: spacing.md }}>
+          <AppText variant="heading">{Math.round(totalKcal)} kcal in total</AppText>
+          <AppText variant="small">
+            {portionsNumber > 0
+              ? `${Math.round(totalKcal / portionsNumber)} kcal per portion`
+              : ' '}
+          </AppText>
+        </Card>
+
+        {missing ? (
+          <AppText variant="small" style={styles.missing}>
+            {missing}
+          </AppText>
+        ) : null}
+        <Button
+          title="Save"
+          onPress={handleSave}
+          disabled={!canSave}
+          loading={isSaving}
+          style={{ marginTop: spacing.md }}
+        />
       </ScrollView>
     </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  flex: { flex: 1, backgroundColor: colors.background },
+  flex: { flex: 1, backgroundColor: colors.surface },
   container: { padding: spacing.lg },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: spacing.lg },
-  label: { fontSize: 14, fontWeight: '600', color: colors.text, marginBottom: spacing.xs },
-  hint: { fontSize: 14, color: colors.muted, paddingVertical: spacing.sm },
+  center: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: spacing.lg,
+    backgroundColor: colors.surface,
+  },
   row: {
     gap: spacing.xs,
     paddingVertical: spacing.sm,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
-  rowName: { fontSize: 15, fontWeight: '500', color: colors.text },
   rowControls: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   amountInput: {
     width: 72,
@@ -267,40 +283,12 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     paddingVertical: spacing.sm,
     paddingHorizontal: spacing.sm,
-    fontSize: 15,
+    fontSize: 16,
     color: colors.text,
     textAlign: 'right',
   },
-  unit: { fontSize: 13, color: colors.muted },
-  rowKcal: { flex: 1, fontSize: 13, color: colors.textSecondary, textAlign: 'right' },
-  remove: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
-  removeText: { fontSize: 16, color: colors.subtle },
-  addButton: {
-    borderWidth: 1,
-    borderColor: colors.primary,
-    borderRadius: radius.md,
-    padding: spacing.md,
-    alignItems: 'center',
-    marginTop: spacing.md,
-  },
-  addButtonText: { color: colors.primary, fontSize: 15, fontWeight: '600' },
-  totalsCard: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    padding: spacing.lg,
-    marginTop: spacing.xl,
-    alignItems: 'center',
-  },
-  totalsMain: { fontSize: 20, fontWeight: '700', color: colors.text },
-  totalsSub: { fontSize: 14, color: colors.textSecondary, marginTop: spacing.xs },
-  missing: { fontSize: 14, color: colors.muted, textAlign: 'center', marginTop: spacing.lg },
-  saveButton: {
-    backgroundColor: colors.primary,
-    borderRadius: radius.md,
-    padding: 14,
-    alignItems: 'center',
-    marginTop: spacing.md,
-  },
-  saveButtonDisabled: { opacity: 0.5 },
-  saveButtonText: { color: colors.onPrimary, fontSize: 16, fontWeight: '600' },
+  rowKcal: { flex: 1, textAlign: 'right' },
+  remove: { width: 48, height: 48, alignItems: 'center', justifyContent: 'center' },
+  removeText: { fontSize: 16, color: colors.muted },
+  missing: { color: colors.textSecondary, textAlign: 'center', marginTop: spacing.lg },
 });

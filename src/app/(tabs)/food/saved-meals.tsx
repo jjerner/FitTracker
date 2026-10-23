@@ -24,8 +24,13 @@ import {
   scaleSavedMealItems,
 } from '../../../lib/foods';
 import { toNumberOrNull } from '../../../lib/numbers';
+import { AppText } from '../../../components/AppText';
+import { Button } from '../../../components/Button';
+import { Card } from '../../../components/Card';
+import { EmptyState } from '../../../components/EmptyState';
+import { TextLink } from '../../../components/TextLink';
 import type { MealType, SavedMeal } from '../../../types/domain';
-import { colors } from '../../../theme';
+import { colors, radius, spacing } from '../../../theme';
 
 const MEAL_TYPES: MealType[] = ['breakfast', 'lunch', 'dinner', 'snack'];
 const MEAL_LABELS: Record<MealType, string> = {
@@ -95,13 +100,12 @@ export default function SavedMeals() {
 
   return (
     <View style={styles.container}>
-      <Pressable
-        style={styles.newRecipe}
+      <Button
+        title="New recipe"
+        variant="secondary"
         onPress={() => router.push('/(tabs)/food/recipe')}
-        accessibilityRole="button"
-      >
-        <Text style={styles.newRecipeText}>New recipe</Text>
-      </Pressable>
+        style={{ marginBottom: spacing.lg }}
+      />
 
       <Modal
         visible={askingMeal != null}
@@ -110,126 +114,131 @@ export default function SavedMeals() {
         onRequestClose={() => setAskingMeal(null)}
       >
         <Pressable style={styles.modalBackdrop} onPress={() => setAskingMeal(null)}>
-          <Pressable style={styles.modalCard}>
-            <Text style={styles.modalTitle}>
-              {askingMeal?.name}: how many portions? (of {askingMeal?.portions})
-            </Text>
-            <TextInput
-              style={styles.modalInput}
-              value={eaten}
-              onChangeText={setEaten}
-              keyboardType="decimal-pad"
-              accessibilityLabel="Portions eaten"
-              selectTextOnFocus
-              autoFocus
-            />
-            <Text style={styles.modalPreview}>
-              {askingMeal
-                ? Math.round(mealCalories(scaleSavedMealItems(askingMeal, eatenNumber)))
-                : 0}{' '}
-              kcal
-            </Text>
-            <Pressable
-              style={[styles.logButton, !(eatenNumber > 0) && styles.buttonDisabled]}
-              disabled={!(eatenNumber > 0) || !!busyId}
-              onPress={() => {
-                const meal = askingMeal!;
-                setAskingMeal(null);
-                handleLog(meal, eatenNumber);
-              }}
-            >
-              <Text style={styles.logButtonText}>Log</Text>
-            </Pressable>
-            <Pressable style={styles.cancelButton} onPress={() => setAskingMeal(null)}>
-              <Text style={styles.cancelText}>Cancel</Text>
-            </Pressable>
+          <Pressable>
+            <Card>
+              <AppText variant="label">
+                {askingMeal?.name}: how many portions? (of {askingMeal?.portions})
+              </AppText>
+              <TextInput
+                style={styles.modalInput}
+                value={eaten}
+                onChangeText={setEaten}
+                keyboardType="decimal-pad"
+                accessibilityLabel="Portions eaten"
+                selectTextOnFocus
+                autoFocus
+              />
+              <AppText style={{ color: colors.textSecondary }}>
+                {askingMeal
+                  ? Math.round(mealCalories(scaleSavedMealItems(askingMeal, eatenNumber)))
+                  : 0}{' '}
+                kcal
+              </AppText>
+              <Button
+                title="Log"
+                disabled={!(eatenNumber > 0) || !!busyId}
+                onPress={() => {
+                  const meal = askingMeal!;
+                  setAskingMeal(null);
+                  handleLog(meal, eatenNumber);
+                }}
+              />
+              <TextLink title="Cancel" onPress={() => setAskingMeal(null)} />
+            </Card>
           </Pressable>
         </Pressable>
       </Modal>
 
-      <Text style={styles.label}>Log to</Text>
-      <View style={styles.mealRow}>
-        {MEAL_TYPES.map((type) => (
-          <Pressable
-            key={type}
-            style={[styles.mealChip, mealType === type && styles.mealChipActive]}
-            onPress={() => setMealType(type)}
-          >
-            <Text style={mealType === type ? styles.mealChipTextActive : styles.mealChipText}>
-              {MEAL_LABELS[type]}
-            </Text>
-          </Pressable>
-        ))}
-      </View>
+      <Card style={{ marginBottom: spacing.md }}>
+        <AppText variant="labelSmall">Log to</AppText>
+        <View style={styles.mealRow}>
+          {MEAL_TYPES.map((type) => (
+            <Pressable
+              key={type}
+              style={[styles.mealChip, mealType === type && styles.mealChipActive]}
+              onPress={() => setMealType(type)}
+            >
+              <Text style={mealType === type ? styles.mealChipTextActive : styles.mealChipText}>
+                {MEAL_LABELS[type]}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
+      </Card>
 
       {isLoading ? (
         <ActivityIndicator style={styles.loading} />
       ) : (
-        <FlatList
-          data={meals ?? []}
-          keyExtractor={(m) => m.id}
-          ListEmptyComponent={
-            <Text style={styles.empty}>
-              No saved meals yet. Tap &quot;New recipe&quot; above, or on the diary tap &quot;Save as
-              meal&quot; on a meal.
-            </Text>
-          }
-          renderItem={({ item }) => (
-            <View style={styles.row}>
-              <Pressable
-                style={styles.rowTap}
-                onPress={() => {
-                  if (item.portions === 1) return handleLog(item);
-                  setEaten('1');
-                  setAskingMeal(item);
-                }}
-                disabled={!!busyId}
-              >
-                <View style={styles.rowInfo}>
-                  <Text style={styles.rowName}>{item.name}</Text>
-                  <Text style={styles.rowSub}>
-                    {item.items.length} {item.items.length === 1 ? 'food' : 'foods'} ·{' '}
-                    {item.portions === 1
-                      ? `${Math.round(mealCalories(item.items))} kcal`
-                      : `makes ${item.portions} · ${Math.round(mealCalories(item.items) / item.portions)} kcal per portion`}
-                  </Text>
-                </View>
-                {busyId === item.id ? <ActivityIndicator /> : <Text style={styles.add}>Add</Text>}
-              </Pressable>
-              <Pressable
-                onPress={() => router.push(`/(tabs)/food/recipe?id=${item.id}`)}
-                style={styles.iconButton}
-                accessibilityRole="button"
-                accessibilityLabel={`Edit ${item.name}`}
-              >
-                <Text style={styles.edit}>Edit</Text>
-              </Pressable>
-              <Pressable
-                onPress={() => confirmDelete(item)}
-                style={styles.iconButton}
-                accessibilityRole="button"
-                accessibilityLabel={`Delete ${item.name}`}
-              >
-                <Text style={styles.delete}>✕</Text>
-              </Pressable>
-            </View>
-          )}
-        />
+        <Card style={{ flexShrink: 1 }}>
+          <FlatList
+            data={meals ?? []}
+            keyExtractor={(m) => m.id}
+            ListEmptyComponent={
+              <EmptyState message='No saved meals yet. Tap "New recipe" above, or on the diary tap "Save as meal" on a meal.' />
+            }
+            renderItem={({ item }) => (
+              <View style={styles.row}>
+                <Pressable
+                  style={styles.rowTap}
+                  onPress={() => {
+                    if (item.portions === 1) return handleLog(item);
+                    setEaten('1');
+                    setAskingMeal(item);
+                  }}
+                  disabled={!!busyId}
+                >
+                  <View style={styles.rowInfo}>
+                    <AppText variant="label">{item.name}</AppText>
+                    <AppText variant="small">
+                      {item.items.length} {item.items.length === 1 ? 'food' : 'foods'} ·{' '}
+                      {item.portions === 1
+                        ? `${Math.round(mealCalories(item.items))} kcal`
+                        : `makes ${item.portions} · ${Math.round(mealCalories(item.items) / item.portions)} kcal per portion`}
+                    </AppText>
+                  </View>
+                  {busyId === item.id ? (
+                    <ActivityIndicator />
+                  ) : (
+                    <AppText variant="label" style={{ color: colors.primary }}>
+                      Add
+                    </AppText>
+                  )}
+                </Pressable>
+                <Pressable
+                  onPress={() => router.push(`/(tabs)/food/recipe?id=${item.id}`)}
+                  style={styles.iconButton}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Edit ${item.name}`}
+                >
+                  <AppText variant="small" style={{ color: colors.primary }}>
+                    Edit
+                  </AppText>
+                </Pressable>
+                <Pressable
+                  onPress={() => confirmDelete(item)}
+                  style={styles.iconButton}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Delete ${item.name}`}
+                >
+                  <Text style={styles.delete}>✕</Text>
+                </Pressable>
+              </View>
+            )}
+          />
+        </Card>
       )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background, padding: 16 },
-  label: { fontSize: 14, fontWeight: '600', marginBottom: 8 },
-  loading: { paddingVertical: 40 },
-  empty: { color: colors.muted, fontSize: 14, paddingVertical: 24 },
-  mealRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 12 },
+  container: { flex: 1, backgroundColor: colors.surface, padding: 16 },
+  loading: { paddingVertical: spacing.xxl },
+  mealRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   mealChip: {
     borderWidth: 1,
     borderColor: colors.borderStrong,
-    borderRadius: 20,
+    borderRadius: radius.full,
     paddingVertical: 8,
     paddingHorizontal: 16,
   },
@@ -246,31 +255,14 @@ const styles = StyleSheet.create({
   },
   rowTap: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 12 },
   rowInfo: { flex: 1 },
-  rowName: { fontSize: 15, fontWeight: '500' },
-  rowSub: { fontSize: 13, color: colors.muted },
-  add: { fontSize: 15, color: colors.primary, fontWeight: '600' },
-  delete: { fontSize: 16, color: colors.subtle, paddingHorizontal: 4 },
-  edit: { fontSize: 14, color: colors.primary },
-  iconButton: { minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' },
-  cancelButton: { alignItems: 'center', paddingTop: 12 },
-  cancelText: { color: colors.muted, fontSize: 15, fontWeight: '600' },
-  newRecipe: {
-    borderWidth: 1,
-    borderColor: colors.primary,
-    borderRadius: 8,
-    padding: 12,
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  newRecipeText: { color: colors.primary, fontSize: 15, fontWeight: '600' },
+  delete: { fontSize: 16, color: colors.muted, paddingHorizontal: 4 },
+  iconButton: { minWidth: 48, minHeight: 48, alignItems: 'center', justifyContent: 'center' },
   modalBackdrop: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.4)',
     justifyContent: 'center',
     padding: 16,
   },
-  modalCard: { backgroundColor: colors.background, borderRadius: 12, padding: 16 },
-  modalTitle: { fontSize: 17, fontWeight: '600', marginBottom: 12 },
   modalInput: {
     borderWidth: 1,
     borderColor: colors.borderStrong,
@@ -278,14 +270,4 @@ const styles = StyleSheet.create({
     padding: 14,
     fontSize: 16,
   },
-  modalPreview: { fontSize: 15, color: colors.textSecondary, marginTop: 12 },
-  logButton: {
-    backgroundColor: colors.primary,
-    borderRadius: 8,
-    padding: 14,
-    alignItems: 'center',
-    marginTop: 16,
-  },
-  logButtonText: { color: colors.onPrimary, fontSize: 16, fontWeight: '600' },
-  buttonDisabled: { opacity: 0.5 },
 });

@@ -1,20 +1,15 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import {
-  ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-} from 'react-native';
+import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet } from 'react-native';
 
+import { AppText } from '../../../../components/AppText';
+import { Button } from '../../../../components/Button';
+import { Card } from '../../../../components/Card';
 import { LabeledInput } from '../../../../components/LabeledInput';
 import { useSession } from '../../../../context/AuthProvider';
 import { createCustomFood } from '../../../../lib/foods';
 import { toNumberOrNull } from '../../../../lib/numbers';
-import { colors } from '../../../../theme';
+import { colors, spacing } from '../../../../theme';
 
 export default function NewCustomFood() {
   const { session } = useSession();
@@ -78,90 +73,91 @@ export default function NewCustomFood() {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <ScrollView contentContainerStyle={styles.container}>
-        <Text style={styles.hint}>
-          {barcode ? `Barcode ${barcode} wasn't found. ` : ''}Enter nutrition per 100g.
-        </Text>
+        {/* gap 0: LabeledInput brings its own bottom margin. */}
+        <Card style={{ gap: 0 }}>
+          <AppText variant="small" style={{ marginBottom: spacing.lg }}>
+            {barcode ? `Barcode ${barcode} wasn't found. ` : ''}Enter nutrition per 100g.
+          </AppText>
 
-        <LabeledInput label="Name" placeholder="e.g. Oat bar" value={name} onChangeText={setName} />
-        <LabeledInput
-          label="Calories per 100 g (kcal)"
-          placeholder="e.g. 380"
-          keyboardType="numeric"
-          value={calories}
-          onChangeText={setCalories}
-        />
-        <LabeledInput
-          label="Protein per 100 g (g)"
-          placeholder="e.g. 12"
-          keyboardType="numeric"
-          value={protein}
-          onChangeText={setProtein}
-        />
-        <LabeledInput
-          label="Carbs per 100 g (g)"
-          placeholder="e.g. 55"
-          keyboardType="numeric"
-          value={carbs}
-          onChangeText={setCarbs}
-        />
-        <LabeledInput
-          label="Fat per 100 g (g)"
-          placeholder="e.g. 8"
-          keyboardType="numeric"
-          value={fat}
-          onChangeText={setFat}
-        />
-        <LabeledInput
-          label="Fiber per 100 g (g) — optional"
-          placeholder="e.g. 6"
-          keyboardType="numeric"
-          value={fiber}
-          onChangeText={setFiber}
-        />
-        <LabeledInput
-          label="Serving size (g) — optional"
-          placeholder="e.g. 45"
-          keyboardType="numeric"
-          value={servingSize}
-          onChangeText={setServingSize}
-        />
-        <LabeledInput
-          label="Serving name — optional"
-          placeholder="e.g. 1 bar"
-          value={servingName}
-          onChangeText={setServingName}
-        />
+          <LabeledInput
+            label="Name"
+            placeholder="e.g. Oat bar"
+            value={name}
+            onChangeText={setName}
+          />
+          <LabeledInput
+            label="Calories per 100 g (kcal)"
+            placeholder="e.g. 380"
+            keyboardType="numeric"
+            value={calories}
+            onChangeText={setCalories}
+          />
+          <LabeledInput
+            label="Protein per 100 g (g)"
+            placeholder="e.g. 12"
+            keyboardType="numeric"
+            value={protein}
+            onChangeText={setProtein}
+          />
+          <LabeledInput
+            label="Carbs per 100 g (g)"
+            placeholder="e.g. 55"
+            keyboardType="numeric"
+            value={carbs}
+            onChangeText={setCarbs}
+          />
+          <LabeledInput
+            label="Fat per 100 g (g)"
+            placeholder="e.g. 8"
+            keyboardType="numeric"
+            value={fat}
+            onChangeText={setFat}
+          />
+          <LabeledInput
+            label="Fiber per 100 g (g) — optional"
+            placeholder="e.g. 6"
+            keyboardType="numeric"
+            value={fiber}
+            onChangeText={setFiber}
+          />
+          <LabeledInput
+            label="Serving size (g) — optional"
+            placeholder="e.g. 45"
+            keyboardType="numeric"
+            value={servingSize}
+            onChangeText={setServingSize}
+          />
+          <LabeledInput
+            label="Serving name — optional"
+            placeholder="e.g. 1 bar"
+            value={servingName}
+            onChangeText={setServingName}
+          />
 
-        {error ? <Text style={styles.error}>{error}</Text> : null}
+          {error ? (
+            <AppText
+              style={{ color: colors.danger }}
+              accessibilityRole="alert"
+              accessibilityLiveRegion="polite"
+            >
+              {error}
+            </AppText>
+          ) : null}
+        </Card>
 
-        <Pressable
-          style={[styles.saveButton, !isValid && styles.saveButtonDisabled]}
+        <Button
+          title="Save Food"
           onPress={handleSave}
-          disabled={!isValid || isSaving}
-        >
-          {isSaving ? (
-            <ActivityIndicator color={colors.onPrimary} />
-          ) : (
-            <Text style={styles.saveButtonText}>Save Food</Text>
-          )}
-        </Pressable>
+          disabled={!isValid}
+          loading={isSaving}
+          style={{ marginTop: spacing.md }}
+        />
       </ScrollView>
     </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  flex: { flex: 1, backgroundColor: colors.background },
+  flex: { flex: 1, backgroundColor: colors.surface },
   container: { padding: 16 },
-  hint: { color: colors.muted, marginBottom: 16 },
-  error: { color: colors.danger, marginBottom: 12 },
-  saveButton: {
-    backgroundColor: colors.primary,
-    borderRadius: 8,
-    padding: 14,
-    alignItems: 'center',
-    marginTop: 8,
-  },
-  saveButtonDisabled: { opacity: 0.5 },
-  saveButtonText: { color: colors.onPrimary, fontSize: 16, fontWeight: '600' },
 });
