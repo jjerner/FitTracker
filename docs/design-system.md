@@ -22,6 +22,7 @@ All colours live in `colors` in `src/theme.ts`. Never write a hex value in a scr
   mascot moments). Text on yellow uses `onAccent`, never white. Never use yellow for buttons or as a
   big background. Streaks keep their own orange `streak`.
 - `success` / `danger` / `warning` carry meaning (done, delete, careful). Don't use them as decoration.
+- White text goes on `successDark`, not `success` (white on `success` is only 3.3:1).
 - **Dark mode is planned** (issue #26). Taking every colour from `colors` keeps that job to one
   place, but it is not free. Styles built with `StyleSheet.create` at import time read `colors` once,
   so dark mode will need a `useColors()` hook (or similar), and screens will read colours at render
@@ -122,5 +123,5 @@ still sits on white only (4.4:1 on grey).
 
 Most screens still use hand-made buttons, cards and font sizes. They move over one area at a time
 through the "[DS] Design system: migrate …" issues on the Plucky roadmap (#64–#68). So far
-**Auth (Login, Signup, Forgot password)**, **Food** and **Progress's cards and empty texts** have
-moved. The rest of Progress is still old style, so don't copy it as an example.
+**Auth (Login, Signup, Forgot password)**, **Food**, **Workouts** and **Progress's cards and empty texts**
+have moved. The rest of Progress is still old style, so don't copy it as an example.

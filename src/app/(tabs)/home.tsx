@@ -242,6 +242,6 @@ const styles = StyleSheet.create({
     padding: 14,
     alignItems: 'center',
   },
-  resumeButton: { backgroundColor: colors.success },
+  resumeButton: { backgroundColor: colors.successDark },
   buttonText: { color: colors.onPrimary, fontSize: 16, fontWeight: '600' },
 });
