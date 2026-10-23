@@ -122,5 +122,5 @@ still sits on white only (4.4:1 on grey).
 
 Most screens still use hand-made buttons, cards and font sizes. They move over one area at a time
 through the "[DS] Design system: migrate …" issues on the Plucky roadmap (#64–#68). So far
-**Auth (Login, Signup, Forgot password)**, **Food** and **Progress's cards and empty texts** have
-moved. The rest of Progress is still old style, so don't copy it as an example.
+**Auth (Login, Signup, Forgot password)**, **Food**, **Workouts** and **Progress's cards and empty texts**
+have moved. The rest of Progress is still old style, so don't copy it as an example.

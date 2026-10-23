@@ -13,6 +13,10 @@ import {
   View,
 } from 'react-native';
 
+import { AppText } from '../../../components/AppText';
+import { Button } from '../../../components/Button';
+import { Card } from '../../../components/Card';
+import { TextLink } from '../../../components/TextLink';
 import { ExercisePicker } from '../../../components/workouts/ExercisePicker';
 import { SwapExercisePicker } from '../../../components/workouts/SwapExercisePicker';
 import { useSession } from '../../../context/AuthProvider';
@@ -43,7 +47,7 @@ import {
 } from '../../../lib/pendingSets';
 import { toNumberOrNull } from '../../../lib/numbers';
 import { bestOf, findNewRecords, matchingSet, setLabels } from '../../../lib/records';
-import { colors, radius, spacing } from '../../../theme';
+import { colors, radius, spacing, typography } from '../../../theme';
 import type {
   Exercise,
   SetType,
@@ -161,7 +165,7 @@ export default function ActiveWorkout() {
   return (
     <View style={styles.container}>
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        <Text style={styles.title}>{log.name}</Text>
+        <AppText variant="heading">{log.name}</AppText>
         <ElapsedClock startedAt={log.startedAt} />
 
         {exercises.map((logExercise) => {
@@ -182,21 +186,22 @@ export default function ActiveWorkout() {
           );
         })}
 
-        <Pressable style={styles.secondaryButton} onPress={() => setPickerOpen(true)}>
-          <Text style={styles.secondaryButtonText}>+ Add Exercise</Text>
-        </Pressable>
+        <Button variant="secondary" title="+ Add Exercise" onPress={() => setPickerOpen(true)} />
 
-        <Pressable style={styles.finishButton} onPress={handleFinish} disabled={isFinishing}>
-          {isFinishing ? (
-            <ActivityIndicator color={colors.onPrimary} />
-          ) : (
-            <Text style={styles.finishButtonText}>Finish Workout</Text>
-          )}
-        </Pressable>
+        <Button
+          variant="success"
+          title="Finish Workout"
+          onPress={handleFinish}
+          loading={isFinishing}
+          style={styles.finishButton}
+        />
 
-        <Pressable style={styles.discardButton} onPress={handleDiscard}>
-          <Text style={styles.discardButtonText}>Discard Workout</Text>
-        </Pressable>
+        <TextLink
+          tone="danger"
+          title="Discard Workout"
+          onPress={handleDiscard}
+          style={styles.discardLink}
+        />
 
         <ExercisePicker
           visible={pickerOpen}
@@ -233,9 +238,9 @@ function ElapsedClock({ startedAt }: { startedAt: string }) {
   }, []);
 
   return (
-    <Text style={styles.subtitle}>
+    <AppText variant="small" style={styles.subtitle}>
       {formatDuration((now - new Date(startedAt).getTime()) / 1000)} elapsed
-    </Text>
+    </AppText>
   );
 }
 
@@ -264,18 +269,35 @@ function RestTimer({
 
   return (
     <View style={styles.restBar}>
-      <Pressable style={styles.restAdjust} onPress={() => onChange(endsAt - 15_000)}>
-        <Text style={styles.restAdjustText}>−15</Text>
+      <Pressable
+        style={styles.restAdjust}
+        onPress={() => onChange(endsAt - 15_000)}
+        accessibilityRole="button"
+        accessibilityLabel="15 seconds less rest"
+      >
+        <AppText variant="label" style={styles.restAdjustText}>−15</AppText>
       </Pressable>
       <View style={styles.restCenter}>
-        <Text style={styles.restLabel}>Rest</Text>
-        <Text style={styles.restTime}>{formatDuration(Math.ceil(remaining))}</Text>
+        <AppText variant="caption" style={styles.restLabel}>Rest</AppText>
+        <AppText variant="title" style={styles.restTime}>
+          {formatDuration(Math.ceil(remaining))}
+        </AppText>
       </View>
-      <Pressable style={styles.restAdjust} onPress={() => onChange(endsAt + 15_000)}>
-        <Text style={styles.restAdjustText}>+15</Text>
+      <Pressable
+        style={styles.restAdjust}
+        onPress={() => onChange(endsAt + 15_000)}
+        accessibilityRole="button"
+        accessibilityLabel="15 seconds more rest"
+      >
+        <AppText variant="label" style={styles.restAdjustText}>+15</AppText>
       </Pressable>
-      <Pressable style={styles.restSkip} onPress={() => onChange(null)}>
-        <Text style={styles.restSkipText}>Skip</Text>
+      <Pressable
+        style={styles.restSkip}
+        onPress={() => onChange(null)}
+        accessibilityRole="button"
+        accessibilityLabel="Skip rest"
+      >
+        <AppText variant="label" style={styles.restSkipText}>Skip</AppText>
       </Pressable>
     </View>
   );
@@ -499,57 +521,82 @@ function ExerciseCard({
   const labels = setLabels(types);
 
   return (
-    <View style={styles.card}>
+    <Card style={styles.card}>
       <View style={styles.cardHeader}>
-        <Text style={styles.cardTitle}>{logExercise.exercise.name}</Text>
-        <Pressable onPress={() => setSwapOpen(true)} hitSlop={8}>
-          <Text style={styles.swapText}>⇄ Swap</Text>
+        <AppText variant="label" style={styles.cardTitle}>
+          {logExercise.exercise.name}
+        </AppText>
+        <Pressable
+          onPress={() => setSwapOpen(true)}
+          hitSlop={headerHitSlop}
+          accessibilityRole="button"
+          accessibilityLabel={`Swap ${logExercise.exercise.name}`}
+        >
+          <AppText style={styles.swapText}>⇄ Swap</AppText>
         </Pressable>
         {doneSets.length === 0 ? (
-          <Pressable onPress={handleRemoveExercise} hitSlop={8}>
-            <Text style={styles.removeText}>Remove</Text>
+          <Pressable
+            onPress={handleRemoveExercise}
+            hitSlop={headerHitSlop}
+            accessibilityRole="button"
+            accessibilityLabel={`Remove ${logExercise.exercise.name}`}
+          >
+            <AppText style={styles.removeText}>Remove</AppText>
           </Pressable>
         ) : null}
       </View>
-      {targetText ? <Text style={styles.targetText}>{targetText}</Text> : null}
+      {targetText ? (
+        <AppText variant="small" style={styles.targetText}>
+          {targetText}
+        </AppText>
+      ) : null}
       {waitingCount > 0 ? (
-        <Text style={styles.waitingText}>
+        <AppText variant="caption" style={styles.waitingText}>
           {waitingCount} set{waitingCount === 1 ? '' : 's'} saved on your phone, sending when
           there is signal
-        </Text>
+        </AppText>
       ) : null}
-      {recordText ? <Text style={styles.recordText}>{recordText}</Text> : null}
+      {recordText ? (
+        <AppText variant="labelSmall" style={styles.recordText}>
+          {recordText}
+        </AppText>
+      ) : null}
 
       <View style={styles.tableHeader}>
-        <Text style={[styles.headerCell, styles.colSet]}>Set</Text>
-        <Text style={[styles.headerCell, styles.colPrev]}>Previous</Text>
-        <Text style={[styles.headerCell, styles.colInput]}>{labelA}</Text>
-        <Text style={[styles.headerCell, styles.colInput]}>{labelB}</Text>
+        <AppText variant="caption" style={styles.colSet}>Set</AppText>
+        <AppText variant="caption" style={styles.colPrev}>Previous</AppText>
+        <AppText variant="caption" style={styles.colInput}>{labelA}</AppText>
+        <AppText variant="caption" style={styles.colInput}>{labelB}</AppText>
         <View style={styles.colCheck} />
         <View style={styles.colRemove} />
       </View>
 
       {doneSets.map((set, index) => (
         <View key={set.id} style={[styles.row, styles.rowDone]}>
-          <Text style={[styles.cell, styles.colSet, set.setType === 'warmup' && styles.warmupText]}>
+          <AppText
+            variant="label"
+            style={[styles.colSet, set.setType === 'warmup' && styles.warmupText]}
+          >
             {labels[index]}
-          </Text>
-          <Text style={[styles.prevCell, styles.colPrev]}>{previousText(index)}</Text>
-          <Text style={[styles.doneValue, styles.colInput]}>
+          </AppText>
+          <AppText variant="small" style={[styles.prevDone, styles.colPrev]}>
+            {previousText(index)}
+          </AppText>
+          <AppText style={[styles.doneValue, styles.colInput]}>
             {isCardio
               ? set.durationS != null ? Math.round(set.durationS / 60) : '—'
               : (set.weightKg ?? '—')}
-          </Text>
-          <Text style={[styles.doneValue, styles.colInput]}>
+          </AppText>
+          <AppText style={[styles.doneValue, styles.colInput]}>
             {isCardio
               ? set.distanceM != null ? set.distanceM / 1000 : '—'
               : (set.reps ?? '—')}
-          </Text>
+          </AppText>
           <Pressable style={[styles.check, styles.checkDone]} onPress={() => handleUndo(set)}>
             <Text style={styles.checkDoneText}>✓</Text>
           </Pressable>
           <Pressable style={styles.colRemove} onPress={() => handleDeleteSet(set, labels[index])} hitSlop={6}>
-            <Text style={styles.removeSetText}>✕</Text>
+            <AppText style={styles.removeSetText}>✕</AppText>
           </Pressable>
         </View>
       ))}
@@ -562,7 +609,7 @@ function ExerciseCard({
         return (
           <View key={draft.key} style={styles.row}>
             {isCardio ? (
-              <Text style={[styles.cell, styles.colSet]}>{label}</Text>
+              <AppText variant="label" style={styles.colSet}>{label}</AppText>
             ) : (
               <Pressable
                 style={styles.colSet}
@@ -572,10 +619,12 @@ function ExerciseCard({
                 accessibilityLabel={`Set ${label}, ${warmup ? 'warm-up' : 'working set'}`}
                 accessibilityHint={warmup ? 'Tap to make it a working set' : 'Tap to mark as warm-up'}
               >
-                <Text style={[styles.cell, styles.setBadge, warmup && styles.warmupText]}>{label}</Text>
+                <AppText variant="label" style={[styles.setBadge, warmup && styles.warmupText]}>
+                  {label}
+                </AppText>
               </Pressable>
             )}
-            <Text style={[styles.prevCell, styles.colPrev]}>{previousText(index)}</Text>
+            <AppText variant="small" style={styles.colPrev}>{previousText(index)}</AppText>
             <TextInput
               style={[styles.input, styles.colInput]}
               value={draft.a}
@@ -608,7 +657,7 @@ function ExerciseCard({
               onPress={() => setDrafts((prev) => prev.filter((d) => d.key !== draft.key))}
               hitSlop={6}
             >
-              <Text style={styles.removeSetText}>✕</Text>
+              <AppText style={styles.removeSetText}>✕</AppText>
             </Pressable>
           </View>
         );
@@ -616,12 +665,14 @@ function ExerciseCard({
 
       <Pressable
         style={styles.addSetButton}
+        accessibilityRole="button"
+        accessibilityLabel={`Add set to ${logExercise.exercise.name}`}
         onPress={() => {
           const last = drafts.at(-1);
           setDrafts((prev) => [...prev, newRow(last?.a, last?.b, last?.type)]);
         }}
       >
-        <Text style={styles.addSetText}>+ Add set</Text>
+        <AppText variant="label" style={styles.addSetText}>+ Add set</AppText>
       </Pressable>
 
       <SwapExercisePicker
@@ -630,29 +681,26 @@ function ExerciseCard({
         onClose={() => setSwapOpen(false)}
         onSelect={handleSwap}
       />
-    </View>
+    </Card>
   );
 }
 
+// Swap and Remove sit 12 apart, so the side slop stays small (48 dp tall tap area).
+const headerHitSlop = { top: 13, bottom: 13, left: 6, right: 6 };
+
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  content: { padding: spacing.lg, paddingBottom: 40 },
-  title: { fontSize: 20, fontWeight: '700', color: colors.text },
-  subtitle: { fontSize: 14, color: colors.muted, marginTop: 2, marginBottom: spacing.lg },
-  card: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    padding: spacing.md,
-    marginBottom: spacing.md,
-  },
+  container: { flex: 1, backgroundColor: colors.surface },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.surface },
+  content: { padding: spacing.lg, paddingBottom: spacing.xxl },
+  subtitle: { color: colors.textSecondary, marginTop: spacing.xs, marginBottom: spacing.lg },
+  card: { padding: spacing.md, gap: 0, marginBottom: spacing.md },
   cardHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
-  cardTitle: { fontSize: 16, fontWeight: '600', flex: 1, color: colors.text },
-  swapText: { color: colors.primary, fontSize: 15 },
-  removeText: { color: colors.danger, fontSize: 15 },
-  waitingText: { fontSize: 12, color: colors.warning, marginBottom: 6 },
-  recordText: { fontSize: 13, fontWeight: '600', color: colors.warning, marginBottom: 6 },
-  targetText: { fontSize: 13, color: colors.muted, marginTop: 2 },
+  cardTitle: { flex: 1 },
+  swapText: { color: colors.primary },
+  removeText: { color: colors.danger },
+  waitingText: { color: colors.warning, marginBottom: spacing.sm },
+  recordText: { color: colors.warning, marginBottom: spacing.sm },
+  targetText: { marginTop: spacing.xs },
   tableHeader: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -660,7 +708,6 @@ const styles = StyleSheet.create({
     marginTop: spacing.md,
     marginBottom: spacing.xs,
   },
-  headerCell: { fontSize: 12, fontWeight: '600', color: colors.muted, textAlign: 'center' },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -674,27 +721,26 @@ const styles = StyleSheet.create({
   colInput: { flex: 1, textAlign: 'center' },
   colCheck: { width: 36 },
   colRemove: { width: 28, height: 36, alignItems: 'center', justifyContent: 'center' },
-  removeSetText: { fontSize: 16, color: colors.muted },
-  cell: { fontSize: 15, fontWeight: '600', color: colors.text },
+  removeSetText: { color: colors.muted },
   // Looks tappable: the set number toggles warm-up on unticked strength rows.
   setBadge: {
     textAlign: 'center',
-    paddingVertical: 6,
+    paddingVertical: spacing.sm,
     borderRadius: radius.sm,
     backgroundColor: colors.border,
     overflow: 'hidden',
   },
   warmupText: { color: colors.warningText },
-  prevCell: { fontSize: 13, color: colors.muted },
-  doneValue: { fontSize: 15, color: colors.text, paddingVertical: 8 },
+  // muted is too faint on the green done row.
+  prevDone: { color: colors.textSecondary },
+  doneValue: { paddingVertical: spacing.sm },
   input: {
+    ...typography.body,
     backgroundColor: colors.background,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: colors.borderStrong,
     borderRadius: radius.sm,
-    paddingVertical: 6,
-    fontSize: 15,
-    color: colors.text,
+    paddingVertical: spacing.sm,
   },
   check: {
     width: 36,
@@ -704,28 +750,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  // icon glyph, not text
   checkText: { fontSize: 18, color: colors.muted, fontWeight: '700' },
   checkDone: { backgroundColor: colors.success },
+  // icon glyph, not text
   checkDoneText: { fontSize: 18, color: colors.onPrimary, fontWeight: '700' },
-  addSetButton: { alignItems: 'center', paddingVertical: spacing.sm, marginTop: spacing.xs },
-  addSetText: { color: colors.primary, fontSize: 15, fontWeight: '600' },
-  secondaryButton: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.md,
-    padding: spacing.md,
+  addSetButton: {
     alignItems: 'center',
+    minHeight: 48,
+    justifyContent: 'center',
+    marginTop: spacing.xs,
   },
-  secondaryButtonText: { fontSize: 15, fontWeight: '600', color: colors.text },
-  finishButton: {
-    backgroundColor: colors.success,
-    borderRadius: radius.md,
-    padding: 14,
-    alignItems: 'center',
-    marginTop: spacing.xl,
-  },
-  finishButtonText: { color: colors.onPrimary, fontSize: 16, fontWeight: '600' },
-  discardButton: { padding: 14, alignItems: 'center', marginTop: spacing.sm },
-  discardButtonText: { color: colors.danger, fontSize: 15 },
+  addSetText: { color: colors.primary },
+  finishButton: { marginTop: spacing.xl },
+  discardLink: { marginTop: spacing.md },
   restBar: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -734,15 +772,22 @@ const styles = StyleSheet.create({
     backgroundColor: colors.text,
   },
   restCenter: { flex: 1, alignItems: 'center' },
-  restLabel: { fontSize: 12, color: colors.subtle },
-  restTime: { fontSize: 22, fontWeight: '700', color: colors.onPrimary },
+  restLabel: { color: colors.subtle },
+  restTime: { color: colors.onPrimary },
   restAdjust: {
+    minHeight: 48,
+    justifyContent: 'center',
     paddingVertical: spacing.sm,
     paddingHorizontal: spacing.md,
     borderRadius: radius.md,
     backgroundColor: colors.textSecondary,
   },
-  restAdjustText: { color: colors.onPrimary, fontSize: 15, fontWeight: '600' },
-  restSkip: { paddingVertical: spacing.sm, paddingHorizontal: spacing.md },
-  restSkipText: { color: colors.primaryLight, fontSize: 15, fontWeight: '600' },
+  restAdjustText: { color: colors.onPrimary },
+  restSkip: {
+    minHeight: 48,
+    justifyContent: 'center',
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+  },
+  restSkipText: { color: colors.primaryLight },
 });
