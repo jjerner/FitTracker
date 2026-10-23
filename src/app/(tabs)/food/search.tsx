@@ -6,7 +6,6 @@ import {
   Pressable,
   SectionList,
   StyleSheet,
-  Text,
   TextInput,
   View,
 } from 'react-native';
@@ -20,8 +19,11 @@ import {
   upsertOffFood,
 } from '../../../lib/foods';
 import { getByBarcode, searchByName, type OffFood } from '../../../lib/openFoodFacts';
+import { AppText } from '../../../components/AppText';
+import { Button } from '../../../components/Button';
+import { Card } from '../../../components/Card';
 import type { Food, MealType } from '../../../types/domain';
-import { colors } from '../../../theme';
+import { colors, spacing } from '../../../theme';
 
 // My/basic foods are already in the database; OFF results get saved when picked.
 type Result = { kind: 'db'; food: Food } | { kind: 'off'; food: OffFood };
@@ -156,73 +158,81 @@ export default function FoodSearch() {
         autoFocus
       />
 
-      <Pressable
-        style={styles.scanButton}
+      <Button
+        title="Scan Barcode"
         onPress={() => router.push(`/(tabs)/food/scan${mealQuery}`)}
-      >
-        <Text style={styles.scanButtonText}>Scan Barcode</Text>
-      </Pressable>
+        style={{ marginBottom: spacing.md }}
+      />
 
       <View style={styles.shortcutRow}>
         {recipe ? null : (
-          <Pressable
-            style={styles.shortcut}
+          <Button
+            title="Saved meals"
+            variant="secondary"
             onPress={() => router.push(`/(tabs)/food/saved-meals${mealQuery}`)}
-          >
-            <Text style={styles.shortcutText}>Saved meals</Text>
-          </Pressable>
+            style={{ flex: 1 }}
+          />
         )}
-        <Pressable
-          style={styles.shortcut}
+        <Button
+          title="Custom food"
+          variant="secondary"
           onPress={() => router.push(`/(tabs)/food/custom-food/new${mealQuery}`)}
-        >
-          <Text style={styles.shortcutText}>Custom food</Text>
-        </Pressable>
+          style={{ flex: 1 }}
+        />
       </View>
 
-      {error ? <Text style={styles.error}>{error}</Text> : null}
+      {error ? (
+        <Card style={{ marginBottom: spacing.md }}>
+          <AppText style={{ color: colors.danger }}>{error}</AppText>
+        </Card>
+      ) : null}
       {isSearching ? <ActivityIndicator style={styles.loader} /> : null}
 
-      <SectionList
-        sections={sections}
-        keyExtractor={resultKey}
-        keyboardShouldPersistTaps="handled"
-        stickySectionHeadersEnabled={false}
-        renderSectionHeader={({ section }) => (
-          <Text style={styles.sectionTitle}>{section.title}</Text>
-        )}
-        renderItem={({ item, index }) => {
-          const key = resultKey(item, index);
-          return (
-            <Pressable
-              style={styles.resultRow}
-              onPress={() => handleSelect(item, key)}
-              disabled={selectingKey != null}
-            >
-              <View style={styles.resultInfo}>
-                <Text style={styles.resultName}>{item.food.name}</Text>
-                {item.food.brand ? (
-                  <Text style={styles.resultBrand}>{item.food.brand}</Text>
-                ) : null}
-              </View>
-              {selectingKey === key ? (
-                <ActivityIndicator />
-              ) : (
-                <Text style={styles.resultCalories}>
-                  {Math.round(item.food.caloriesKcal)} kcal/100g
-                </Text>
-              )}
-            </Pressable>
-          );
-        }}
-      />
+      {sections.length > 0 ? (
+        <Card style={{ flexShrink: 1 }}>
+          <SectionList
+            sections={sections}
+            keyExtractor={resultKey}
+            keyboardShouldPersistTaps="handled"
+            stickySectionHeadersEnabled={false}
+            renderSectionHeader={({ section }) => (
+              <AppText variant="small" style={styles.sectionTitle}>
+                {section.title}
+              </AppText>
+            )}
+            renderItem={({ item, index }) => {
+              const key = resultKey(item, index);
+              return (
+                <Pressable
+                  style={styles.resultRow}
+                  onPress={() => handleSelect(item, key)}
+                  disabled={selectingKey != null}
+                >
+                  <View style={styles.resultInfo}>
+                    <AppText variant="label">{item.food.name}</AppText>
+                    {item.food.brand ? <AppText variant="small">{item.food.brand}</AppText> : null}
+                  </View>
+                  {selectingKey === key ? (
+                    <ActivityIndicator />
+                  ) : (
+                    <AppText variant="small">
+                      {Math.round(item.food.caloriesKcal)} kcal/100g
+                    </AppText>
+                  )}
+                </Pressable>
+              );
+            }}
+          />
+        </Card>
+      ) : null}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background, padding: 16 },
+  container: { flex: 1, backgroundColor: colors.surface, padding: 16 },
   input: {
+    backgroundColor: colors.background,
     borderWidth: 1,
     borderColor: colors.borderStrong,
     borderRadius: 8,
@@ -230,30 +240,9 @@ const styles = StyleSheet.create({
     fontSize: 16,
     marginBottom: 12,
   },
-  scanButton: {
-    backgroundColor: colors.text,
-    borderRadius: 8,
-    padding: 12,
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  scanButtonText: { color: colors.onPrimary, fontSize: 15, fontWeight: '600' },
   shortcutRow: { flexDirection: 'row', gap: 8, marginBottom: 12 },
-  shortcut: {
-    flex: 1,
-    borderWidth: 1,
-    borderColor: colors.primary,
-    borderRadius: 8,
-    padding: 12,
-    alignItems: 'center',
-  },
-  shortcutText: { color: colors.primary, fontSize: 15, fontWeight: '600' },
   loader: { marginBottom: 12 },
-  error: { color: colors.danger, marginBottom: 12 },
   sectionTitle: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: colors.muted,
     textTransform: 'uppercase',
     marginTop: 12,
     marginBottom: 4,
@@ -267,6 +256,4 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.border,
   },
   resultInfo: { flex: 1, marginRight: 8 },
-  resultName: { fontSize: 15, fontWeight: '500' },
-  resultBrand: { fontSize: 13, color: colors.muted },
-  resultCalories: { fontSize: 13, color: colors.textSecondary },});
+});

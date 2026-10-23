@@ -1,22 +1,16 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import {
-  ActivityIndicator,
-  Alert,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
+import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { useSession } from '../../../context/AuthProvider';
 import { useDiaryDate } from '../../../context/DiaryDateProvider';
 import { defaultMealForNow, logQuickEntry, updateQuickEntry } from '../../../lib/foods';
+import { AppText } from '../../../components/AppText';
+import { Button } from '../../../components/Button';
+import { Card } from '../../../components/Card';
 import type { MealType } from '../../../types/domain';
-import { colors } from '../../../theme';
+import { colors, radius, spacing } from '../../../theme';
 
 const MEAL_TYPES: MealType[] = ['breakfast', 'lunch', 'dinner', 'snack'];
 const MEAL_LABELS: Record<MealType, string> = {
@@ -81,82 +75,89 @@ export default function QuickAdd() {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <Text style={styles.label}>Name (optional)</Text>
-      <TextInput style={styles.input} placeholder="Quick add" value={name} onChangeText={setName} />
+      <Card>
+        <AppText variant="labelSmall">Name (optional)</AppText>
+        <TextInput
+          style={styles.input}
+          placeholder="Quick add"
+          value={name}
+          onChangeText={setName}
+        />
 
-      <Text style={styles.label}>Calories (kcal)</Text>
-      <TextInput
-        style={styles.input}
-        keyboardType="decimal-pad"
-        value={kcal}
-        onChangeText={setKcal}
-        autoFocus={!entryId}
-      />
+        <AppText variant="labelSmall" style={styles.label}>
+          Calories (kcal)
+        </AppText>
+        <TextInput
+          style={styles.input}
+          keyboardType="decimal-pad"
+          value={kcal}
+          onChangeText={setKcal}
+          autoFocus={!entryId}
+        />
 
-      <View style={styles.macroRow}>
-        <View style={styles.macro}>
-          <Text style={styles.label}>Protein (g)</Text>
-          <TextInput
-            style={styles.input}
-            keyboardType="decimal-pad"
-            value={protein}
-            onChangeText={setProtein}
-          />
+        <View style={styles.macroRow}>
+          <View style={styles.macro}>
+            <AppText variant="labelSmall">Protein (g)</AppText>
+            <TextInput
+              style={styles.input}
+              keyboardType="decimal-pad"
+              value={protein}
+              onChangeText={setProtein}
+            />
+          </View>
+          <View style={styles.macro}>
+            <AppText variant="labelSmall">Carbs (g)</AppText>
+            <TextInput
+              style={styles.input}
+              keyboardType="decimal-pad"
+              value={carbs}
+              onChangeText={setCarbs}
+            />
+          </View>
+          <View style={styles.macro}>
+            <AppText variant="labelSmall">Fat (g)</AppText>
+            <TextInput
+              style={styles.input}
+              keyboardType="decimal-pad"
+              value={fat}
+              onChangeText={setFat}
+            />
+          </View>
         </View>
-        <View style={styles.macro}>
-          <Text style={styles.label}>Carbs (g)</Text>
-          <TextInput
-            style={styles.input}
-            keyboardType="decimal-pad"
-            value={carbs}
-            onChangeText={setCarbs}
-          />
-        </View>
-        <View style={styles.macro}>
-          <Text style={styles.label}>Fat (g)</Text>
-          <TextInput
-            style={styles.input}
-            keyboardType="decimal-pad"
-            value={fat}
-            onChangeText={setFat}
-          />
-        </View>
-      </View>
 
-      <Text style={styles.label}>Meal</Text>
-      <View style={styles.mealRow}>
-        {MEAL_TYPES.map((type) => (
-          <Pressable
-            key={type}
-            style={[styles.mealChip, mealType === type && styles.mealChipActive]}
-            onPress={() => setMealType(type)}
-          >
-            <Text style={mealType === type ? styles.mealChipTextActive : styles.mealChipText}>
-              {MEAL_LABELS[type]}
-            </Text>
-          </Pressable>
-        ))}
-      </View>
+        <AppText variant="labelSmall" style={styles.label}>
+          Meal
+        </AppText>
+        <View style={styles.mealRow}>
+          {MEAL_TYPES.map((type) => (
+            <Pressable
+              key={type}
+              style={[styles.mealChip, mealType === type && styles.mealChipActive]}
+              onPress={() => setMealType(type)}
+            >
+              <Text style={mealType === type ? styles.mealChipTextActive : styles.mealChipText}>
+                {MEAL_LABELS[type]}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
+      </Card>
 
-      <Pressable
-        style={[styles.saveButton, !isValid && styles.saveButtonDisabled]}
+      <Button
+        title={entryId ? 'Save changes' : 'Add to Diary'}
         onPress={handleSave}
-        disabled={!isValid || isSaving}
-      >
-        {isSaving ? (
-          <ActivityIndicator color={colors.onPrimary} />
-        ) : (
-          <Text style={styles.saveButtonText}>{entryId ? 'Save changes' : 'Add to Diary'}</Text>
-        )}
-      </Pressable>
+        disabled={!isValid}
+        loading={isSaving}
+        style={{ marginTop: spacing.xl }}
+      />
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
+  container: { flex: 1, backgroundColor: colors.surface },
   content: { padding: 16 },
-  label: { fontSize: 14, fontWeight: '600', marginTop: 16, marginBottom: 8 },
+  label: { marginTop: 8 },
   input: {
     borderWidth: 1,
     borderColor: colors.borderStrong,
@@ -164,26 +165,17 @@ const styles = StyleSheet.create({
     padding: 14,
     fontSize: 16,
   },
-  macroRow: { flexDirection: 'row', gap: 8 },
-  macro: { flex: 1 },
+  macroRow: { flexDirection: 'row', gap: 8, marginTop: 8 },
+  macro: { flex: 1, gap: 8 },
   mealRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   mealChip: {
     borderWidth: 1,
     borderColor: colors.borderStrong,
-    borderRadius: 20,
+    borderRadius: radius.full,
     paddingVertical: 8,
     paddingHorizontal: 16,
   },
   mealChipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
   mealChipText: { color: colors.textSecondary },
   mealChipTextActive: { color: colors.onPrimary },
-  saveButton: {
-    backgroundColor: colors.primary,
-    borderRadius: 8,
-    padding: 14,
-    alignItems: 'center',
-    marginTop: 24,
-  },
-  saveButtonDisabled: { opacity: 0.5 },
-  saveButtonText: { color: colors.onPrimary, fontSize: 16, fontWeight: '600' },
 });

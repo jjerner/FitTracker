@@ -1,10 +1,12 @@
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, View } from 'react-native';
 
 import { getFoodByBarcode, upsertOffFood } from '../../../lib/foods';
 import { getByBarcode } from '../../../lib/openFoodFacts';
+import { AppText } from '../../../components/AppText';
+import { Button } from '../../../components/Button';
 import { colors } from '../../../theme';
 
 export default function ScanBarcode() {
@@ -53,10 +55,8 @@ export default function ScanBarcode() {
   if (!permission.granted) {
     return (
       <View style={styles.center}>
-        <Text style={styles.permissionText}>Camera access is needed to scan barcodes.</Text>
-        <Pressable style={styles.permissionButton} onPress={requestPermission}>
-          <Text style={styles.permissionButtonText}>Grant Access</Text>
-        </Pressable>
+        <AppText style={{ textAlign: 'center' }}>Camera access is needed to scan barcodes.</AppText>
+        <Button title="Grant Access" onPress={requestPermission} style={{ alignSelf: 'stretch' }} />
       </View>
     );
   }
@@ -74,9 +74,13 @@ export default function ScanBarcode() {
         {isProcessing ? (
           <ActivityIndicator color={colors.onPrimary} size="large" />
         ) : (
-          <Text style={styles.hint}>Point the camera at a barcode</Text>
+          <AppText style={{ color: colors.onPrimary }}>Point the camera at a barcode</AppText>
         )}
-        {error ? <Text style={styles.error}>{error}</Text> : null}
+        {error ? (
+          <AppText variant="small" style={styles.error}>
+            {error}
+          </AppText>
+        ) : null}
       </View>
     </View>
   );
@@ -86,14 +90,6 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.black },
   camera: { flex: 1 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24, gap: 16 },
-  permissionText: { textAlign: 'center', fontSize: 16 },
-  permissionButton: {
-    backgroundColor: colors.primary,
-    borderRadius: 8,
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-  },
-  permissionButtonText: { color: colors.onPrimary, fontSize: 16, fontWeight: '600' },
   overlay: {
     position: 'absolute',
     bottom: 40,
@@ -102,6 +98,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
   },
-  hint: { color: colors.onPrimary, fontSize: 15 },
-  error: { color: colors.dangerLight, fontSize: 14, paddingHorizontal: 24, textAlign: 'center' },
+  error: { color: colors.dangerLight, paddingHorizontal: 24, textAlign: 'center' },
 });
