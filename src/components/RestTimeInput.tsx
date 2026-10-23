@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { StyleSheet, Text, TextInput, View } from 'react-native';
+import { StyleSheet, TextInput, View } from 'react-native';
 
+import { AppText } from './AppText';
 import { restFromMinSec, splitRest } from '../lib/restTime';
-import { colors, radius, spacing } from '../theme';
+import { colors, radius, spacing, typography } from '../theme';
 
 // Rest time as two boxes: [ 3 ] min [ 00 ] sec. Reports clamped seconds on every keystroke
 // (so Save works without leaving the box) and tidies the boxes when one loses focus.
@@ -42,7 +43,9 @@ export function RestTimeInput({
         selectTextOnFocus
         accessibilityLabel={`${label} minutes`}
       />
-      <Text style={styles.unit}>min</Text>
+      <AppText variant="small" style={styles.unit}>
+        min
+      </AppText>
       <TextInput
         style={styles.input}
         value={parts.seconds}
@@ -53,7 +56,9 @@ export function RestTimeInput({
         selectTextOnFocus
         accessibilityLabel={`${label} seconds`}
       />
-      <Text style={styles.unit}>sec</Text>
+      <AppText variant="small" style={styles.unit}>
+        sec
+      </AppText>
     </View>
   );
 }
@@ -61,6 +66,7 @@ export function RestTimeInput({
 const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
   input: {
+    ...typography.body,
     width: 48,
     minHeight: 44,
     backgroundColor: colors.background,
@@ -68,10 +74,8 @@ const styles = StyleSheet.create({
     borderColor: colors.borderStrong,
     borderRadius: radius.sm,
     paddingHorizontal: spacing.xs,
-    fontSize: 16,
-    color: colors.text,
     textAlign: 'center',
     fontVariant: ['tabular-nums'],
   },
-  unit: { fontSize: 14, color: colors.textSecondary, marginRight: spacing.xs },
+  unit: { color: colors.textSecondary, marginRight: spacing.xs },
 });

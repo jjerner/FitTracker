@@ -1,11 +1,15 @@
 import { useState } from 'react';
-import { FlatList, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { FlatList, Modal, Pressable, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { AppText } from '../AppText';
+import { Button } from '../Button';
+import { Card } from '../Card';
+import { EmptyState } from '../EmptyState';
 import { ExerciseList } from './ExerciseList';
 import { useExercises } from '../../hooks/useWorkouts';
 import type { Exercise } from '../../types/domain';
-import { colors } from '../../theme';
+import { colors, spacing } from '../../theme';
 
 // Suggests exercises with the same movement pattern (or muscle group if it has none).
 export function SwapExercisePicker({
@@ -44,11 +48,11 @@ export function SwapExercisePicker({
     <Modal visible={visible} animationType="slide" onRequestClose={close}>
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
-          <Text style={styles.title} numberOfLines={1}>
+          <AppText variant="heading" style={styles.title} numberOfLines={1}>
             Swap {current.name}
-          </Text>
-          <Pressable onPress={close} hitSlop={12}>
-            <Text style={styles.link}>Cancel</Text>
+          </AppText>
+          <Pressable onPress={close} hitSlop={14} accessibilityRole="button">
+            <AppText style={styles.link}>Cancel</AppText>
           </Pressable>
         </View>
 
@@ -56,22 +60,32 @@ export function SwapExercisePicker({
           <ExerciseList onSelect={select} />
         ) : (
           <>
-            <FlatList
-              data={similar}
-              keyExtractor={(item) => item.id}
-              ListEmptyComponent={<Text style={styles.empty}>No similar exercises found</Text>}
-              renderItem={({ item }) => (
-                <Pressable style={styles.row} onPress={() => select(item)}>
-                  <Text style={styles.name}>{item.name}</Text>
-                  <Text style={styles.meta}>
-                    {[item.equipment, item.isCustom ? 'custom' : null].filter(Boolean).join(' · ')}
-                  </Text>
-                </Pressable>
-              )}
+            <Card style={styles.card}>
+              <FlatList
+                data={similar}
+                keyExtractor={(item) => item.id}
+                ListEmptyComponent={
+                  <EmptyState message="No similar exercises found. Tap Show all exercises below." />
+                }
+                renderItem={({ item, index }) => (
+                  <Pressable
+                    style={[styles.row, index < similar.length - 1 && styles.rowDivider]}
+                    onPress={() => select(item)}
+                  >
+                    <AppText variant="label">{item.name}</AppText>
+                    <AppText variant="small" style={styles.meta}>
+                      {[item.equipment, item.isCustom ? 'custom' : null].filter(Boolean).join(' · ')}
+                    </AppText>
+                  </Pressable>
+                )}
+              />
+            </Card>
+            <Button
+              variant="secondary"
+              title="Show all exercises"
+              onPress={() => setShowAll(true)}
+              style={styles.showAllButton}
             />
-            <Pressable style={styles.showAllButton} onPress={() => setShowAll(true)}>
-              <Text style={styles.showAllText}>Show all exercises</Text>
-            </Pressable>
           </>
         )}
       </SafeAreaView>
@@ -80,26 +94,20 @@ export function SwapExercisePicker({
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background, padding: 16 },
+  container: { flex: 1, backgroundColor: colors.surface, padding: spacing.lg },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
-    gap: 12,
+    marginBottom: spacing.lg,
+    gap: spacing.md,
   },
-  title: { fontSize: 20, fontWeight: '700', flex: 1 },
-  link: { fontSize: 16, color: colors.primary },
-  empty: { color: colors.subtle, fontSize: 14, paddingVertical: 12 },
-  row: { paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.border },
-  name: { fontSize: 15, fontWeight: '500' },
-  meta: { fontSize: 13, color: colors.muted, marginTop: 2 },
-  showAllButton: {
-    backgroundColor: colors.surface,
-    borderRadius: 8,
-    padding: 12,
-    alignItems: 'center',
-    marginTop: 12,
-  },
-  showAllText: { fontSize: 15, fontWeight: '600' },
+  title: { flex: 1 },
+  link: { color: colors.primary },
+  // Same card as ExerciseList: a short list hugs its rows, a long one scrolls.
+  card: { flexShrink: 1, gap: 0, paddingVertical: 0 },
+  row: { paddingVertical: spacing.md },
+  rowDivider: { borderBottomWidth: 1, borderBottomColor: colors.border },
+  meta: { marginTop: spacing.xs },
+  showAllButton: { marginTop: spacing.md },
 });

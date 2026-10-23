@@ -1,12 +1,16 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 
+import { AppText } from '../AppText';
+import { Button } from '../Button';
+import { Card } from '../Card';
+import { Chips } from '../Chips';
 import { LabeledInput } from '../LabeledInput';
 import { useSession } from '../../context/AuthProvider';
 import { MOVEMENT_PATTERNS, createCustomExercise } from '../../lib/workouts';
 import type { Exercise, ExerciseCategory } from '../../types/domain';
-import { colors } from '../../theme';
+import { colors, radius, spacing } from '../../theme';
 
 const CATEGORIES: ExerciseCategory[] = ['strength', 'cardio'];
 
@@ -52,26 +56,19 @@ export function CreateExerciseForm({
   }
 
   return (
-    <View style={styles.form}>
+    <Card style={styles.form}>
       <LabeledInput
         label="Exercise name"
         placeholder="e.g. Bulgarian split squat"
         value={name}
         onChangeText={setName}
       />
-      <View style={styles.chipRow}>
-        {CATEGORIES.map((c) => (
-          <Pressable
-            key={c}
-            style={[styles.chip, category === c && styles.chipActive]}
-            onPress={() => setCategory(c)}
-          >
-            <Text style={category === c ? styles.chipTextActive : styles.chipText}>
-              {c === 'strength' ? 'Strength' : 'Cardio'}
-            </Text>
-          </Pressable>
-        ))}
-      </View>
+      <Chips
+        labels={['Strength', 'Cardio']}
+        selected={CATEGORIES.indexOf(category)}
+        onSelect={(i) => setCategory(CATEGORIES[i])}
+        style={styles.chips}
+      />
       <LabeledInput
         label="Muscle group (optional)"
         placeholder="e.g. Quads"
@@ -80,67 +77,52 @@ export function CreateExerciseForm({
       />
       {category === 'strength' ? (
         <>
-          <Text style={styles.label}>Movement (optional, used for swap suggestions)</Text>
-          <View style={[styles.chipRow, styles.chipWrap]}>
+          <AppText variant="labelSmall">Movement (optional, used for swap suggestions)</AppText>
+          <View style={styles.chipRow}>
             {MOVEMENT_PATTERNS.map((p) => (
               <Pressable
                 key={p.value}
                 style={[styles.smallChip, movementPattern === p.value && styles.chipActive]}
                 onPress={() => setMovementPattern((cur) => (cur === p.value ? null : p.value))}
+                hitSlop={6}
+                accessibilityRole="button"
+                accessibilityState={{ selected: movementPattern === p.value }}
               >
-                <Text style={movementPattern === p.value ? styles.chipTextActive : styles.chipText}>
+                <AppText
+                  variant="small"
+                  style={movementPattern === p.value ? styles.chipTextActive : styles.chipText}
+                >
                   {p.label}
-                </Text>
+                </AppText>
               </Pressable>
             ))}
           </View>
         </>
       ) : null}
-      {error ? <Text style={styles.error}>{error}</Text> : null}
-      <Pressable style={styles.saveButton} onPress={handleCreate} disabled={isSaving}>
-        {isSaving ? (
-          <ActivityIndicator color={colors.onPrimary} />
-        ) : (
-          <Text style={styles.saveButtonText}>Save Exercise</Text>
-        )}
-      </Pressable>
-      <Pressable style={styles.cancelButton} onPress={onCancel}>
-        <Text style={styles.cancelText}>Cancel</Text>
-      </Pressable>
-    </View>
+      {error ? (
+        <AppText style={styles.error} accessibilityRole="alert" accessibilityLiveRegion="polite">
+          {error}
+        </AppText>
+      ) : null}
+      <Button title="Save Exercise" onPress={handleCreate} loading={isSaving} />
+      <Button variant="secondary" title="Cancel" onPress={onCancel} />
+    </Card>
   );
 }
 
 const styles = StyleSheet.create({
-  form: { marginBottom: 16, gap: 10 },
-  chipRow: { flexDirection: 'row', gap: 8 },
-  chip: {
-    borderWidth: 1,
-    borderColor: colors.borderStrong,
-    borderRadius: 20,
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-  },
-  chipWrap: { flexWrap: 'wrap' },
+  form: { gap: spacing.md, marginBottom: spacing.lg },
+  chips: { marginBottom: 0 },
+  chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   smallChip: {
     borderWidth: 1,
     borderColor: colors.borderStrong,
-    borderRadius: 16,
-    paddingVertical: 6,
-    paddingHorizontal: 12,
+    borderRadius: radius.full,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
   },
-  label: { fontSize: 13, color: colors.textSecondary },
   chipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
   chipText: { color: colors.textSecondary },
   chipTextActive: { color: colors.onPrimary },
   error: { color: colors.danger },
-  saveButton: {
-    backgroundColor: colors.primary,
-    borderRadius: 8,
-    padding: 14,
-    alignItems: 'center',
-  },
-  saveButtonText: { color: colors.onPrimary, fontSize: 16, fontWeight: '600' },
-  cancelButton: { alignItems: 'center', padding: 8 },
-  cancelText: { color: colors.text },
 });

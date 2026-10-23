@@ -12,7 +12,13 @@ import {
   View,
 } from 'react-native';
 
+import { AppText } from '../../../components/AppText';
+import { Button } from '../../../components/Button';
+import { Card } from '../../../components/Card';
+import { EmptyState } from '../../../components/EmptyState';
+import { LabeledInput } from '../../../components/LabeledInput';
 import { RestTimeInput } from '../../../components/RestTimeInput';
+import { TextLink } from '../../../components/TextLink';
 import { ExercisePicker } from '../../../components/workouts/ExercisePicker';
 import { useSession } from '../../../context/AuthProvider';
 import { useDefaultRest } from '../../../hooks/useDefaultRest';
@@ -21,7 +27,7 @@ import { toNumberOrNull } from '../../../lib/numbers';
 import { formatRest } from '../../../lib/restTime';
 import { deleteTemplate, saveTemplate, setTemplateArchived } from '../../../lib/workouts';
 import type { WorkoutTemplate, WorkoutTemplateExercise } from '../../../types/domain';
-import { colors } from '../../../theme';
+import { colors, radius, spacing, typography } from '../../../theme';
 
 export default function TemplateScreen() {
   const { templateId } = useLocalSearchParams<{ templateId: string }>();
@@ -192,24 +198,29 @@ function TemplateForm({ template }: { template: WorkoutTemplate | null }) {
       contentContainerStyle={styles.content}
       keyboardShouldPersistTaps="handled"
     >
-      <Text style={styles.label}>Name</Text>
-      <TextInput
-        style={styles.input}
-        value={name}
-        onChangeText={setName}
-        placeholder="e.g. Push Day"
-      />
+      <LabeledInput label="Name" value={name} onChangeText={setName} placeholder="e.g. Push Day" />
 
-      <Text style={styles.label}>Exercises</Text>
-      {exercises.length === 0 ? <Text style={styles.emptyText}>No exercises yet</Text> : null}
+      <AppText variant="labelSmall" accessibilityRole="header" style={styles.label}>
+        Exercises
+      </AppText>
+      {exercises.length === 0 ? (
+        <Card style={styles.emptyCard}>
+          <EmptyState message="No exercises yet. Tap + Add Exercise to add one." />
+        </Card>
+      ) : null}
       {exercises.map((e, index) => (
-        <View key={e.key} style={styles.exerciseCard}>
+        <Card key={e.key} style={styles.exerciseCard}>
           <View style={styles.exerciseHeader}>
-            <Text style={styles.exerciseName}>{e.exercise.name}</Text>
+            <AppText variant="label" style={styles.exerciseName}>
+              {e.exercise.name}
+            </AppText>
             <Pressable
               style={styles.moveButton}
               onPress={() => moveExercise(index, -1)}
               disabled={index === 0}
+              accessibilityRole="button"
+              accessibilityLabel={`Move ${e.exercise.name} up`}
+              accessibilityState={{ disabled: index === 0 }}
             >
               <Text style={index === 0 ? styles.moveTextDisabled : styles.moveText}>↑</Text>
             </Pressable>
@@ -217,6 +228,9 @@ function TemplateForm({ template }: { template: WorkoutTemplate | null }) {
               style={styles.moveButton}
               onPress={() => moveExercise(index, 1)}
               disabled={index === exercises.length - 1}
+              accessibilityRole="button"
+              accessibilityLabel={`Move ${e.exercise.name} down`}
+              accessibilityState={{ disabled: index === exercises.length - 1 }}
             >
               <Text
                 style={index === exercises.length - 1 ? styles.moveTextDisabled : styles.moveText}
@@ -225,10 +239,14 @@ function TemplateForm({ template }: { template: WorkoutTemplate | null }) {
               </Text>
             </Pressable>
             <Pressable
+              style={styles.removeButton}
               onPress={() => setExercises((prev) => prev.filter((_, i) => i !== index))}
-              hitSlop={8}
+              accessibilityRole="button"
+              accessibilityLabel={`Remove ${e.exercise.name}`}
             >
-              <Text style={styles.removeText}>Remove</Text>
+              <AppText variant="small" style={styles.removeText}>
+                Remove
+              </AppText>
             </Pressable>
           </View>
           {e.exercise.category === 'strength' ? (
@@ -237,10 +255,12 @@ function TemplateForm({ template }: { template: WorkoutTemplate | null }) {
                 <Pressable
                   style={styles.linkButton}
                   onPress={() => updateExercise(index, { showTargets: true })}
-                  hitSlop={12}
+                  hitSlop={14}
                   accessibilityRole="button"
                 >
-                  <Text style={styles.addTargetsText}>+ Targets</Text>
+                  <AppText variant="small" style={styles.addTargetsText}>
+                    + Targets
+                  </AppText>
                 </Pressable>
               ) : null}
               {e.showTargets ? (
@@ -252,20 +272,24 @@ function TemplateForm({ template }: { template: WorkoutTemplate | null }) {
               ) : null}
               {e.restSeconds == null ? (
                 <View style={styles.defaultRestRow}>
-                  <Text style={styles.defaultRestText}>
+                  <AppText variant="small" style={styles.defaultRestText}>
                     Uses your default rest ({formatRest(defaultRest.seconds)})
-                  </Text>
+                  </AppText>
                   <Pressable
                     onPress={() => updateExercise(index, { restSeconds: defaultRest.seconds })}
-                    hitSlop={12}
+                    hitSlop={14}
                     accessibilityRole="button"
                   >
-                    <Text style={styles.addTargetsText}>+ Rest time</Text>
+                    <AppText variant="small" style={styles.addTargetsText}>
+                      + Rest time
+                    </AppText>
                   </Pressable>
                 </View>
               ) : (
                 <View style={styles.restRow}>
-                  <Text style={styles.restLabel}>Rest</Text>
+                  <AppText variant="caption" style={styles.restLabel}>
+                    Rest
+                  </AppText>
                   <RestTimeInput
                     initialSeconds={e.restSeconds}
                     min={5}
@@ -274,54 +298,62 @@ function TemplateForm({ template }: { template: WorkoutTemplate | null }) {
                   />
                   <Pressable
                     onPress={() => updateExercise(index, { restSeconds: null })}
-                    hitSlop={12}
+                    hitSlop={14}
                     accessibilityRole="button"
                     accessibilityLabel="Use default rest"
                   >
-                    <Text style={styles.useDefaultText}>✕ Use default</Text>
+                    <AppText variant="small" style={styles.useDefaultText}>
+                      ✕ Use default
+                    </AppText>
                   </Pressable>
                 </View>
               )}
             </>
           ) : null}
-        </View>
+        </Card>
       ))}
 
-      <Pressable style={styles.secondaryButton} onPress={() => setPickerOpen(true)}>
-        <Text style={styles.secondaryButtonText}>+ Add Exercise</Text>
-      </Pressable>
+      <Button
+        variant="secondary"
+        title="+ Add Exercise"
+        onPress={() => setPickerOpen(true)}
+        style={styles.secondaryButton}
+      />
 
-      {error ? <Text style={styles.error}>{error}</Text> : null}
+      {error ? (
+        <AppText style={styles.error} accessibilityRole="alert" accessibilityLiveRegion="polite">
+          {error}
+        </AppText>
+      ) : null}
 
-      <Pressable style={styles.saveButton} onPress={handleSave} disabled={isSaving}>
-        {isSaving ? (
-          <ActivityIndicator color={colors.onPrimary} />
-        ) : (
-          <Text style={styles.saveButtonText}>Save Routine</Text>
-        )}
-      </Pressable>
+      <Button title="Save Routine" onPress={handleSave} loading={isSaving} style={styles.saveButton} />
 
       {template ? (
         <>
-          <Pressable style={styles.secondaryButton} onPress={handleDuplicate} disabled={isSaving}>
-            <Text style={styles.secondaryButtonText}>Duplicate</Text>
-          </Pressable>
-          <Pressable
+          <Button
+            variant="secondary"
+            title="Duplicate"
+            onPress={handleDuplicate}
+            disabled={isSaving}
             style={styles.secondaryButton}
+          />
+          <Button
+            variant="secondary"
+            title={template.isArchived ? 'Unarchive' : 'Archive'}
             onPress={handleToggleArchived}
             disabled={isSaving}
-          >
-            <Text style={styles.secondaryButtonText}>
-              {template.isArchived ? 'Unarchive' : 'Archive'}
-            </Text>
-          </Pressable>
+            style={styles.secondaryButton}
+          />
         </>
       ) : null}
 
       {template ? (
-        <Pressable style={styles.deleteButton} onPress={handleDelete}>
-          <Text style={styles.deleteButtonText}>Delete Routine</Text>
-        </Pressable>
+        <TextLink
+          tone="danger"
+          title="Delete Routine"
+          onPress={handleDelete}
+          style={styles.deleteLink}
+        />
       ) : null}
 
       <ExercisePicker
@@ -357,7 +389,9 @@ function TargetInput({
 }) {
   return (
     <View style={styles.targetField}>
-      <Text style={styles.targetLabel}>{label}</Text>
+      <AppText variant="caption" style={styles.targetLabel}>
+        {label}
+      </AppText>
       <TextInput
         style={styles.targetInput}
         value={value}
@@ -369,65 +403,52 @@ function TargetInput({
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  content: { padding: 16, paddingBottom: 40 },
-  label: { fontSize: 14, fontWeight: '600', marginTop: 16, marginBottom: 8 },
-  input: {
-    borderWidth: 1,
-    borderColor: colors.borderStrong,
-    borderRadius: 8,
-    padding: 14,
-    fontSize: 16,
-  },
-  emptyText: { color: colors.subtle, fontSize: 14 },
-  exerciseCard: {
-    backgroundColor: colors.surface,
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 8,
-  },
+  container: { flex: 1, backgroundColor: colors.surface },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.surface },
+  content: { padding: spacing.lg, paddingBottom: spacing.xxl },
+  label: { marginTop: spacing.lg, marginBottom: spacing.sm },
+  emptyCard: { paddingVertical: 0 },
+  exerciseCard: { padding: spacing.md, gap: 0, marginBottom: spacing.sm },
   exerciseHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  exerciseName: { fontSize: 15, fontWeight: '600', flex: 1 },
-  removeText: { color: colors.danger, marginLeft: 8 },
-  moveButton: { paddingHorizontal: 8, paddingVertical: 2 },
+  exerciseName: { flex: 1 },
+  removeButton: { minHeight: 48, justifyContent: 'center', paddingLeft: spacing.sm },
+  removeText: { color: colors.danger },
+  moveButton: { minWidth: 48, minHeight: 48, alignItems: 'center', justifyContent: 'center' },
+  // icon glyph, not text
   moveText: { fontSize: 18, color: colors.primary },
+  // icon glyph, not text
   moveTextDisabled: { fontSize: 18, color: colors.borderStrong },
   linkButton: { alignSelf: 'flex-start' },
-  defaultRestRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', columnGap: 20 },
-  addTargetsText: { color: colors.primary, fontSize: 14, marginTop: 6 },
-  defaultRestText: { color: colors.muted, fontSize: 13, marginTop: 6 },
-  restLabel: { fontSize: 12, color: colors.textSecondary },
-  useDefaultText: { color: colors.primary, fontSize: 14 },
-  restRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 8, marginTop: 8 },
-  targetsRow: { flexDirection: 'row', gap: 8, marginTop: 8 },
+  defaultRestRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    columnGap: spacing.xl,
+  },
+  addTargetsText: { color: colors.primary, marginTop: spacing.sm },
+  defaultRestText: { marginTop: spacing.sm },
+  restLabel: { color: colors.textSecondary },
+  useDefaultText: { color: colors.primary },
+  restRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+    marginTop: spacing.sm,
+  },
+  targetsRow: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.sm },
   targetField: { flex: 1 },
-  targetLabel: { fontSize: 12, color: colors.textSecondary, marginBottom: 4 },
+  targetLabel: { color: colors.textSecondary, marginBottom: spacing.xs },
   targetInput: {
+    ...typography.body,
     backgroundColor: colors.background,
     borderWidth: 1,
     borderColor: colors.borderStrong,
-    borderRadius: 6,
-    padding: 8,
-    fontSize: 15,
+    borderRadius: radius.sm,
+    padding: spacing.sm,
   },
-  secondaryButton: {
-    backgroundColor: colors.surface,
-    borderRadius: 8,
-    padding: 12,
-    alignItems: 'center',
-    marginTop: 8,
-  },
-  secondaryButtonText: { fontSize: 15, fontWeight: '600' },
-  error: { color: colors.danger, marginTop: 12 },
-  saveButton: {
-    backgroundColor: colors.primary,
-    borderRadius: 8,
-    padding: 14,
-    alignItems: 'center',
-    marginTop: 24,
-  },
-  saveButtonText: { color: colors.onPrimary, fontSize: 16, fontWeight: '600' },
-  deleteButton: { padding: 14, alignItems: 'center', marginTop: 8 },
-  deleteButtonText: { color: colors.danger, fontSize: 15 },
+  secondaryButton: { marginTop: spacing.sm },
+  error: { color: colors.dangerDark, marginTop: spacing.md },
+  saveButton: { marginTop: spacing.xl },
+  deleteLink: { marginTop: spacing.md },
 });

@@ -12,7 +12,12 @@ import {
   View,
 } from 'react-native';
 
+import { AppText } from '../../../../components/AppText';
+import { Button } from '../../../../components/Button';
+import { Card } from '../../../../components/Card';
+import { Chips } from '../../../../components/Chips';
 import { LabeledInput } from '../../../../components/LabeledInput';
+import { TextLink } from '../../../../components/TextLink';
 import { useSession } from '../../../../context/AuthProvider';
 import { useWorkoutHistory, useWorkoutLog } from '../../../../hooks/useWorkouts';
 import { toNumberOrNull } from '../../../../lib/numbers';
@@ -24,7 +29,7 @@ import {
   getExerciseHistory,
   updateSet,
 } from '../../../../lib/workouts';
-import { colors } from '../../../../theme';
+import { colors, radius, spacing } from '../../../../theme';
 import type { SetType, WorkoutSet } from '../../../../types/domain';
 
 function logVolume(exercises: { sets: WorkoutSet[] }[]) {
@@ -201,54 +206,63 @@ export default function WorkoutSummary() {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <Text style={styles.title}>{log.name}</Text>
-      <Text style={styles.subtitle}>{new Date(log.startedAt).toLocaleString()}</Text>
+      <AppText variant="heading">{log.name}</AppText>
+      <AppText variant="small" style={styles.subtitle}>
+        {new Date(log.startedAt).toLocaleString()}
+      </AppText>
 
-      <View style={styles.statsCard}>
+      <Card style={styles.statsCard}>
         <Stat label="Minutes" value={durationMin != null ? String(durationMin) : '–'} />
         <Stat label="Sets" value={String(totalSets)} />
         <Stat label="Volume (kg)" value={String(Math.round(volumeKg))} />
-      </View>
+      </Card>
 
       {volumeDiff != null ? (
-        <Text style={styles.compareText}>
+        <AppText variant="small" style={styles.compareText}>
           Volume {volumeDiff >= 0 ? '+' : '−'}
           {Math.abs(volumeDiff)} kg vs last time
-        </Text>
+        </AppText>
       ) : null}
 
       {highlights.length > 0 ? (
         <View style={styles.highlights}>
-          <Text style={styles.highlightsTitle}>🏆 New records</Text>
+          <AppText variant="label" style={styles.highlightsTitle}>
+            🏆 New records
+          </AppText>
           {highlights.map((h) => (
-            <Text key={h} style={styles.highlightText}>
+            <AppText key={h} variant="small" style={styles.highlightText}>
               {h}
-            </Text>
+            </AppText>
           ))}
         </View>
       ) : null}
 
       {log.exercises.map((e) => (
-        <View key={e.id} style={styles.exercise}>
-          <Text style={styles.exerciseName}>{e.exercise.name}</Text>
+        <Card key={e.id} style={styles.exercise}>
+          <AppText variant="label" style={styles.exerciseName}>
+            {e.exercise.name}
+          </AppText>
           {e.sets.length === 0 ? (
-            <Text style={styles.emptyText}>No sets</Text>
+            <AppText variant="small">No sets</AppText>
           ) : (
             setLabels(e.sets.map((s) => s.setType)).map((label, i) => {
               const set = e.sets[i];
               return (
                 <Pressable
                   key={set.id}
+                  style={styles.setRow}
                   onPress={() => openEdit(set, e.exercise.category === 'cardio', label)}
+                  accessibilityRole="button"
+                  accessibilityHint="Edit set"
                 >
-                  <Text style={styles.setText}>
+                  <AppText style={styles.setText}>
                     {label === 'W' ? 'Warm-up' : `Set ${label}`}: {formatSet(set)} <Text style={styles.editHint}>✎</Text>
-                  </Text>
+                  </AppText>
                 </Pressable>
               );
             })
           )}
-        </View>
+        </Card>
       ))}
 
       <Modal
@@ -258,64 +272,49 @@ export default function WorkoutSummary() {
         onRequestClose={() => setEditing(null)}
       >
         <Pressable style={styles.modalBackdrop} onPress={() => setEditing(null)}>
-          <Pressable style={styles.modalCard}>
-            <Text style={styles.modalTitle}>
-              {editing?.label === 'W' ? 'Edit warm-up set' : `Edit set ${editing?.label}`}
-            </Text>
-            {editing && !editing.cardio ? (
-              <View style={styles.chipRow}>
-                {(['normal', 'warmup'] as const).map((t) => (
-                  <Pressable
-                    key={t}
-                    style={[styles.chip, type === t && styles.chipActive]}
-                    onPress={() => setType(t)}
-                    accessibilityRole="button"
-                    accessibilityState={{ selected: type === t }}
-                  >
-                    <Text style={type === t ? styles.chipTextActive : styles.chipText}>
-                      {t === 'normal' ? 'Normal' : 'Warm-up'}
-                    </Text>
-                  </Pressable>
-                ))}
-              </View>
-            ) : null}
-            <LabeledInput
-              label={editing?.cardio ? 'Minutes' : 'Weight (kg)'}
-              value={a}
-              onChangeText={setA}
-              keyboardType="numeric"
-            />
-            <LabeledInput
-              label={editing?.cardio ? 'Distance (km)' : 'Reps'}
-              value={b}
-              onChangeText={setB}
-              keyboardType="numeric"
-            />
-            <Pressable
-              style={[styles.doneButton, isEmptySet && styles.buttonDisabled]}
-              onPress={handleSaveSet}
-              disabled={saving || isEmptySet}
-            >
-              {saving ? (
-                <ActivityIndicator color={colors.onPrimary} />
-              ) : (
-                <Text style={styles.doneButtonText}>Save</Text>
-              )}
-            </Pressable>
-            <Pressable style={styles.deleteButton} onPress={handleDeleteSet} disabled={saving}>
-              <Text style={styles.deleteButtonText}>Delete set</Text>
-            </Pressable>
+          <Pressable>
+            <Card>
+              <AppText variant="label">
+                {editing?.label === 'W' ? 'Edit warm-up set' : `Edit set ${editing?.label}`}
+              </AppText>
+              {editing && !editing.cardio ? (
+                <Chips
+                  labels={['Normal', 'Warm-up']}
+                  selected={type === 'normal' ? 0 : 1}
+                  onSelect={(i) => setType(i === 0 ? 'normal' : 'warmup')}
+                />
+              ) : null}
+              <LabeledInput
+                label={editing?.cardio ? 'Minutes' : 'Weight (kg)'}
+                value={a}
+                onChangeText={setA}
+                keyboardType="numeric"
+              />
+              <LabeledInput
+                label={editing?.cardio ? 'Distance (km)' : 'Reps'}
+                value={b}
+                onChangeText={setB}
+                keyboardType="numeric"
+              />
+              <Button title="Save" onPress={handleSaveSet} loading={saving} disabled={isEmptySet} />
+              <TextLink tone="danger" title="Delete set" onPress={handleDeleteSet} disabled={saving} />
+            </Card>
           </Pressable>
         </Pressable>
       </Modal>
 
-      <Pressable style={styles.doneButton} onPress={() => router.dismissTo('/(tabs)/workouts')}>
-        <Text style={styles.doneButtonText}>Done</Text>
-      </Pressable>
+      <Button
+        title="Done"
+        onPress={() => router.dismissTo('/(tabs)/workouts')}
+        style={styles.doneButton}
+      />
 
-      <Pressable style={styles.deleteButton} onPress={handleDelete}>
-        <Text style={styles.deleteButtonText}>Delete Workout</Text>
-      </Pressable>
+      <TextLink
+        tone="danger"
+        title="Delete Workout"
+        onPress={handleDelete}
+        style={styles.deleteLink}
+      />
     </ScrollView>
   );
 }
@@ -323,66 +322,42 @@ export default function WorkoutSummary() {
 function Stat({ label, value }: { label: string; value: string }) {
   return (
     <View style={styles.stat}>
-      <Text style={styles.statValue}>{value}</Text>
-      <Text style={styles.statLabel}>{label}</Text>
+      <AppText variant="title">{value}</AppText>
+      <AppText variant="caption" style={styles.statLabel}>
+        {label}
+      </AppText>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  content: { padding: 16, paddingBottom: 40 },
-  title: { fontSize: 20, fontWeight: '700' },
-  subtitle: { fontSize: 14, color: colors.muted, marginTop: 2 },
-  statsCard: {
-    flexDirection: 'row',
-    backgroundColor: colors.surface,
-    borderRadius: 12,
-    padding: 16,
-    marginVertical: 20,
+  container: { flex: 1, backgroundColor: colors.surface },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.surface },
+  content: { padding: spacing.lg, paddingBottom: spacing.xxl },
+  subtitle: { color: colors.textSecondary, marginTop: spacing.xs },
+  statsCard: { flexDirection: 'row', gap: 0, marginVertical: spacing.xl },
+  compareText: { color: colors.textSecondary, textAlign: 'center', marginBottom: spacing.lg },
+  highlights: {
+    backgroundColor: colors.warningBg,
+    borderRadius: radius.lg,
+    padding: spacing.lg,
+    marginBottom: spacing.xl,
   },
-  compareText: { fontSize: 14, color: colors.textSecondary, textAlign: 'center', marginBottom: 16 },
-  highlights: { backgroundColor: colors.warningBg, borderRadius: 12, padding: 16, marginBottom: 20 },
-  highlightsTitle: { fontSize: 16, fontWeight: '700', marginBottom: 6 },
-  highlightText: { fontSize: 14, color: colors.warningText, paddingVertical: 2 },
+  highlightsTitle: { marginBottom: spacing.sm },
+  highlightText: { color: colors.warningText, paddingVertical: spacing.xs },
   stat: { flex: 1, alignItems: 'center' },
-  statValue: { fontSize: 20, fontWeight: '700' },
-  statLabel: { fontSize: 12, color: colors.textSecondary, marginTop: 2 },
-  exercise: { marginBottom: 16 },
-  exerciseName: { fontSize: 16, fontWeight: '600', marginBottom: 4 },
-  emptyText: { color: colors.subtle, fontSize: 14 },
-  setText: { fontSize: 15, color: colors.textSecondary, paddingVertical: 4 },
+  statLabel: { color: colors.textSecondary, marginTop: spacing.xs },
+  exercise: { gap: 0, marginBottom: spacing.md },
+  exerciseName: { marginBottom: spacing.xs },
+  setRow: { minHeight: 48, justifyContent: 'center' },
+  setText: { color: colors.textSecondary },
   editHint: { color: colors.subtle },
-  buttonDisabled: { opacity: 0.5 },
   modalBackdrop: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.4)',
     justifyContent: 'center',
-    padding: 16,
+    padding: spacing.lg,
   },
-  modalCard: { backgroundColor: colors.background, borderRadius: 12, padding: 16 },
-  modalTitle: { fontSize: 17, fontWeight: '600', marginBottom: 12 },
-  // Same chips as CreateExerciseForm.
-  chipRow: { flexDirection: 'row', gap: 8, marginBottom: 12 },
-  chip: {
-    borderWidth: 1,
-    borderColor: colors.borderStrong,
-    borderRadius: 20,
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-  },
-  chipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
-  chipText: { color: colors.textSecondary },
-  chipTextActive: { color: colors.onPrimary },
-  doneButton: {
-    backgroundColor: colors.primary,
-    borderRadius: 8,
-    padding: 14,
-    alignItems: 'center',
-    marginTop: 8,
-  },
-  doneButtonText: { color: colors.onPrimary, fontSize: 16, fontWeight: '600' },
-  deleteButton: { padding: 14, alignItems: 'center', marginTop: 8 },
-  deleteButtonText: { color: colors.danger, fontSize: 15 },
+  doneButton: { marginTop: spacing.sm },
+  deleteLink: { marginTop: spacing.md },
 });
