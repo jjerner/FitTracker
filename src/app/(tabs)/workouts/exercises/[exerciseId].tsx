@@ -5,17 +5,20 @@ import {
   FlatList,
   Pressable,
   StyleSheet,
-  Text,
   View,
   useWindowDimensions,
 } from 'react-native';
 import { LineChart } from 'react-native-gifted-charts';
 
+import { AppText } from '../../../../components/AppText';
+import { Card } from '../../../../components/Card';
+import { Chips } from '../../../../components/Chips';
+import { EmptyState } from '../../../../components/EmptyState';
 import { useExerciseHistory, useExercises } from '../../../../hooks/useWorkouts';
 import { bestOf, setLabels, workingSets } from '../../../../lib/records';
 import { formatSet } from '../../../../lib/workouts';
 import type { ExerciseSession } from '../../../../types/domain';
-import { colors } from '../../../../theme';
+import { colors, radius, spacing } from '../../../../theme';
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString(undefined, {
@@ -89,46 +92,45 @@ export default function ExerciseDetail() {
         keyExtractor={(item, index) => `${item.logId}-${index}`}
         contentContainerStyle={styles.content}
         ListHeaderComponent={
-          <View style={styles.card}>
+          <Card style={styles.card}>
             {!isCardio && charted.length > 0 ? (
               <View style={styles.recordsRow}>
                 <View style={styles.record}>
-                  <Text style={styles.recordValue}>🏆 {records.weightKg} kg</Text>
-                  <Text style={styles.recordLabel}>Heaviest weight</Text>
+                  <AppText variant="label">🏆 {records.weightKg} kg</AppText>
+                  <AppText variant="caption" style={styles.recordLabel}>
+                    Heaviest weight
+                  </AppText>
                 </View>
                 <View style={styles.record}>
-                  <Text style={styles.recordValue}>🏆 {Math.round(records.oneRM)} kg</Text>
-                  <Text style={styles.recordLabel}>Best est. 1RM</Text>
+                  <AppText variant="label">🏆 {Math.round(records.oneRM)} kg</AppText>
+                  <AppText variant="caption" style={styles.recordLabel}>
+                    Best est. 1RM
+                  </AppText>
                 </View>
               </View>
             ) : null}
             {!isCardio ? (
-              <View style={styles.toggleRow}>
-                {(['weight', 'oneRM'] as const).map((m) => (
-                  <Pressable
-                    key={m}
-                    style={[styles.toggle, metric === m && styles.toggleActive]}
-                    onPress={() => setMetric(m)}
-                  >
-                    <Text style={metric === m ? styles.toggleTextActive : styles.toggleText}>
-                      {m === 'weight' ? 'Weight' : 'Est. 1RM'}
-                    </Text>
-                  </Pressable>
-                ))}
-              </View>
+              <Chips
+                labels={['Weight', 'Est. 1RM']}
+                selected={metric === 'weight' ? 0 : 1}
+                onSelect={(i) => setMetric(i === 0 ? 'weight' : 'oneRM')}
+                style={styles.chips}
+              />
             ) : null}
-            <Text style={styles.cardTitle}>{chartLabel}</Text>
+            <AppText variant="label">{chartLabel}</AppText>
             {best != null && (
-              <Text style={styles.cardSubtitle}>
+              <AppText variant="small">
                 Best: {best} {unit} · {charted.length} workout{charted.length === 1 ? '' : 's'}
-              </Text>
+              </AppText>
             )}
             {values.length < 2 ? (
-              <Text style={styles.empty}>
-                {values.length === 0
-                  ? 'No completed workouts with this exercise yet.'
-                  : 'Do this exercise in one more workout to see a trend.'}
-              </Text>
+              <EmptyState
+                message={
+                  values.length === 0
+                    ? 'No completed workouts with this exercise yet.'
+                    : 'Do this exercise in one more workout to see a trend.'
+                }
+              />
             ) : (
               <LineChart
                 data={values.map((v, i) => ({
@@ -152,19 +154,20 @@ export default function ExerciseDetail() {
                 yAxisTextStyle={styles.axisLabel}
               />
             )}
-          </View>
+          </Card>
         }
         renderItem={({ item }) => (
-          <Pressable
-            style={styles.session}
-            onPress={() => router.push(`/(tabs)/workouts/log/${item.logId}`)}
-          >
-            <Text style={styles.sessionDate}>{formatDate(item.startedAt)}</Text>
-            {setLabels(item.sets.map((s) => s.setType)).map((label, i) => (
-              <Text key={item.sets[i].id} style={styles.setText}>
-                {label === 'W' ? 'Warm-up' : `Set ${label}`}: {formatSet(item.sets[i])}
-              </Text>
-            ))}
+          <Pressable onPress={() => router.push(`/(tabs)/workouts/log/${item.logId}`)}>
+            <Card style={styles.session}>
+              <AppText variant="label" style={styles.sessionDate}>
+                {formatDate(item.startedAt)}
+              </AppText>
+              {setLabels(item.sets.map((s) => s.setType)).map((label, i) => (
+                <AppText key={item.sets[i].id} variant="small" style={styles.setText}>
+                  {label === 'W' ? 'Warm-up' : `Set ${label}`}: {formatSet(item.sets[i])}
+                </AppText>
+              ))}
+            </Card>
           </Pressable>
         )}
       />
@@ -174,29 +177,15 @@ export default function ExerciseDetail() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.surface },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  content: { padding: 16, gap: 12 },
-  card: { backgroundColor: colors.background, borderRadius: 12, padding: 16, gap: 8, marginBottom: 4 },
-  cardTitle: { fontSize: 16, fontWeight: '600' },
-  cardSubtitle: { fontSize: 13, color: colors.muted },
-  recordsRow: { flexDirection: 'row', gap: 12 },
-  record: { flex: 1, backgroundColor: colors.surface, borderRadius: 8, padding: 12 },
-  recordValue: { fontSize: 16, fontWeight: '700' },
-  recordLabel: { fontSize: 12, color: colors.muted, marginTop: 2 },
-  toggleRow: { flexDirection: 'row', gap: 8 },
-  toggle: {
-    borderWidth: 1,
-    borderColor: colors.borderStrong,
-    borderRadius: 16,
-    paddingVertical: 6,
-    paddingHorizontal: 14,
-  },
-  toggleActive: { backgroundColor: colors.primary, borderColor: colors.primary },
-  toggleText: { color: colors.textSecondary, fontSize: 13 },
-  toggleTextActive: { color: colors.onPrimary, fontSize: 13 },
-  empty: { fontSize: 14, color: colors.muted, paddingVertical: 16 },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.surface },
+  content: { padding: spacing.lg, gap: spacing.md },
+  card: { marginBottom: spacing.xs },
+  recordsRow: { flexDirection: 'row', gap: spacing.md },
+  record: { flex: 1, backgroundColor: colors.surface, borderRadius: radius.md, padding: spacing.md },
+  recordLabel: { color: colors.textSecondary, marginTop: spacing.xs },
+  chips: { marginBottom: 0 },
   axisLabel: { fontSize: 10, color: colors.muted },
-  session: { backgroundColor: colors.background, borderRadius: 12, padding: 16, gap: 4 },
-  sessionDate: { fontSize: 15, fontWeight: '600', marginBottom: 4 },
-  setText: { fontSize: 14, color: colors.textSecondary },
+  session: { gap: spacing.xs },
+  sessionDate: { marginBottom: spacing.xs },
+  setText: { color: colors.textSecondary },
 });

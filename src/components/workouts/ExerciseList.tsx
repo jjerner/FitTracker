@@ -1,17 +1,11 @@
 import { useMemo, useState } from 'react';
-import {
-  ActivityIndicator,
-  FlatList,
-  Pressable,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
+import { ActivityIndicator, FlatList, Pressable, StyleSheet, TextInput, View } from 'react-native';
 
+import { AppText } from '../AppText';
+import { Card } from '../Card';
 import { useExercises } from '../../hooks/useWorkouts';
 import type { Exercise } from '../../types/domain';
-import { colors } from '../../theme';
+import { colors, radius, spacing, typography } from '../../theme';
 
 export function ExerciseList({ onSelect }: { onSelect?: (exercise: Exercise) => void }) {
   const { data: exercises, isLoading } = useExercises();
@@ -35,25 +29,27 @@ export function ExerciseList({ onSelect }: { onSelect?: (exercise: Exercise) => 
         onChangeText={setQuery}
       />
       {isLoading ? <ActivityIndicator /> : null}
-      <FlatList
-        data={filtered}
-        keyExtractor={(item) => item.id}
-        keyboardShouldPersistTaps="handled"
-        renderItem={({ item }) => (
-          <Pressable
-            style={styles.row}
-            onPress={onSelect ? () => onSelect(item) : undefined}
-            disabled={!onSelect}
-          >
-            <Text style={styles.name}>{item.name}</Text>
-            <Text style={styles.meta}>
-              {[item.muscleGroup ?? item.category, item.equipment, item.isCustom ? 'custom' : null]
-                .filter(Boolean)
-                .join(' · ')}
-            </Text>
-          </Pressable>
-        )}
-      />
+      <Card style={styles.card}>
+        <FlatList
+          data={filtered}
+          keyExtractor={(item) => item.id}
+          keyboardShouldPersistTaps="handled"
+          renderItem={({ item, index }) => (
+            <Pressable
+              style={[styles.row, index < filtered.length - 1 && styles.rowDivider]}
+              onPress={onSelect ? () => onSelect(item) : undefined}
+              disabled={!onSelect}
+            >
+              <AppText variant="label">{item.name}</AppText>
+              <AppText variant="small" style={styles.meta}>
+                {[item.muscleGroup ?? item.category, item.equipment, item.isCustom ? 'custom' : null]
+                  .filter(Boolean)
+                  .join(' · ')}
+              </AppText>
+            </Pressable>
+          )}
+        />
+      </Card>
     </View>
   );
 }
@@ -61,15 +57,17 @@ export function ExerciseList({ onSelect }: { onSelect?: (exercise: Exercise) => 
 const styles = StyleSheet.create({
   container: { flex: 1 },
   input: {
+    ...typography.body,
+    backgroundColor: colors.background,
     borderWidth: 1,
     borderColor: colors.borderStrong,
-    borderRadius: 8,
-    padding: 14,
-    fontSize: 16,
-    color: colors.text,
-    marginBottom: 12,
+    borderRadius: radius.md,
+    padding: spacing.lg,
+    marginBottom: spacing.md,
   },
-  row: { paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.border },
-  name: { fontSize: 15, fontWeight: '500' },
-  meta: { fontSize: 13, color: colors.muted, marginTop: 2 },
+  // flexShrink: a short list hugs its rows, a long one scrolls inside the card.
+  card: { flexShrink: 1, gap: 0, paddingVertical: 0 },
+  row: { paddingVertical: spacing.md },
+  rowDivider: { borderBottomWidth: 1, borderBottomColor: colors.border },
+  meta: { marginTop: spacing.xs },
 });
