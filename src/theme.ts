@@ -14,6 +14,8 @@ export const colors = {
   danger: '#dc2626',
   dangerLight: '#f87171',
   dangerDark: '#b91c1c',
+  // White text on this green reads at about 5:1 (success is too light for that).
+  successDark: '#15803d',
   warning: '#b45309',
   warningText: '#92400e',
   warningBg: '#fef3c7',
@@ -40,6 +42,7 @@ export const typography = {
   heading: { fontSize: 20, fontWeight: '600', color: colors.text },
   body: { fontSize: 16, fontWeight: '400', color: colors.text },
   label: { fontSize: 16, fontWeight: '600', color: colors.text },
+  labelSmall: { fontSize: 14, fontWeight: '600', color: colors.text },
   small: { fontSize: 14, fontWeight: '400', color: colors.muted },
   caption: { fontSize: 12, fontWeight: '400', color: colors.muted },
 } as const satisfies Record<string, TextStyle>;

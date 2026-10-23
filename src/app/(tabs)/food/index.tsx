@@ -13,8 +13,12 @@ import {
   View,
 } from 'react-native';
 
+import { AppText } from '../../../components/AppText';
+import { Button } from '../../../components/Button';
 import { CalorieRing, MacroBar } from '../../../components/CalorieRing';
+import { Card } from '../../../components/Card';
 import { MonthCalendar } from '../../../components/MonthCalendar';
+import { TextLink } from '../../../components/TextLink';
 import { useSession } from '../../../context/AuthProvider';
 import { useDiaryDate } from '../../../context/DiaryDateProvider';
 import { useFoodDiary } from '../../../hooks/useFoodDiary';
@@ -22,7 +26,7 @@ import { useNutritionGoals } from '../../../hooks/useNutritionGoals';
 import { addDays, todayLocalDate } from '../../../lib/dateUtils';
 import { copyEntriesToDate, saveMealFromEntries, sumEntries } from '../../../lib/foods';
 import type { FoodLogEntry, MealType, NutritionGoals } from '../../../types/domain';
-import { colors, radius } from '../../../theme';
+import { colors, radius, spacing } from '../../../theme';
 
 const MEAL_TYPES: MealType[] = ['breakfast', 'lunch', 'dinner', 'snack'];
 const MEAL_LABELS: Record<MealType, string> = {
@@ -118,13 +122,33 @@ export default function FoodDiary() {
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <View style={styles.dayRow}>
-        <Pressable onPress={() => setDate(addDays(date, -1))} hitSlop={12}>
+        <Pressable
+          onPress={() => setDate(addDays(date, -1))}
+          hitSlop={12}
+          accessibilityRole="button"
+          accessibilityLabel="Previous day"
+        >
           <Text style={styles.dayArrow}>‹</Text>
         </Pressable>
-        <Pressable onPress={() => setCalendarOpen(true)} hitSlop={8}>
-          <Text style={styles.dayLabel}>{dayLabel}</Text>
+        <Pressable
+          style={styles.dayLabelTap}
+          onPress={() => setCalendarOpen(true)}
+          hitSlop={8}
+          accessibilityRole="button"
+          accessibilityLabel={`${dayLabel}, choose a date`}
+        >
+          <AppText variant="label" style={styles.dayLabel}>
+            {dayLabel}
+          </AppText>
         </Pressable>
-        <Pressable onPress={() => setDate(addDays(date, 1))} disabled={isToday} hitSlop={12}>
+        <Pressable
+          onPress={() => setDate(addDays(date, 1))}
+          disabled={isToday}
+          hitSlop={12}
+          accessibilityRole="button"
+          accessibilityLabel="Next day"
+          accessibilityState={{ disabled: isToday }}
+        >
           <Text style={[styles.dayArrow, isToday && styles.dayArrowDisabled]}>›</Text>
         </Pressable>
       </View>
@@ -137,23 +161,23 @@ export default function FoodDiary() {
       >
         {/* Tapping outside the calendar closes it. */}
         <Pressable style={styles.modalBackdrop} onPress={() => setCalendarOpen(false)}>
-          <Pressable style={styles.modalCard}>
-            <MonthCalendar
-              selectedDate={date}
-              onSelectDate={(d) => {
-                setDate(d);
-                setCalendarOpen(false);
-              }}
-            />
-            <Pressable
-              style={styles.modalTodayButton}
-              onPress={() => {
-                setDate(today);
-                setCalendarOpen(false);
-              }}
-            >
-              <Text style={styles.modalTodayText}>Go to today</Text>
-            </Pressable>
+          <Pressable>
+            <Card>
+              <MonthCalendar
+                selectedDate={date}
+                onSelectDate={(d) => {
+                  setDate(d);
+                  setCalendarOpen(false);
+                }}
+              />
+              <TextLink
+                title="Go to today"
+                onPress={() => {
+                  setDate(today);
+                  setCalendarOpen(false);
+                }}
+              />
+            </Card>
           </Pressable>
         </Pressable>
       </Modal>
@@ -165,53 +189,47 @@ export default function FoodDiary() {
         onRequestClose={() => setSavingMeal(null)}
       >
         <Pressable style={styles.modalBackdrop} onPress={() => setSavingMeal(null)}>
-          <Pressable style={styles.modalCard}>
-            <Text style={styles.modalTitle}>Save as meal</Text>
-            <TextInput
-              style={styles.modalInput}
-              placeholder="Name, e.g. Overnight oats"
-              value={mealName}
-              onChangeText={setMealName}
-              autoFocus
-            />
-            <ScrollView style={styles.saveList} keyboardShouldPersistTaps="handled">
-              {saveCandidates.map((e) => {
-                const checked = !excluded.has(e.id);
-                return (
-                  <Pressable
-                    key={e.id}
-                    style={styles.entryRow}
-                    onPress={() => toggleExcluded(e.id)}
-                    accessibilityRole="checkbox"
-                    accessibilityState={{ checked }}
-                  >
-                    <View style={[styles.tickBox, checked && styles.tickBoxOn]}>
-                      {checked && <Text style={styles.tickText}>✓</Text>}
-                    </View>
-                    <Text style={[styles.entryName, !checked && styles.unticked]}>
-                      {e.foodName}
-                    </Text>
-                    <Text style={[styles.entryCalories, !checked && styles.unticked]}>
-                      {Math.round(e.caloriesKcal)} kcal
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </ScrollView>
-            <Pressable
-              style={[
-                styles.logButton,
-                (!mealName.trim() || selected.length === 0) && styles.buttonDisabled,
-              ]}
-              onPress={handleSaveMeal}
-              disabled={!mealName.trim() || selected.length === 0 || isSavingMeal}
-            >
-              {isSavingMeal ? (
-                <ActivityIndicator color={colors.onPrimary} />
-              ) : (
-                <Text style={styles.logButtonText}>Save</Text>
-              )}
-            </Pressable>
+          <Pressable>
+            <Card>
+              <AppText variant="label">Save as meal</AppText>
+              <TextInput
+                style={styles.modalInput}
+                placeholder="Name, e.g. Overnight oats"
+                value={mealName}
+                onChangeText={setMealName}
+                autoFocus
+              />
+              <ScrollView style={styles.saveList} keyboardShouldPersistTaps="handled">
+                {saveCandidates.map((e) => {
+                  const checked = !excluded.has(e.id);
+                  return (
+                    <Pressable
+                      key={e.id}
+                      style={styles.entryRow}
+                      onPress={() => toggleExcluded(e.id)}
+                      accessibilityRole="checkbox"
+                      accessibilityState={{ checked }}
+                    >
+                      <View style={[styles.tickBox, checked && styles.tickBoxOn]}>
+                        {checked && <Text style={styles.tickText}>✓</Text>}
+                      </View>
+                      <AppText style={[styles.entryName, !checked && styles.unticked]}>
+                        {e.foodName}
+                      </AppText>
+                      <AppText style={[styles.entryCalories, !checked && styles.unticked]}>
+                        {Math.round(e.caloriesKcal)} kcal
+                      </AppText>
+                    </Pressable>
+                  );
+                })}
+              </ScrollView>
+              <Button
+                title="Save"
+                onPress={handleSaveMeal}
+                disabled={!mealName.trim() || selected.length === 0}
+                loading={isSavingMeal}
+              />
+            </Card>
           </Pressable>
         </Pressable>
       </Modal>
@@ -268,14 +286,14 @@ function DiaryContent({
 
   return (
     <>
-      <View style={styles.totalsCard}>
+      <Card style={{ gap: spacing.lg, marginBottom: spacing.lg }}>
         <CalorieRing eaten={totals.calories} goal={goals?.caloriesKcal ?? null} />
         <View style={styles.macroList}>
           <MacroBar label="Carbs" value={totals.carbs} goal={goals?.carbsG} />
           <MacroBar label="Protein" value={totals.protein} goal={goals?.proteinG} />
           <MacroBar label="Fat" value={totals.fat} goal={goals?.fatG} />
         </View>
-      </View>
+      </Card>
 
       {MEAL_TYPES.map((mealType) => {
         const mealEntries = entries.filter((e) => e.mealType === mealType);
@@ -284,45 +302,51 @@ function DiaryContent({
           mealEntries.length === 0 && previousEntries.some((e) => e.mealType === mealType);
         const isOpen = open.has(mealType);
         return (
-          <View key={mealType} style={styles.mealCard}>
+          <Card key={mealType} style={{ marginBottom: spacing.md }}>
             <View style={styles.mealHeader}>
               <Pressable
                 style={styles.mealHeaderTap}
                 onPress={() => toggle(mealType)}
                 disabled={mealEntries.length === 0}
+                accessibilityRole="button"
+                accessibilityState={{ expanded: isOpen }}
               >
                 <View style={styles.mealTitleRow}>
-                  <Text style={styles.mealTitle}>{MEAL_LABELS[mealType]}</Text>
+                  <AppText variant="label">{MEAL_LABELS[mealType]}</AppText>
                   {mealEntries.length > 0 ? (
-                    <Text style={styles.mealCalories}>{Math.round(sums.calories)} kcal</Text>
+                    <AppText variant="small">{Math.round(sums.calories)} kcal</AppText>
                   ) : null}
                 </View>
                 {mealEntries.length > 0 ? (
-                  <Text style={styles.mealMacros}>
+                  <AppText variant="small" style={styles.mealMacros}>
                     P {Math.round(sums.protein)} g · C {Math.round(sums.carbs)} g · F{' '}
                     {Math.round(sums.fat)} g
-                  </Text>
+                  </AppText>
                 ) : (
-                  <Text style={styles.emptyText}>Nothing logged</Text>
+                  <AppText variant="small">Nothing logged</AppText>
                 )}
               </Pressable>
               {canCopy ? (
-                <Pressable onPress={() => onCopyMeal(mealType)} disabled={isCopying} hitSlop={8}>
-                  <Text style={styles.copyText}>Copy previous day</Text>
-                </Pressable>
+                <TextLink
+                  title="Copy previous day"
+                  onPress={() => onCopyMeal(mealType)}
+                  disabled={isCopying}
+                />
               ) : null}
               <Pressable
                 style={styles.addButton}
                 onPress={() =>
                   router.push({ pathname: '/(tabs)/food/search', params: { meal: mealType } })
                 }
-                hitSlop={8}
+                hitSlop={10}
+                accessibilityRole="button"
+                accessibilityLabel={`Add food to ${MEAL_LABELS[mealType]}`}
               >
                 <Text style={styles.addButtonText}>+</Text>
               </Pressable>
             </View>
             {isOpen && mealEntries.length > 0 ? (
-              <View style={styles.mealBody}>
+              <View>
                 {groupEntries(mealEntries).map((item) =>
                   item.kind === 'entry' ? (
                     <EntryRow
@@ -343,13 +367,15 @@ function DiaryContent({
                   )
                 )}
                 {mealEntries.some((e) => e.foodId != null) ? (
-                  <Pressable onPress={() => onSaveMeal(mealType)} hitSlop={8}>
-                    <Text style={styles.saveMealText}>Save as meal</Text>
-                  </Pressable>
+                  <TextLink
+                    title="Save as meal"
+                    onPress={() => onSaveMeal(mealType)}
+                    style={{ alignSelf: 'flex-start', marginLeft: -spacing.md }}
+                  />
                 ) : null}
               </View>
             ) : null}
-          </View>
+          </Card>
         );
       })}
     </>
@@ -404,20 +430,27 @@ function GroupRow({
   return (
     <View>
       <View style={styles.entryRow}>
-        <Pressable style={styles.entryTap} onPress={onToggle}>
-          <Text style={styles.entryName}>
+        <Pressable
+          style={styles.entryTap}
+          onPress={onToggle}
+          accessibilityRole="button"
+          accessibilityState={{ expanded: isOpen }}
+        >
+          <AppText style={styles.entryName}>
             {isOpen ? '▾' : '▸'} {name}
-          </Text>
-          <Text style={styles.entryCalories}>{Math.round(calories)} kcal</Text>
+          </AppText>
+          <AppText style={styles.entryCalories}>{Math.round(calories)} kcal</AppText>
         </Pressable>
         <Pressable
+          style={styles.deleteTap}
           onPress={() =>
             Alert.alert('Delete meal?', `${name} (${entries.length} foods)`, [
               { text: 'Cancel', style: 'cancel' },
               { text: 'Delete', style: 'destructive', onPress: onDelete },
             ])
           }
-          hitSlop={10}
+          accessibilityRole="button"
+          accessibilityLabel={`Delete ${name}`}
         >
           <Text style={styles.entryDelete}>✕</Text>
         </Pressable>
@@ -438,6 +471,7 @@ function EntryRow({ entry, onDelete }: { entry: FoodLogEntry; onDelete: () => vo
     <View style={styles.entryRow}>
       <Pressable
         style={styles.entryTap}
+        accessibilityRole="button"
         onPress={() =>
           entry.foodId == null
             ? router.push({
@@ -465,17 +499,19 @@ function EntryRow({ entry, onDelete }: { entry: FoodLogEntry; onDelete: () => vo
               })
         }
       >
-        <Text style={styles.entryName}>{entry.foodName}</Text>
-        <Text style={styles.entryCalories}>{Math.round(entry.caloriesKcal)} kcal</Text>
+        <AppText style={styles.entryName}>{entry.foodName}</AppText>
+        <AppText style={styles.entryCalories}>{Math.round(entry.caloriesKcal)} kcal</AppText>
       </Pressable>
       <Pressable
+        style={styles.deleteTap}
         onPress={() =>
           Alert.alert('Delete entry?', entry.foodName, [
             { text: 'Cancel', style: 'cancel' },
             { text: 'Delete', style: 'destructive', onPress: onDelete },
           ])
         }
-        hitSlop={10}
+        accessibilityRole="button"
+        accessibilityLabel={`Delete ${entry.foodName}`}
       >
         <Text style={styles.entryDelete}>✕</Text>
       </Pressable>
@@ -484,7 +520,7 @@ function EntryRow({ entry, onDelete }: { entry: FoodLogEntry; onDelete: () => vo
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
+  container: { flex: 1, backgroundColor: colors.surface },
   dayRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -492,18 +528,17 @@ const styles = StyleSheet.create({
     gap: 12,
     marginBottom: 12,
   },
-  dayLabel: { fontSize: 17, fontWeight: '600', minWidth: 110, textAlign: 'center' },
+  dayLabelTap: { minHeight: 48, justifyContent: 'center' },
+  dayLabel: { minWidth: 110, textAlign: 'center' },
   dayArrow: { fontSize: 28, color: colors.primary, paddingHorizontal: 8 },
   dayArrowDisabled: { color: colors.disabled },
-  loading: { paddingVertical: 40 },
+  loading: { paddingVertical: spacing.xxl },
   modalBackdrop: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.4)',
     justifyContent: 'center',
     padding: 16,
   },
-  modalCard: { backgroundColor: colors.background, borderRadius: 12, padding: 16 },
-  modalTitle: { fontSize: 17, fontWeight: '600', marginBottom: 12 },
   modalInput: {
     borderWidth: 1,
     borderColor: colors.borderStrong,
@@ -511,8 +546,7 @@ const styles = StyleSheet.create({
     padding: 14,
     fontSize: 16,
   },
-  buttonDisabled: { opacity: 0.5 },
-  saveList: { maxHeight: 300, marginTop: 8 },
+  saveList: { maxHeight: 300 },
   tickBox: {
     width: 24,
     height: 24,
@@ -524,62 +558,34 @@ const styles = StyleSheet.create({
   },
   tickBoxOn: { backgroundColor: colors.success, borderColor: colors.success },
   tickText: { fontSize: 14, color: colors.onPrimary, fontWeight: '700' },
-  unticked: { color: colors.subtle },
-  modalTodayButton: { alignItems: 'center', paddingTop: 12 },
-  modalTodayText: { color: colors.primary, fontSize: 15, fontWeight: '600' },
-  content: { padding: 16, paddingBottom: 40 },
-  totalsCard: {
-    backgroundColor: colors.surface,
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 20,
-    gap: 16,
-  },
+  unticked: { color: colors.muted },
+  content: { padding: 16, paddingBottom: spacing.xxl },
   macroList: { flexDirection: 'row', gap: 12 },
   addButton: {
     width: 28,
     height: 28,
-    borderRadius: 14,
+    borderRadius: radius.full,
     backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
   },
   addButtonText: { color: colors.onPrimary, fontSize: 20, lineHeight: 22, fontWeight: '600' },
-  mealCard: {
-    backgroundColor: colors.surface,
-    borderRadius: 12,
-    padding: 14,
-    marginBottom: 12,
-  },
   mealHeader: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  mealHeaderTap: { flex: 1 },
+  mealHeaderTap: { flex: 1, minHeight: 48, justifyContent: 'center' },
   mealTitleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' },
-  mealMacros: { fontSize: 13, color: colors.textSecondary, marginTop: 2 },
-  mealBody: { marginTop: 8 },
+  mealMacros: { marginTop: spacing.xs },
   groupItems: { paddingLeft: 16 },
-  saveMealText: { fontSize: 14, color: colors.primary, paddingTop: 10 },
-  mealTitle: { fontSize: 16, fontWeight: '600', color: colors.text },
-  mealCalories: { fontSize: 14, color: colors.textSecondary },
-  copyText: { fontSize: 14, color: colors.primary },
-  emptyText: { color: colors.subtle, fontSize: 14 },
   entryRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    paddingVertical: 8,
+    minHeight: 48,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
-  entryTap: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 12 },
-  entryName: { flex: 1, fontSize: 15 },
-  entryCalories: { fontSize: 15, color: colors.textSecondary },
-  entryDelete: { fontSize: 16, color: colors.subtle, paddingHorizontal: 4 },
-  logButton: {
-    backgroundColor: colors.primary,
-    borderRadius: 8,
-    padding: 14,
-    alignItems: 'center',
-    marginTop: 8,
-  },
-  logButtonText: { color: colors.onPrimary, fontSize: 16, fontWeight: '600' },
+  entryTap: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 48 },
+  entryName: { flex: 1 },
+  entryCalories: { color: colors.textSecondary },
+  deleteTap: { minWidth: 48, minHeight: 48, alignItems: 'center', justifyContent: 'center' },
+  entryDelete: { fontSize: 16, color: colors.muted },
 });
