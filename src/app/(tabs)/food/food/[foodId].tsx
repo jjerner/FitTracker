@@ -423,7 +423,7 @@ export default function FoodDetail() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.surface, padding: 16 },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.surface },
   nameRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
   nameText: { flex: 1 },
   star: { fontSize: 26, color: colors.muted },

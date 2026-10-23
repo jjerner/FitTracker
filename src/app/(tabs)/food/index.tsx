@@ -571,7 +571,7 @@ const styles = StyleSheet.create({
   },
   addButtonText: { color: colors.onPrimary, fontSize: 20, lineHeight: 22, fontWeight: '600' },
   mealHeader: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  mealHeaderTap: { flex: 1 },
+  mealHeaderTap: { flex: 1, minHeight: 48, justifyContent: 'center' },
   mealTitleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' },
   mealMacros: { marginTop: spacing.xs },
   groupItems: { paddingLeft: 16 },
