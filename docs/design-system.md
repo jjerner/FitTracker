@@ -38,6 +38,7 @@ Use `<AppText variant="...">` (`src/components/AppText.tsx`), not `fontSize`. Th
 | `heading` | 20 / 600      | section titles (announced as a heading) |
 | `body`    | 16 / 400      | normal text (default)         |
 | `label`   | 16 / 600      | button text, row titles       |
+| `labelSmall` | 14 / 600   | field labels, table numbers, active tab |
 | `small`   | 14 / 400 grey | secondary text                |
 | `caption` | 12 / 400 grey | hints, timestamps             |
 
@@ -46,7 +47,8 @@ Use `<AppText variant="...">` (`src/components/AppText.tsx`), not `fontSize`. Th
 - To colour text, pass a token: `<AppText style={{ color: colors.danger }}>`.
 - When an old screen moves over, 15 rounds to 16 and 13 rounds to 14. Check that table columns
   still fit.
-- **Exception:** chart axis labels and tiny footnotes (10–11) may stay as they are.
+- **Exception:** chart axis labels and tiny footnotes (10–11) may stay as they are, and glyph icons
+  (‹ › + ✕ ✓ ★ ☆ ▾ ▸) until the app has an icon set.
 
 ## Spacing and corners
 
@@ -60,10 +62,10 @@ Use `<AppText variant="...">` (`src/components/AppText.tsx`), not `fontSize`. Th
 | Component    | Use it for |
 |--------------|------------|
 | `AppText`    | All text. Pick a `variant`. |
-| `Button`     | Full-width or stand-alone actions. `variant`: `primary` (the main action: one per screen, or one per card on dashboard screens like Home and Progress), `secondary` (other actions; white with an outline), `danger` (delete or irreversible). Handles the pressed look, `disabled`, and `loading` (shows a spinner, keeps its width, blocks taps). At least 48 dp tall. `style` is for layout only. |
+| `Button`     | Full-width or stand-alone actions. `variant`: `primary` (the main action: one per screen, or one per card on dashboard screens like Home and Progress), `secondary` (other actions; white with an outline), `success` (dark green `successDark` with white text), `danger` (only the Delete account screen's main button; see Destructive actions). Handles the pressed look, `disabled`, and `loading` (shows a spinner, keeps its width, blocks taps). At least 48 dp tall. `style` is for layout only. |
 | `Card`       | A white rounded box grouping one topic on a grey screen. Pass content as children. Don't wrap every list row in a card: use list rows with separators for that. |
 | `EmptyState` | "Nothing here yet" text, with optional children for one action below it (usually a `Button`). Only for *empty*, never for loading or errors. |
-| `TextLink`   | A blue text link (`label` in `primary`) with a 48 dp tap area that hugs the text. Read by TalkBack as "…, link". Handles the pressed look and `disabled`. Pass `onPress` (e.g. `router.navigate(href)`). `style` is for layout only. |
+| `TextLink`   | A blue text link (`label` in `primary`) with a 48 dp tap area that hugs the text. Read by TalkBack as "…, link". Handles the pressed look and `disabled`. `tone="danger"` makes it red (`dangerDark`) for deletes and removes. Pass `onPress` (e.g. `router.navigate(href)`). `style` is for layout only. |
 
 There is **no small button size yet**. Compact in-row buttons (like Progress's "Log" next to the
 weight box) stay as they are, until a migration ticket adds `size="sm"`. Do that through the system,
@@ -88,8 +90,12 @@ the button enabled and show the error on tap.
 
 ## Destructive actions
 
-`danger` buttons (delete, reset, leave without saving) always ask first with a confirm dialog, or
-offer undo right after. Never delete on a single tap.
+Deletes and removes are quiet red links: `TextLink tone="danger"`. They always ask first with a
+confirm dialog, or offer undo right after. Never delete on a single tap. A red `danger` `Button` is
+only for the Delete account screen's main button.
+
+The danger link uses `dangerDark`, so it reads on both grey and white. Plain `danger` error text
+still sits on white only (4.4:1 on grey).
 
 ## Accessibility
 

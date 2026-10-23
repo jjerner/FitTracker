@@ -7,6 +7,7 @@ const variants = {
   primary: { backgroundColor: colors.primary, color: colors.onPrimary, borderColor: colors.primary },
   // White with an outline, so it stays visible on both white cards and grey screens.
   secondary: { backgroundColor: colors.background, color: colors.text, borderColor: colors.borderStrong },
+  success: { backgroundColor: colors.successDark, color: colors.onPrimary, borderColor: colors.successDark },
   danger: { backgroundColor: colors.danger, color: colors.onPrimary, borderColor: colors.danger },
 };
 

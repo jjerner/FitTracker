@@ -27,9 +27,13 @@ import {
 } from '../../../../lib/foods';
 import { toNumberOrNull } from '../../../../lib/numbers';
 import { addPendingRecipeItem } from '../../../../lib/recipeDraft';
+import { AppText } from '../../../../components/AppText';
+import { Button } from '../../../../components/Button';
+import { Card } from '../../../../components/Card';
 import { LabeledInput } from '../../../../components/LabeledInput';
+import { TextLink } from '../../../../components/TextLink';
 import type { MealType } from '../../../../types/domain';
-import { colors } from '../../../../theme';
+import { colors, radius, spacing } from '../../../../theme';
 
 const MEAL_TYPES: MealType[] = ['breakfast', 'lunch', 'dinner', 'snack'];
 const MEAL_LABELS: Record<MealType, string> = {
@@ -271,165 +275,162 @@ export default function FoodDetail() {
   return (
     <View style={styles.container}>
       {params.recipe ? <Stack.Screen options={{ title: 'Add to Recipe' }} /> : null}
-      <View style={styles.nameRow}>
-        <Text style={[styles.name, styles.nameText]}>{food.name}</Text>
-        <Pressable
-          onPress={toggleFavourite}
-          disabled={!favourites}
-          hitSlop={12}
-          accessibilityRole="button"
-          accessibilityLabel={isFavourite ? 'Remove from favourites' : 'Add to favourites'}
-        >
-          <Text style={[styles.star, isFavourite && styles.starOn]}>{isFavourite ? '★' : '☆'}</Text>
-        </Pressable>
-      </View>
-      {food.brand ? <Text style={styles.brand}>{food.brand}</Text> : null}
-
-      {chips.length > 0 ? (
-        <View style={styles.mealRow}>
+      <Card>
+        <View style={styles.nameRow}>
+          <AppText variant="heading" style={styles.nameText}>
+            {food.name}
+          </AppText>
           <Pressable
-            style={[styles.mealChip, !selected && styles.mealChipActive]}
-            onPress={() => selectOption(null)}
+            onPress={toggleFavourite}
+            disabled={!favourites}
+            hitSlop={12}
+            accessibilityRole="button"
+            accessibilityLabel={isFavourite ? 'Remove from favourites' : 'Add to favourites'}
           >
-            <Text style={!selected ? styles.mealChipTextActive : styles.mealChipText}>Grams</Text>
+            <Text style={[styles.star, isFavourite && styles.starOn]}>{isFavourite ? '★' : '☆'}</Text>
           </Pressable>
-          {chips.map((option) => (
-            <Pressable
-              key={option.id}
-              style={[styles.mealChip, selected?.id === option.id && styles.mealChipActive]}
-              onPress={() => selectOption(option)}
-            >
-              <Text
-                style={selected?.id === option.id ? styles.mealChipTextActive : styles.mealChipText}
-              >
-                {option.label}
-              </Text>
-            </Pressable>
-          ))}
         </View>
-      ) : null}
+        {food.brand ? (
+          <AppText variant="small" style={styles.brand}>
+            {food.brand}
+          </AppText>
+        ) : null}
 
-      {editor ? (
-        <View>
-          <LabeledInput
-            label="Serving size (g)"
-            placeholder="e.g. 45"
-            keyboardType="numeric"
-            value={servingSize}
-            onChangeText={setServingSize}
-          />
-          <LabeledInput
-            label={editor === 'add' ? 'Serving name' : 'Serving name — optional'}
-            placeholder="e.g. 1 slice"
-            value={servingName}
-            onChangeText={setServingName}
-          />
-          <View style={styles.linkRow}>
-            <Pressable onPress={handleSaveServing} hitSlop={8}>
-              <Text style={styles.servingLink}>Save serving size</Text>
-            </Pressable>
-            <Pressable onPress={() => setEditor(null)} hitSlop={8}>
-              <Text style={styles.servingLinkMuted}>Cancel</Text>
-            </Pressable>
-          </View>
-        </View>
-      ) : (
-        <View style={styles.linkRow}>
-          <Pressable
-            onPress={() => {
-              setServingSize('');
-              setServingName('');
-              setEditor('add');
-            }}
-          >
-            <Text style={styles.servingLink}>Add serving size</Text>
-          </Pressable>
-          {canEditDefault ? (
-            <Pressable
-              onPress={() => {
-                setServingSize(String(food.servingSizeG));
-                setServingName(food.servingDescription ?? '');
-                setEditor('default');
-              }}
-            >
-              <Text style={styles.servingLink}>Edit default serving</Text>
-            </Pressable>
-          ) : null}
-          {canDeleteSelected ? (
-            <Pressable onPress={handleDeleteServing} hitSlop={8}>
-              <Text style={styles.servingLinkMuted}>Delete this serving</Text>
-            </Pressable>
-          ) : null}
-        </View>
-      )}
-
-      <Text style={styles.label}>{unit === 'g' ? 'Amount (grams)' : 'Number of servings'}</Text>
-      <TextInput
-        style={styles.input}
-        value={amount}
-        onChangeText={setAmount}
-        keyboardType="numeric"
-      />
-
-      {params.recipe ? null : (
-        <>
-          <Text style={styles.label}>Meal</Text>
+        {chips.length > 0 ? (
           <View style={styles.mealRow}>
-            {MEAL_TYPES.map((type) => (
+            <Pressable
+              style={[styles.mealChip, !selected && styles.mealChipActive]}
+              onPress={() => selectOption(null)}
+            >
+              <Text style={!selected ? styles.mealChipTextActive : styles.mealChipText}>Grams</Text>
+            </Pressable>
+            {chips.map((option) => (
               <Pressable
-                key={type}
-                style={[styles.mealChip, mealType === type && styles.mealChipActive]}
-                onPress={() => setMealType(type)}
+                key={option.id}
+                style={[styles.mealChip, selected?.id === option.id && styles.mealChipActive]}
+                onPress={() => selectOption(option)}
               >
-                <Text style={mealType === type ? styles.mealChipTextActive : styles.mealChipText}>
-                  {MEAL_LABELS[type]}
+                <Text
+                  style={selected?.id === option.id ? styles.mealChipTextActive : styles.mealChipText}
+                >
+                  {option.label}
                 </Text>
               </Pressable>
             ))}
           </View>
-        </>
-      )}
+        ) : null}
 
-      {preview ? (
-        <View style={styles.previewCard}>
-          <Text style={styles.previewCalories}>{Math.round(preview.calories)} kcal</Text>
-          <Text style={styles.previewMacros}>
-            P {Math.round(preview.protein)}g · C {Math.round(preview.carbs)}g · F{' '}
-            {Math.round(preview.fat)}g
-          </Text>
-        </View>
-      ) : null}
-
-      <Pressable
-        style={[styles.saveButton, recipeBlocked && styles.saveButtonDisabled]}
-        onPress={handleSave}
-        disabled={isSaving || recipeBlocked}
-      >
-        {isSaving ? (
-          <ActivityIndicator color={colors.onPrimary} />
+        {editor ? (
+          <View>
+            <LabeledInput
+              label="Serving size (g)"
+              placeholder="e.g. 45"
+              keyboardType="numeric"
+              value={servingSize}
+              onChangeText={setServingSize}
+            />
+            <LabeledInput
+              label={editor === 'add' ? 'Serving name' : 'Serving name — optional'}
+              placeholder="e.g. 1 slice"
+              value={servingName}
+              onChangeText={setServingName}
+            />
+            <View style={styles.linkRow}>
+              <TextLink title="Save serving size" onPress={handleSaveServing} />
+              <TextLink title="Cancel" onPress={() => setEditor(null)} />
+            </View>
+          </View>
         ) : (
-          <Text style={styles.saveButtonText}>
-            {params.recipe ? 'Add to Recipe' : entryId ? 'Save changes' : 'Add to Diary'}
-          </Text>
+          <View style={styles.linkRow}>
+            <TextLink
+              title="Add serving size"
+              onPress={() => {
+                setServingSize('');
+                setServingName('');
+                setEditor('add');
+              }}
+            />
+            {canEditDefault ? (
+              <TextLink
+                title="Edit default serving"
+                onPress={() => {
+                  setServingSize(String(food.servingSizeG));
+                  setServingName(food.servingDescription ?? '');
+                  setEditor('default');
+                }}
+              />
+            ) : null}
+            {canDeleteSelected ? (
+              <TextLink title="Delete this serving" tone="danger" onPress={handleDeleteServing} />
+            ) : null}
+          </View>
         )}
-      </Pressable>
+      </Card>
+
+      <Card style={{ marginTop: spacing.md }}>
+        <AppText variant="labelSmall">
+          {unit === 'g' ? 'Amount (grams)' : 'Number of servings'}
+        </AppText>
+        <TextInput
+          style={styles.input}
+          value={amount}
+          onChangeText={setAmount}
+          keyboardType="numeric"
+        />
+
+        {params.recipe ? null : (
+          <>
+            <AppText variant="labelSmall" style={styles.label}>
+              Meal
+            </AppText>
+            <View style={styles.mealRow}>
+              {MEAL_TYPES.map((type) => (
+                <Pressable
+                  key={type}
+                  style={[styles.mealChip, mealType === type && styles.mealChipActive]}
+                  onPress={() => setMealType(type)}
+                >
+                  <Text style={mealType === type ? styles.mealChipTextActive : styles.mealChipText}>
+                    {MEAL_LABELS[type]}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+          </>
+        )}
+
+        {preview ? (
+          <View style={styles.preview}>
+            <AppText variant="heading">{Math.round(preview.calories)} kcal</AppText>
+            <AppText variant="small">
+              P {Math.round(preview.protein)}g · C {Math.round(preview.carbs)}g · F{' '}
+              {Math.round(preview.fat)}g
+            </AppText>
+          </View>
+        ) : null}
+      </Card>
+
+      <Button
+        title={params.recipe ? 'Add to Recipe' : entryId ? 'Save changes' : 'Add to Diary'}
+        onPress={handleSave}
+        disabled={recipeBlocked}
+        loading={isSaving}
+        style={{ marginTop: spacing.xl }}
+      />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background, padding: 16 },
+  container: { flex: 1, backgroundColor: colors.surface, padding: 16 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  name: { fontSize: 20, fontWeight: '700' },
   nameRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
   nameText: { flex: 1 },
-  star: { fontSize: 26, color: colors.subtle },
+  star: { fontSize: 26, color: colors.muted },
   starOn: { color: colors.streak },
-  brand: { fontSize: 14, color: colors.muted, marginTop: 2, marginBottom: 16 },
-  label: { fontSize: 14, fontWeight: '600', marginTop: 16, marginBottom: 8 },
-  linkRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 16, marginTop: 12 },
-  servingLink: { color: colors.primary, fontSize: 14 },
-  servingLinkMuted: { color: colors.muted, fontSize: 14 },
+  brand: { marginTop: spacing.xs, marginBottom: 8 },
+  label: { marginTop: 8 },
+  linkRow: { flexDirection: 'row', flexWrap: 'wrap', marginLeft: -spacing.md },
   input: {
     borderWidth: 1,
     borderColor: colors.borderStrong,
@@ -441,29 +442,12 @@ const styles = StyleSheet.create({
   mealChip: {
     borderWidth: 1,
     borderColor: colors.borderStrong,
-    borderRadius: 20,
+    borderRadius: radius.full,
     paddingVertical: 8,
     paddingHorizontal: 16,
   },
   mealChipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
   mealChipText: { color: colors.textSecondary },
   mealChipTextActive: { color: colors.onPrimary },
-  previewCard: {
-    backgroundColor: colors.surface,
-    borderRadius: 12,
-    padding: 16,
-    marginTop: 24,
-    alignItems: 'center',
-  },
-  previewCalories: { fontSize: 20, fontWeight: '700' },
-  previewMacros: { fontSize: 14, color: colors.textSecondary, marginTop: 4 },
-  saveButton: {
-    backgroundColor: colors.primary,
-    borderRadius: 8,
-    padding: 14,
-    alignItems: 'center',
-    marginTop: 24,
-  },
-  saveButtonDisabled: { opacity: 0.5 },
-  saveButtonText: { color: colors.onPrimary, fontSize: 16, fontWeight: '600' },
+  preview: { alignItems: 'center', gap: 4, marginTop: 8 },
 });

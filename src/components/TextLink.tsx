@@ -7,12 +7,14 @@ type Props = {
   title: string;
   onPress: () => void;
   disabled?: boolean;
+  // danger: red, for deletes (still confirm first). dangerDark reads on grey and white.
+  tone?: 'primary' | 'danger';
   // Layout only (margins).
   style?: StyleProp<ViewStyle>;
 };
 
 // A blue text link with a 48 dp tap area that hugs the text.
-export function TextLink({ title, onPress, disabled, style }: Props) {
+export function TextLink({ title, onPress, disabled, tone = 'primary', style }: Props) {
   return (
     <Pressable
       accessibilityRole="link"
@@ -26,7 +28,10 @@ export function TextLink({ title, onPress, disabled, style }: Props) {
         style,
       ]}
     >
-      <AppText variant="label" style={styles.label}>
+      <AppText
+        variant="label"
+        style={[styles.label, tone === 'danger' && { color: colors.dangerDark }]}
+      >
         {title}
       </AppText>
     </Pressable>
