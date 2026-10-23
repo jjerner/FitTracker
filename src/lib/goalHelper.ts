@@ -1,4 +1,4 @@
-// Calorie and macro suggestions for the Goals screen. Also used by the adaptive goal card.
+// Calorie and macro suggestions for the Goals screen. `KCAL_PER_KG` is shared with progress.ts.
 
 export type Sex = 'male' | 'female';
 
