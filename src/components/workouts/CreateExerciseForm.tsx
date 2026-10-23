@@ -84,6 +84,9 @@ export function CreateExerciseForm({
                 key={p.value}
                 style={[styles.smallChip, movementPattern === p.value && styles.chipActive]}
                 onPress={() => setMovementPattern((cur) => (cur === p.value ? null : p.value))}
+                hitSlop={6}
+                accessibilityRole="button"
+                accessibilityState={{ selected: movementPattern === p.value }}
               >
                 <AppText
                   variant="small"
