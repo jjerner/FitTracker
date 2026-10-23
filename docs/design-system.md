@@ -22,6 +22,7 @@ All colours live in `colors` in `src/theme.ts`. Never write a hex value in a scr
   mascot moments). Text on yellow uses `onAccent`, never white. Never use yellow for buttons or as a
   big background. Streaks keep their own orange `streak`.
 - `success` / `danger` / `warning` carry meaning (done, delete, careful). Don't use them as decoration.
+- White text goes on `successDark`, not `success` (white on `success` is only 3.3:1).
 - **Dark mode is planned** (issue #26). Taking every colour from `colors` keeps that job to one
   place, but it is not free. Styles built with `StyleSheet.create` at import time read `colors` once,
   so dark mode will need a `useColors()` hook (or similar), and screens will read colours at render
