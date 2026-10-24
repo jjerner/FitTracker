@@ -23,6 +23,7 @@ All colours live in `colors` in `src/theme.ts`. Never write a hex value in a scr
   big background. Streaks keep their own orange `streak`.
 - `success` / `danger` / `warning` carry meaning (done, delete, careful). Don't use them as decoration.
 - White text goes on `successDark`, not `success` (white on `success` is only 3.3:1).
+- `primaryBg` is a light-blue tint for info boxes (tips), with `text` on it.
 - **One look:** every screen is grey `surface`, and its content sits in white `Card`s or
   `SettingsGroup`s. Text placed straight on the grey screen uses `textSecondary`, never `muted`.
 - **Dark mode is planned** (issue #26). Taking every colour from `colors` keeps that job to one

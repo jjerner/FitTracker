@@ -4,6 +4,8 @@ import type { TextStyle } from 'react-native';
 export const colors = {
   primary: '#2563eb',
   primaryLight: '#93c5fd',
+  // Light-blue tint for info boxes (tips), with `text` on it.
+  primaryBg: '#dbeafe',
   // Plucky mascot yellow: small fun touches only (badges, mascot moments).
   accent: '#ffd23f',
   // Text on yellow: stays dark even when dark mode arrives.

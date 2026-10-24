@@ -1,5 +1,6 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { router, useLocalSearchParams } from 'expo-router';
+import { SymbolView } from 'expo-symbols';
 import { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
@@ -22,6 +23,7 @@ import { SwapExercisePicker } from '../../../components/workouts/SwapExercisePic
 import { useSession } from '../../../context/AuthProvider';
 import { useDefaultRest } from '../../../hooks/useDefaultRest';
 import { useRestVibration } from '../../../hooks/useRestVibration';
+import { useSetsHint } from '../../../hooks/useSetsHint';
 import {
   useExerciseHistory,
   useWorkoutLog,
@@ -69,6 +71,7 @@ export default function ActiveWorkout() {
   const { session } = useSession();
   const queryClient = useQueryClient();
   const defaultRest = useDefaultRest();
+  const setsHint = useSetsHint();
   const { data: log, isLoading } = useWorkoutLog(logId);
   const { data: template } = useWorkoutTemplate(log?.templateId ?? null);
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -166,7 +169,41 @@ export default function ActiveWorkout() {
     <View style={styles.container}>
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <AppText variant="heading">{log.name}</AppText>
-        <ElapsedClock startedAt={log.startedAt} />
+        <View style={[styles.clockRow, setsHint.open === true && styles.clockRowWithHint]}>
+          <ElapsedClock startedAt={log.startedAt} />
+          <Pressable
+            onPress={() => setsHint.setOpen(!setsHint.open)}
+            hitSlop={14}
+            accessibilityRole="button"
+            accessibilityLabel="How sets are saved"
+            accessibilityState={{ expanded: setsHint.open === true }}
+          >
+            {/* web key needed: without it SymbolView renders nothing on web */}
+            <SymbolView
+              name={{ ios: 'info.circle', android: 'info', web: 'info' }}
+              tintColor={colors.primary}
+              size={20}
+            />
+          </Pressable>
+        </View>
+        {setsHint.open === true && (
+          <View style={styles.hint} accessibilityLiveRegion="polite">
+            <AppText variant="small" style={styles.hintText}>
+              Each set saves when you tick it. Tap the green tick again to change a set. You can leave and come
+              back any time.
+            </AppText>
+            <Pressable
+              onPress={() => setsHint.setOpen(false)}
+              hitSlop={{ top: 14, bottom: 14, left: 17, right: 17 }}
+              accessibilityRole="button"
+              accessibilityLabel="Close tip"
+            >
+              <AppText variant="label" style={styles.hintClose}>
+                ✕
+              </AppText>
+            </Pressable>
+          </View>
+        )}
 
         {exercises.map((logExercise) => {
           const target = template?.exercises.find((te) => te.exercise.id === logExercise.exercise.id);
@@ -692,7 +729,26 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.surface },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.surface },
   content: { padding: spacing.lg, paddingBottom: spacing.xxl },
-  subtitle: { color: colors.textSecondary, marginTop: spacing.xs, marginBottom: spacing.lg },
+  subtitle: { color: colors.textSecondary },
+  clockRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginTop: spacing.xs,
+    marginBottom: spacing.lg,
+  },
+  clockRowWithHint: { marginBottom: spacing.sm },
+  hint: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    backgroundColor: colors.primaryBg,
+    borderRadius: radius.md,
+    padding: spacing.md,
+    gap: spacing.sm,
+    marginBottom: spacing.lg,
+  },
+  hintText: { flex: 1, color: colors.text },
+  hintClose: { color: colors.textSecondary },
   card: { padding: spacing.md, gap: 0, marginBottom: spacing.md },
   cardHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   cardTitle: { flex: 1 },
