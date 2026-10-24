@@ -7,8 +7,14 @@ jest.mock('@react-native-async-storage/async-storage', () =>
 // One answer per upsert via mockResolvedValueOnce; an unplanned call gets undefined and throws.
 const mockUpsert = jest.fn();
 const mockFrom = jest.fn((_table: string) => ({ upsert: mockUpsert }));
-// Wrapped: the hoisted factory runs before mockFrom is assigned.
-jest.mock('../supabase', () => ({ supabase: { from: (table: string) => mockFrom(table) } }));
+const mockGetSession = jest.fn();
+// Wrapped: the hoisted factory runs before mockFrom and mockGetSession are assigned.
+jest.mock('../supabase', () => ({
+  supabase: {
+    from: (table: string) => mockFrom(table),
+    auth: { getSession: () => mockGetSession() },
+  },
+}));
 
 const set = (id: string): PendingSet => ({
   id,
@@ -26,6 +32,8 @@ const upsertIds = () => mockUpsert.mock.calls.map(([row]) => row.id);
 beforeEach(() => {
   mockUpsert.mockReset();
   mockFrom.mockClear();
+  mockGetSession.mockReset();
+  mockGetSession.mockResolvedValue({ data: { session: { user: { id: 'me' } } }, error: null });
 });
 
 // The queue lives in module memory and sent sets stay in it, so empty it between tests.
@@ -55,13 +63,12 @@ describe('flushPendingSets', () => {
     );
   });
 
-  it.each([
-    ['network', { message: 'TypeError: Network request failed', code: '' }],
-    ['other code', { message: 'permission denied', code: '42501' }],
-  ])('keeps the set and stops on a non-23 error (%s)', async (_name, error) => {
+  it('keeps the set and stops on a network error', async () => {
     await queueSet(set('set-a'));
     await queueSet(set('set-b'));
-    mockUpsert.mockResolvedValueOnce({ error });
+    mockUpsert.mockResolvedValueOnce({
+      error: { message: 'TypeError: Network request failed', code: '' },
+    });
 
     expect(await flushPendingSets()).toEqual({ sent: false, allSent: false });
     expect(upsertIds()).toEqual(['set-a']);
@@ -87,5 +94,34 @@ describe('flushPendingSets', () => {
     mockUpsert.mockResolvedValueOnce({ error: null });
     await flushPendingSets();
     expect(upsertIds()).toEqual(['set-b']);
+  });
+
+  it('drops a set that is not yours (42501) and goes on', async () => {
+    await queueSet(set('set-a'));
+    await queueSet(set('set-b'));
+    mockUpsert
+      .mockResolvedValueOnce({ error: { message: 'permission denied', code: '42501' } })
+      .mockResolvedValueOnce({ error: null });
+
+    expect(await flushPendingSets()).toEqual({ sent: true, allSent: true });
+    expect(upsertIds()).toEqual(['set-a', 'set-b']);
+
+    mockUpsert.mockReset();
+    mockUpsert.mockResolvedValueOnce({ error: null });
+    await flushPendingSets();
+    expect(upsertIds()).toEqual(['set-b']);
+  });
+
+  it('keeps the set and stops on 42501 with no session', async () => {
+    await queueSet(set('set-a'));
+    mockGetSession.mockResolvedValue({ data: { session: null }, error: null });
+    mockUpsert.mockResolvedValueOnce({ error: { message: 'permission denied', code: '42501' } });
+
+    expect(await flushPendingSets()).toEqual({ sent: false, allSent: false });
+
+    mockUpsert.mockReset();
+    mockUpsert.mockResolvedValueOnce({ error: null });
+    expect(await flushPendingSets()).toEqual({ sent: true, allSent: true });
+    expect(upsertIds()).toEqual(['set-a']);
   });
 });
