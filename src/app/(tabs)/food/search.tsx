@@ -136,9 +136,9 @@ export default function FoodSearch() {
     }
     setSelectingKey(key);
     try {
-      // Search hits have no serving size; the first save sticks for everyone, so save the full product.
+      // Search hits have no serving size; the first save sticks, so save the full product.
       const full = item.food.barcode ? await getByBarcode(item.food.barcode) : null;
-      const saved = await upsertOffFood(full ?? item.food);
+      const saved = await upsertOffFood(session?.user.id as string, full ?? item.food);
       router.push(`/(tabs)/food/food/${saved.id}${mealQuery}`);
     } catch {
       setError('Could not select this food. Try again.');
