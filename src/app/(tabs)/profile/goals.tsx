@@ -1,16 +1,11 @@
 import { router } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import { useState } from 'react';
-import {
-  ActivityIndicator,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 
+import { AppText } from '../../../components/AppText';
+import { Button } from '../../../components/Button';
+import { Card } from '../../../components/Card';
 import { Chips } from '../../../components/Chips';
 import { LabeledInput } from '../../../components/LabeledInput';
 import { Stepper } from '../../../components/SettingsList';
@@ -100,7 +95,9 @@ function GoalsForm({
     const parts: string[] = [];
     if (calories > 0) parts.push(`${Math.round(((grams * kcalPerGram) / calories) * 100)} % of kcal`);
     if (weightKg) parts.push(`${(grams / weightKg).toFixed(1)} g/kg`);
-    return parts.length ? <Text style={styles.hint}>{parts.join(' · ')}</Text> : null;
+    return parts.length ? (
+      <AppText variant="small" style={styles.hint}>{parts.join(' · ')}</AppText>
+    ) : null;
   }
 
   function fill(macros: Macros) {
@@ -147,7 +144,7 @@ function GoalsForm({
           accessibilityRole="button"
           accessibilityState={{ expanded: helperOpen }}
         >
-          <Text style={styles.helperTitle}>Suggest goals for me</Text>
+          <AppText variant="label" style={{ flex: 1 }}>Suggest goals for me</AppText>
           {/* web key needed: without it SymbolView renders nothing on web */}
           <SymbolView
             name={
@@ -166,54 +163,56 @@ function GoalsForm({
         </View>
       </View>
 
-      <Text style={styles.label}>Protein (g)</Text>
-      <TextInput
-        style={styles.input}
-        keyboardType="numeric"
-        value={protein}
-        onChangeText={setProtein}
-        accessibilityLabel="Protein (g)"
-      />
-      {macroDetail(proteinNumber, 4)}
+      <Card style={styles.fields}>
+        <AppText variant="labelSmall" style={styles.label}>Protein (g)</AppText>
+        <TextInput
+          style={styles.input}
+          keyboardType="numeric"
+          value={protein}
+          onChangeText={setProtein}
+          accessibilityLabel="Protein (g)"
+        />
+        {macroDetail(proteinNumber, 4)}
 
-      <Text style={styles.label}>Carbs (g)</Text>
-      <TextInput
-        style={styles.input}
-        keyboardType="numeric"
-        value={carbs}
-        onChangeText={setCarbs}
-        accessibilityLabel="Carbs (g)"
-      />
-      {macroDetail(carbsNumber, 4)}
+        <AppText variant="labelSmall" style={styles.label}>Carbs (g)</AppText>
+        <TextInput
+          style={styles.input}
+          keyboardType="numeric"
+          value={carbs}
+          onChangeText={setCarbs}
+          accessibilityLabel="Carbs (g)"
+        />
+        {macroDetail(carbsNumber, 4)}
 
-      <Text style={styles.label}>Fat (g)</Text>
-      <TextInput
-        style={styles.input}
-        keyboardType="numeric"
-        value={fat}
-        onChangeText={setFat}
-        accessibilityLabel="Fat (g)"
-      />
-      {macroDetail(fatNumber, 9)}
-      {filled ? (
-        <Text style={styles.hint}>Filled in from the helper. Check the numbers, then tap Save Goals.</Text>
-      ) : null}
+        <AppText variant="labelSmall" style={styles.label}>Fat (g)</AppText>
+        <TextInput
+          style={styles.input}
+          keyboardType="numeric"
+          value={fat}
+          onChangeText={setFat}
+          accessibilityLabel="Fat (g)"
+        />
+        {macroDetail(fatNumber, 9)}
+        {filled ? (
+          <AppText variant="small" style={styles.hint}>
+            Filled in from the helper. Check the numbers, then tap Save Goals.
+          </AppText>
+        ) : null}
 
-      <Text style={styles.label}>Daily Calories</Text>
-      <Text style={styles.calories}>{calories} kcal</Text>
-      <Text style={styles.hint}>Calculated: protein × 4 + carbs × 4 + fat × 9</Text>
+        <AppText variant="labelSmall" style={styles.label}>Daily Calories</AppText>
+        <AppText variant="title">{calories} kcal</AppText>
+        <AppText variant="small" style={styles.hint}>
+          Calculated: protein × 4 + carbs × 4 + fat × 9
+        </AppText>
 
-      <Pressable
-        style={[styles.saveButton, !isValid && styles.saveButtonDisabled]}
-        onPress={handleSave}
-        disabled={!isValid || isSaving}
-      >
-        {isSaving ? (
-          <ActivityIndicator color={colors.onPrimary} />
-        ) : (
-          <Text style={styles.saveButtonText}>Save Goals</Text>
-        )}
-      </Pressable>
+        <Button
+          title="Save Goals"
+          onPress={handleSave}
+          disabled={!isValid}
+          loading={isSaving}
+          style={styles.saveButton}
+        />
+      </Card>
     </ScrollView>
   );
 }
@@ -295,7 +294,7 @@ function GoalHelper({
 
   return (
     <View style={styles.helperBody}>
-      <Text style={styles.helperLabel}>Sex (for the formula)</Text>
+      <AppText variant="labelSmall" style={styles.helperLabel}>Sex (for the formula)</AppText>
       <Chips labels={['Male', 'Female']} selected={sexIndex} onSelect={setSexIndex} />
 
       <LabeledInput
@@ -309,17 +308,19 @@ function GoalHelper({
       <LabeledInput label="Height (cm)" keyboardType="numeric" value={height} onChangeText={setHeight} />
       <LabeledInput label="Weight (kg)" keyboardType="numeric" value={weight} onChangeText={setWeight} />
       {trendWeightKg === undefined ? (
-        <Text style={styles.weightHint}>Log a weigh-in on Progress to fill this in automatically.</Text>
+        <AppText variant="small" style={styles.weightHint}>
+          Log a weigh-in on Progress to fill this in automatically.
+        </AppText>
       ) : null}
 
-      <Text style={styles.helperLabel}>Activity</Text>
+      <AppText variant="labelSmall" style={styles.helperLabel}>Activity</AppText>
       <Chips labels={ACTIVITY_LEVELS.map((a) => a.label)} selected={activityIndex} onSelect={setActivityIndex} />
 
-      <Text style={styles.helperLabel}>Goal</Text>
+      <AppText variant="labelSmall" style={styles.helperLabel}>Goal</AppText>
       <Chips labels={PACES.map((p) => p.label)} selected={paceIndex} onSelect={handlePace} />
 
       <View style={styles.stepRow}>
-        <Text style={styles.stepLabel}>Protein (g per kg)</Text>
+        <AppText variant="labelSmall" style={styles.stepLabel}>Protein (g per kg)</AppText>
         <Stepper
           value={perKg.proteinPerKg.toFixed(1)}
           decreaseLabel="Less protein"
@@ -329,7 +330,7 @@ function GoalHelper({
         />
       </View>
       <View style={styles.stepRow}>
-        <Text style={styles.stepLabel}>Fat (g per kg)</Text>
+        <AppText variant="labelSmall" style={styles.stepLabel}>Fat (g per kg)</AppText>
         <Stepper
           value={perKg.fatPerKg.toFixed(1)}
           decreaseLabel="Less fat"
@@ -340,74 +341,56 @@ function GoalHelper({
       </View>
 
       {target?.clamped && sex ? (
-        <Text style={styles.clampNote}>
+        <AppText variant="small" style={styles.clampNote}>
           Raised to the {MIN_KCAL[sex]} kcal minimum. A slower pace is easier to keep.
-        </Text>
+        </AppText>
       ) : null}
 
-      <Pressable
-        style={[styles.fillButton, !target && styles.saveButtonDisabled]}
+      <Button
+        variant="secondary"
+        title="Fill in suggestion"
         onPress={handleFill}
         disabled={!target}
-        accessibilityRole="button"
-        accessibilityState={{ disabled: !target }}
         accessibilityHint={missing ?? undefined}
-      >
-        <Text style={styles.fillButtonText}>Fill in suggestion</Text>
-      </Pressable>
-      {missing ? <Text style={styles.hint}>{missing}</Text> : null}
-      <Text style={styles.hint}>Estimate only, not medical advice.</Text>
+        style={styles.fillButton}
+      />
+      {missing ? <AppText variant="small" style={styles.helperHint}>{missing}</AppText> : null}
+      <AppText variant="small" style={styles.helperHint}>Estimate only, not medical advice.</AppText>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
-  content: { padding: 16 },
+  container: { flex: 1, backgroundColor: colors.surface },
+  content: { padding: spacing.lg, gap: spacing.lg },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  label: { fontSize: 14, fontWeight: '600', marginTop: 12, marginBottom: 8 },
+  fields: { gap: 0, paddingTop: spacing.xs },
+  label: { marginTop: spacing.md, marginBottom: spacing.sm },
   input: {
     borderWidth: 1,
     borderColor: colors.borderStrong,
-    borderRadius: 8,
+    borderRadius: radius.md,
     padding: 14,
     fontSize: 16,
     color: colors.text,
   },
-  calories: { fontSize: 20, fontWeight: '700' },
-  hint: { fontSize: 13, color: colors.muted, marginTop: 4 },
-  saveButton: {
-    backgroundColor: colors.primary,
-    borderRadius: 8,
-    padding: 14,
-    alignItems: 'center',
-    marginTop: 24,
-  },
-  saveButtonDisabled: { opacity: 0.5 },
-  saveButtonText: { color: colors.onPrimary, fontSize: 16, fontWeight: '600' },
-  helper: { backgroundColor: colors.surface, borderRadius: radius.lg, overflow: 'hidden' },
+  hint: { marginTop: spacing.xs },
+  helperHint: { marginTop: spacing.xs, color: colors.textSecondary },
+  saveButton: { marginTop: spacing.xl },
+  helper: { backgroundColor: colors.background, borderRadius: radius.lg, overflow: 'hidden' },
   helperToggle: {
     flexDirection: 'row',
     alignItems: 'center',
     minHeight: 56,
     paddingHorizontal: spacing.lg,
   },
-  helperTitle: { flex: 1, fontSize: 16, fontWeight: '600', color: colors.text },
   helperBody: { paddingHorizontal: spacing.lg, paddingBottom: spacing.lg },
-  helperLabel: { fontSize: 14, fontWeight: '600', color: colors.text, marginBottom: spacing.xs },
+  helperLabel: { marginBottom: spacing.xs },
   hidden: { display: 'none' },
   // Pulled up under the Weight box it explains (LabeledInput adds space below itself).
-  weightHint: { fontSize: 13, color: colors.muted, marginTop: -spacing.sm, marginBottom: spacing.md },
-  fillButton: {
-    borderWidth: 1,
-    borderColor: colors.primary,
-    borderRadius: 8,
-    padding: 14,
-    alignItems: 'center',
-    marginTop: spacing.md,
-  },
-  fillButtonText: { color: colors.primary, fontSize: 16, fontWeight: '600' },
+  weightHint: { color: colors.textSecondary, marginTop: -spacing.sm, marginBottom: spacing.md },
+  fillButton: { marginTop: spacing.md },
   stepRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, minHeight: 48 },
-  stepLabel: { flex: 1, fontSize: 14, fontWeight: '600', color: colors.text },
-  clampNote: { fontSize: 13, color: colors.warningText, marginTop: spacing.sm },
+  stepLabel: { flex: 1 },
+  clampNote: { color: colors.warningText, marginTop: spacing.sm },
 });

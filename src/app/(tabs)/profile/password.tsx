@@ -1,12 +1,15 @@
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet } from 'react-native';
 
+import { AppText } from '../../../components/AppText';
+import { Button } from '../../../components/Button';
+import { Card } from '../../../components/Card';
 import { LabeledInput } from '../../../components/LabeledInput';
 import { settingsStyles } from '../../../components/SettingsList';
 import { useSession } from '../../../context/AuthProvider';
 import { supabase } from '../../../lib/supabase';
-import { colors, radius, spacing } from '../../../theme';
+import { colors, spacing } from '../../../theme';
 
 export default function ChangePassword() {
   const { session } = useSession();
@@ -65,7 +68,7 @@ export default function ChangePassword() {
       contentContainerStyle={settingsStyles.content}
       keyboardShouldPersistTaps="handled"
     >
-      <View>
+      <Card>
         <LabeledInput
           label="Current password"
           accessibilityLabel="Current password"
@@ -98,50 +101,33 @@ export default function ChangePassword() {
         />
 
         {error ? (
-          <Text
+          <AppText
             style={styles.error}
             selectable
             accessibilityRole="alert"
             accessibilityLiveRegion="polite"
           >
             {error}
-          </Text>
+          </AppText>
         ) : null}
         {done ? (
-          <Text style={styles.success} accessibilityRole="alert" accessibilityLiveRegion="polite">
+          <AppText
+            variant="label"
+            style={styles.success}
+            accessibilityRole="alert"
+            accessibilityLiveRegion="polite"
+          >
             Password changed.
-          </Text>
+          </AppText>
         ) : null}
 
-        <Pressable
-          style={[styles.button, !canSave && styles.buttonDisabled]}
-          onPress={handleSave}
-          disabled={!canSave}
-          accessibilityRole="button"
-          accessibilityLabel="Change password"
-          accessibilityState={{ disabled: !canSave, busy: isSubmitting }}
-        >
-          {isSubmitting ? (
-            <ActivityIndicator color={colors.onPrimary} />
-          ) : (
-            <Text style={styles.buttonText}>Change password</Text>
-          )}
-        </Pressable>
-      </View>
+        <Button title="Change password" onPress={handleSave} disabled={!canSave} loading={isSubmitting} />
+      </Card>
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  button: {
-    backgroundColor: colors.primary,
-    borderRadius: radius.md,
-    padding: 14,
-    alignItems: 'center',
-    marginTop: spacing.sm,
-  },
-  buttonDisabled: { opacity: 0.5 },
-  buttonText: { color: colors.onPrimary, fontSize: 16, fontWeight: '600' },
   error: { color: colors.danger, marginBottom: spacing.md },
-  success: { color: colors.success, marginBottom: spacing.md, fontWeight: '600' },
+  success: { color: colors.success, marginBottom: spacing.md },
 });

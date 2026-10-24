@@ -23,6 +23,8 @@ All colours live in `colors` in `src/theme.ts`. Never write a hex value in a scr
   big background. Streaks keep their own orange `streak`.
 - `success` / `danger` / `warning` carry meaning (done, delete, careful). Don't use them as decoration.
 - White text goes on `successDark`, not `success` (white on `success` is only 3.3:1).
+- **One look:** every screen is grey `surface`, and its content sits in white `Card`s or
+  `SettingsGroup`s. Text placed straight on the grey screen uses `textSecondary`, never `muted`.
 - **Dark mode is planned** (issue #26). Taking every colour from `colors` keeps that job to one
   place, but it is not free. Styles built with `StyleSheet.create` at import time read `colors` once,
   so dark mode will need a `useColors()` hook (or similar), and screens will read colours at render
@@ -63,15 +65,16 @@ Use `<AppText variant="...">` (`src/components/AppText.tsx`), not `fontSize`. Th
 | Component    | Use it for |
 |--------------|------------|
 | `AppText`    | All text. Pick a `variant`. |
-| `Button`     | Full-width or stand-alone actions. `variant`: `primary` (the main action: one per screen, or one per card on dashboard screens like Home and Progress), `secondary` (other actions; white with an outline), `success` (dark green `successDark` with white text), `danger` (only the Delete account screen's main button; see Destructive actions). Handles the pressed look, `disabled`, and `loading` (shows a spinner, keeps its width, blocks taps). At least 48 dp tall. `style` is for layout only. |
+| `Button`     | Full-width or stand-alone actions. `variant`: `primary` (the main action: one per screen, or one per card on dashboard screens like Home and Progress), `secondary` (other actions; white with an outline), `success` (dark green `successDark` with white text), `danger` (only the Delete account screen's main button; see Destructive actions). Handles the pressed look, `disabled`, and `loading` (shows a spinner, keeps its width, blocks taps). At least 48 dp tall. `accessibilityHint` says what is missing while the button is disabled. `style` is for layout only. |
 | `Card`       | A white rounded box grouping one topic on a grey screen. Pass content as children. Don't wrap every list row in a card: use list rows with separators for that. |
 | `EmptyState` | "Nothing here yet" text, with optional children for one action below it (usually a `Button`). Only for *empty*, never for loading or errors. |
+| `SettingsList` | Settings screens (Profile): `SettingsGroup` = white rounded group on the grey screen, `SettingsRow` = icon + label row (a chevron opens a screen, `destructive` only for delete), `Stepper` = − value +. `settingsStyles` gives the grey screen. |
 | `TextLink`   | A blue text link (`label` in `primary`) with a 48 dp tap area that hugs the text. Read by TalkBack as "…, link". Handles the pressed look and `disabled`. `tone="danger"` makes it red (`dangerDark`) for deletes and removes. Pass `onPress` (e.g. `router.navigate(href)`). `style` is for layout only. |
 
 There is **no small button size yet**. If a screen needs one, add `size="sm"` through the system,
 not by hand in one screen.
 
-Older shared pieces are still in use: `LabeledInput`, `Chips`, `SettingsList`, `CalorieRing`,
+Older shared pieces are still in use: `LabeledInput`, `Chips`, `CalorieRing`,
 `MonthCalendar`, `RestTimeInput`, `src/components/workouts/*`.
 
 ## States
@@ -105,7 +108,8 @@ still sits on white only (4.4:1 on grey).
 - Text grows with the phone's font-size setting. Never turn off `allowFontScaling`. Layouts wrap
   instead of cutting text off.
 - Grey ladder text (`small`, `caption`) goes on white (cards), not directly on the grey screen,
-  where it is too faint. Never use `subtle` or `disabled` for text that must be read.
+  where it is too faint. Text straight on the grey screen uses `textSecondary`. Never use `subtle`
+  or `disabled` for text that must be read.
 
 ## Rules for new UI
 
@@ -122,4 +126,4 @@ still sits on white only (4.4:1 on grey).
 
 Most screens still use hand-made buttons, cards and font sizes. They move over one area at a time
 through the "[DS] Design system: migrate …" issues on the Plucky roadmap (#64–#68). So far
-**Auth (Login, Signup, Forgot password)**, **Food**, **Workouts** and **Progress** have moved.
+**Auth (Login, Signup, Forgot password)**, **Food**, **Workouts**, **Progress** and **Profile** have moved.

@@ -1,20 +1,14 @@
 import { useState } from 'react';
-import {
-  ActivityIndicator,
-  Alert,
-  Platform,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { Alert, Platform, ScrollView, StyleSheet } from 'react-native';
 
+import { AppText } from '../../../components/AppText';
+import { Button } from '../../../components/Button';
+import { Card } from '../../../components/Card';
 import { LabeledInput } from '../../../components/LabeledInput';
 import { settingsStyles } from '../../../components/SettingsList';
 import { useSession } from '../../../context/AuthProvider';
 import { supabase } from '../../../lib/supabase';
-import { colors, radius, spacing } from '../../../theme';
+import { colors, spacing } from '../../../theme';
 
 const CONFIRM_TITLE = 'Are you sure?';
 const CONFIRM_MESSAGE = 'Your account and all your data will be deleted forever.';
@@ -85,16 +79,16 @@ export default function DeleteAccount() {
       contentContainerStyle={settingsStyles.content}
       keyboardShouldPersistTaps="handled"
     >
-      <View style={styles.info}>
-        <Text style={styles.heading} accessibilityRole="header">This deletes your account forever</Text>
-        <Text style={styles.body}>
+      <Card>
+        <AppText variant="heading">This deletes your account forever</AppText>
+        <AppText style={{ color: colors.textSecondary }}>
           Everything you have saved in Plucky is removed: your food diary, workouts, weights, goals,
           routines, custom foods and exercises, and saved meals.
-        </Text>
-        <Text style={styles.body}>This cannot be undone.</Text>
-      </View>
+        </AppText>
+        <AppText style={{ color: colors.textSecondary }}>This cannot be undone.</AppText>
+      </Card>
 
-      <View>
+      <Card>
         <LabeledInput
           label="Type your password to continue"
           accessibilityLabel="Password"
@@ -107,47 +101,28 @@ export default function DeleteAccount() {
         />
 
         {error ? (
-          <Text
+          <AppText
             style={styles.error}
             selectable
             accessibilityRole="alert"
             accessibilityLiveRegion="polite"
           >
             {error}
-          </Text>
+          </AppText>
         ) : null}
 
-        <Pressable
-          style={[styles.button, !canDelete && styles.buttonDisabled]}
+        <Button
+          variant="danger"
+          title="Delete my account"
           onPress={handleDelete}
           disabled={!canDelete}
-          accessibilityRole="button"
-          accessibilityLabel="Delete my account"
-          accessibilityState={{ disabled: !canDelete, busy: isSubmitting }}
-        >
-          {isSubmitting ? (
-            <ActivityIndicator color={colors.onPrimary} />
-          ) : (
-            <Text style={styles.buttonText}>Delete my account</Text>
-          )}
-        </Pressable>
-      </View>
+          loading={isSubmitting}
+        />
+      </Card>
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  info: { gap: spacing.sm },
-  heading: { fontSize: 18, fontWeight: '700', color: colors.text },
-  body: { fontSize: 15, color: colors.textSecondary },
-  button: {
-    backgroundColor: colors.danger,
-    borderRadius: radius.md,
-    padding: 14,
-    alignItems: 'center',
-    marginTop: spacing.sm,
-  },
-  buttonDisabled: { opacity: 0.5 },
-  buttonText: { color: colors.onPrimary, fontSize: 16, fontWeight: '600' },
   error: { color: colors.danger, marginBottom: spacing.md },
 });
