@@ -194,7 +194,7 @@ export default function ActiveWorkout() {
             </AppText>
             <Pressable
               onPress={() => setsHint.setOpen(false)}
-              hitSlop={14}
+              hitSlop={{ top: 14, bottom: 14, left: 17, right: 17 }}
               accessibilityRole="button"
               accessibilityLabel="Close tip"
             >

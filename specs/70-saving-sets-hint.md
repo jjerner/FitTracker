@@ -13,12 +13,12 @@ On the active workout screen, a small tip behind an ⓘ next to the elapsed time
 - `src/hooks/useSetsHint.ts` (new): a copy of `useRestVibration.ts` with query key `['setsHintOpen']`. Return `{ open: query.data, setOpen: saveMutation.mutate }`. Do **not** default `open` to anything, because `undefined` means "still loading".
 - `src/app/(tabs)/workouts/active.tsx`:
   - In `ActiveWorkout`, call `const setsHint = useSetsHint();` together with the other hooks, **before** the `if (isLoading || !log)` early return.
-  - Replace the bare `<ElapsedClock … />` with a row: `<View style={styles.clockRow}>` holding `<ElapsedClock />` and a `Pressable` with an `AppText` "ⓘ" in `colors.primary`. Tapping it calls `setsHint.setOpen(!setsHint.open)`. The Pressable gets `hitSlop` up to 48 dp, `accessibilityRole="button"`, `accessibilityLabel="How sets are saved"` and `accessibilityState={{ expanded: setsHint.open === true }}`.
+  - Replace the bare `<ElapsedClock … />` with a row: `<View style={styles.clockRow}>` holding `<ElapsedClock />` and a `Pressable` with a 20 px `SymbolView` info icon (`{ ios: 'info.circle', android: 'info', web: 'info' }`, as in `LabeledInput`) in `colors.primary`. Tapping it calls `setsHint.setOpen(!setsHint.open)`. The Pressable gets `hitSlop` up to 48 dp, `accessibilityRole="button"`, `accessibilityLabel="How sets are saved"` and `accessibilityState={{ expanded: setsHint.open === true }}`.
   - Under the row, render the box only when `setsHint.open === true`. This means no box while the setting loads, so there is no flash. The box is a `View` (`styles.hint`): row layout, `backgroundColor: colors.primaryBg`, `borderRadius: radius.md`, `padding: spacing.md`, `gap: spacing.sm`, `marginBottom: spacing.lg`. Inside it: `<AppText variant="small" style={{ flex: 1, color: colors.text }}>` with the text below, then a `Pressable` "✕" (`hitSlop`, `accessibilityRole="button"`, `accessibilityLabel="Close tip"`) that calls `setsHint.setOpen(false)`.
   - Text, word for word: "Each set saves when you tick it. Tap the green tick again to change a set. You can leave and come back any time."
   - Styles: move the margins from `subtitle` to the new `clockRow` (`flexDirection: 'row'`, `alignItems: 'center'`, `gap: spacing.sm`, `marginTop: spacing.xs`, `marginBottom: spacing.lg`). `subtitle` keeps only `color: colors.textSecondary`. When the box is open, `clockRow` uses `marginBottom: spacing.sm` so the box sits close under the timer. `ElapsedClock` itself stays the same, so only the clock re-renders every second.
 - `src/theme.ts`: add `primaryBg: '#dbeafe'` next to `primary` / `primaryLight`. This is the light-blue tint, the same idea as `successBg` and `warningBg`.
-- `docs/design-system.md`: add `ⓘ` to the glyph exception list (line 54). Under Colour, add one line: "`primaryBg` is a light-blue tint for info boxes (tips), with `text` on it."
+- `docs/design-system.md`: under Colour, add one line: "`primaryBg` is a light-blue tint for info boxes (tips), with `text` on it."
 
 ## Reuse
 
@@ -70,7 +70,7 @@ None. No SQL and no new APK. JS only, ships with `eas update`.
 - New: the ⓘ button next to the timer, the light-blue tip box (built in the screen, not a shared component), and the `primaryBg` colour token.
 
 **Look**
-- ⓘ: `AppText variant="label"` in `primary`, so it reads as "you can tap this" and is a bit bigger than the 14 px timer. Blue on the grey screen is about 4.7:1, which passes.
+- ⓘ: a 20 px `SymbolView` info icon in `primary` (the app's icon pattern, so it renders the same on Android), so it reads as "you can tap this" and is a bit bigger than the 14 px timer. Blue on the grey screen is about 4.7:1, which passes.
 - Box: `primaryBg` fill, no border or shadow, `radius.md`, `spacing.md` padding. It is a quiet note, not a `Card`. The text is `small` in `text` (about 15:1 on the light blue). ✕ is `label` in `textSecondary`, at the top right of the box (`alignItems: 'flex-start'`), so it stays put when the text wraps.
 - The box sits between the timer and the first exercise card, `spacing.lg` above the card, the same gap there is today.
 
