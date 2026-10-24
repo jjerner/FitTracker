@@ -13,7 +13,8 @@ const PAGE = 1000;
 export function toCsv(rows: Cell[][]): string {
   const cell = (value: Cell) => {
     if (value == null) return '';
-    const text = String(value);
+    // Stop Excel/Sheets running a text cell as a formula; numbers like -5 stay as they are.
+    const text = typeof value === 'string' && /^[=+\-@\t\r]/.test(value) ? `'${value}` : String(value);
     return /[",\r\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
   };
   return '﻿' + rows.map((row) => row.map(cell).join(',')).join('\r\n');

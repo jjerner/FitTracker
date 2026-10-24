@@ -28,6 +28,10 @@ describe('toCsv', () => {
       '﻿"Ost, mild","say ""hi""","one\ntwo","one\r\ntwo"'
     );
   });
+
+  it('prefixes text that starts like a formula, but not numbers', () => {
+    expect(toCsv([['=1+1', -5]])).toBe("﻿'=1+1,-5");
+  });
 });
 
 describe('foodRow amount', () => {
