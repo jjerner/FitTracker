@@ -1,15 +1,10 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
-import {
-  ActivityIndicator,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
+import { ActivityIndicator, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 
+import { AppText } from '../../../components/AppText';
+import { Button } from '../../../components/Button';
+import { Card } from '../../../components/Card';
 import { SettingsGroup, SettingsRow, settingsStyles } from '../../../components/SettingsList';
 import { useSession } from '../../../context/AuthProvider';
 import { useDisplayName } from '../../../hooks/useDisplayName';
@@ -25,15 +20,15 @@ export default function Profile() {
       contentContainerStyle={settingsStyles.content}
       keyboardShouldPersistTaps="handled"
     >
-      <View>
-        <Text style={styles.label}>Name</Text>
+      <Card>
+        <AppText variant="labelSmall" style={styles.label}>Name</AppText>
         {isLoading ? (
           <ActivityIndicator />
         ) : (
           <NameEditor savedName={savedName ?? ''} onSave={saveName} isSaving={isSaving} />
         )}
-        <Text style={styles.email}>{session?.user.email}</Text>
-      </View>
+        <AppText variant="small">{session?.user.email}</AppText>
+      </Card>
 
       <SettingsGroup>
         <SettingsRow
@@ -90,29 +85,13 @@ function NameEditor({
         value={name}
         onChangeText={setName}
       />
-      <Pressable
-        style={[styles.saveButton, !isChanged && styles.saveButtonDisabled]}
-        onPress={() => onSave(trimmed || null)}
-        disabled={!isChanged || isSaving}
-      >
-        {isSaving ? (
-          <ActivityIndicator color={colors.onPrimary} />
-        ) : (
-          <Text style={styles.saveButtonText}>Save</Text>
-        )}
-      </Pressable>
+      <Button title="Save" onPress={() => onSave(trimmed || null)} disabled={!isChanged} loading={isSaving} />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  label: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: colors.muted,
-    textTransform: 'uppercase',
-    marginBottom: spacing.sm,
-  },
+  label: { color: colors.textSecondary, textTransform: 'uppercase' },
   nameRow: { flexDirection: 'row', gap: spacing.sm },
   nameInput: {
     flex: 1,
@@ -123,13 +102,4 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: colors.text,
   },
-  saveButton: {
-    backgroundColor: colors.primary,
-    borderRadius: radius.md,
-    paddingHorizontal: 20,
-    justifyContent: 'center',
-  },
-  saveButtonDisabled: { opacity: 0.5 },
-  saveButtonText: { color: colors.onPrimary, fontSize: 16, fontWeight: '600' },
-  email: { fontSize: 14, color: colors.muted, marginTop: spacing.sm },
 });

@@ -20,9 +20,19 @@ type Props = {
   loading?: boolean;
   // Layout only (margins, flex); colours come from the variant.
   style?: StyleProp<ViewStyle>;
+  // Says what is missing while the button is disabled.
+  accessibilityHint?: string;
 };
 
-export function Button({ title, onPress, variant = 'primary', disabled, loading, style }: Props) {
+export function Button({
+  title,
+  onPress,
+  variant = 'primary',
+  disabled,
+  loading,
+  style,
+  accessibilityHint,
+}: Props) {
   const { color, ...box } = variants[variant];
   const blocked = disabled || loading;
 
@@ -30,6 +40,7 @@ export function Button({ title, onPress, variant = 'primary', disabled, loading,
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={title}
+      accessibilityHint={accessibilityHint}
       accessibilityState={{ disabled: !!blocked, busy: !!loading }}
       disabled={blocked}
       onPress={onPress}

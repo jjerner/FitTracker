@@ -2,7 +2,8 @@ import { Children, type ComponentProps, type ReactNode } from 'react';
 import { SymbolView } from 'expo-symbols';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { colors, radius, spacing } from '../theme';
+import { colors, radius, spacing, typography } from '../theme';
+import { AppText } from './AppText';
 
 type Icon = ComponentProps<typeof SymbolView>['name'];
 
@@ -53,7 +54,9 @@ export function SettingsRow({
       ) : (
         <View style={styles.iconSpacer} />
       )}
-      <Text style={[styles.rowText, destructive && styles.rowTextDestructive]}>{label}</Text>
+      <AppText variant="label" style={[styles.rowText, destructive && styles.rowTextDestructive]}>
+        {label}
+      </AppText>
       {children}
       {chevron ? (
         <SymbolView
@@ -101,7 +104,7 @@ export function Stepper({
       >
         <Text style={styles.stepButtonText}>−</Text>
       </Pressable>
-      <Text style={styles.timeText}>{value}</Text>
+      <AppText variant="label" style={styles.timeText}>{value}</AppText>
       <Pressable
         style={styles.stepButton}
         hitSlop={6}
@@ -116,12 +119,12 @@ export function Stepper({
 }
 
 export const settingsStyles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
+  container: { flex: 1, backgroundColor: colors.surface },
   content: { padding: spacing.lg, gap: spacing.xl },
 });
 
 const styles = StyleSheet.create({
-  group: { backgroundColor: colors.surface, borderRadius: radius.lg, overflow: 'hidden' },
+  group: { backgroundColor: colors.background, borderRadius: radius.lg, overflow: 'hidden' },
   separator: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.borderStrong },
   row: {
     flexDirection: 'row',
@@ -133,17 +136,17 @@ const styles = StyleSheet.create({
   },
   rowPressed: { backgroundColor: colors.border },
   iconSpacer: { width: 22 },
-  rowText: { flex: 1, fontSize: 16, fontWeight: '600', color: colors.text },
+  rowText: { flex: 1 },
   rowTextDestructive: { color: colors.dangerDark },
   // 36 dp visible, hitSlop 6 makes the tap area 48 dp.
   stepButton: {
     width: 36,
     height: 36,
     borderRadius: radius.md,
-    backgroundColor: colors.background,
+    backgroundColor: colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  stepButtonText: { fontSize: 20, fontWeight: '600', color: colors.primary },
-  timeText: { fontSize: 16, fontWeight: '600', color: colors.text, minWidth: 52, textAlign: 'center' },
+  stepButtonText: { ...typography.heading, color: colors.primary },
+  timeText: { minWidth: 52, textAlign: 'center' },
 });
