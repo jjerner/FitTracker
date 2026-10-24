@@ -165,7 +165,7 @@ function WeightCard({ chartWidth }: { chartWidth: number }) {
             data2={trend.map((value) => ({ value }))}
             width={chartWidth}
             height={160}
-            // Not adjustToWidth: it puts the last point on the right edge and clips its date.
+            // Not adjustToWidth: it puts the last point on the right edge and clips its date. 40 = default initialSpacing + endSpacing.
             spacing={(chartWidth - 40) / (points.length - 1)}
             yAxisOffset={minValue}
             maxValue={maxValue - minValue}
