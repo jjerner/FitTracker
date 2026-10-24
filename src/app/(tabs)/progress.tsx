@@ -510,7 +510,7 @@ const styles = StyleSheet.create({
   rangeOptionActive: { color: colors.primary },
   rangeTabs: { flexDirection: 'row', gap: spacing.xl },
   // A real 48 dp box: hitSlop can't reach past the card's edge.
-  rangeTab: { minHeight: 48, justifyContent: 'center' },
+  rangeTab: { minHeight: 48, minWidth: 48, alignItems: 'center', justifyContent: 'center' },
   legend: { color: colors.textSecondary, marginTop: spacing.sm },
   legendTrend: { color: colors.primary },
   legendDaily: { color: colors.subtle },
