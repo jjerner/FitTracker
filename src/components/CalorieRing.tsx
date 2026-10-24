@@ -1,12 +1,13 @@
 import { StyleSheet, Text, View } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 
+import type { NutritionGoals } from '../types/domain';
 import { colors, spacing } from '../theme';
 
-const RING_SIZE = 160;
-const RING_STROKE = 14;
+const RING_SIZE = 110;
+const RING_STROKE = 10;
 
-export function CalorieRing({ eaten, goal }: { eaten: number; goal: number | null }) {
+function CalorieRing({ eaten, goal }: { eaten: number; goal: number | null }) {
   const r = (RING_SIZE - RING_STROKE) / 2;
   const circumference = 2 * Math.PI * r;
   const share = goal ? Math.min(1, eaten / goal) : 0;
@@ -47,7 +48,7 @@ export function CalorieRing({ eaten, goal }: { eaten: number; goal: number | nul
         </Svg>
         <View style={styles.ringCenter}>
           <Text style={styles.ringNumber}>{eatenKcal}</Text>
-          <Text style={styles.muted}>{goal != null ? `of ${goal} kcal` : 'kcal'}</Text>
+          <Text style={styles.ringSub}>{goal != null ? `of ${goal} kcal` : 'kcal'}</Text>
         </View>
       </View>
       {left != null ? (
@@ -59,7 +60,7 @@ export function CalorieRing({ eaten, goal }: { eaten: number; goal: number | nul
   );
 }
 
-export function MacroBar({
+function MacroBar({
   label,
   value,
   goal,
@@ -70,7 +71,7 @@ export function MacroBar({
 }) {
   const share = goal ? Math.min(1, value / goal) : 0;
   return (
-    <View style={styles.macro}>
+    <View>
       <Text style={styles.macroText}>{label}</Text>
       <Text style={[styles.muted, styles.macroValue]}>
         {Math.round(value)}
@@ -85,8 +86,29 @@ export function MacroBar({
   );
 }
 
+export function NutritionSummary({
+  totals,
+  goals,
+}: {
+  totals: { calories: number; protein: number; carbs: number; fat: number };
+  goals: NutritionGoals | null | undefined;
+}) {
+  return (
+    <View style={styles.summary}>
+      <CalorieRing eaten={totals.calories} goal={goals?.caloriesKcal ?? null} />
+      <View style={styles.macroList}>
+        <MacroBar label="Carbs" value={totals.carbs} goal={goals?.carbsG} />
+        <MacroBar label="Protein" value={totals.protein} goal={goals?.proteinG} />
+        <MacroBar label="Fat" value={totals.fat} goal={goals?.fatG} />
+      </View>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   muted: { fontSize: 13, color: colors.muted },
+  summary: { flexDirection: 'row', alignItems: 'center', gap: spacing.lg },
+  macroList: { flex: 1, gap: spacing.sm },
   ringBlock: { alignItems: 'center', gap: spacing.sm },
   ring: { width: RING_SIZE, height: RING_SIZE },
   ringCenter: {
@@ -97,11 +119,13 @@ const styles = StyleSheet.create({
     left: 0,
     alignItems: 'center',
     justifyContent: 'center',
+    // Keep the text inside the hole so big font sizes wrap instead of running over the stroke.
+    paddingHorizontal: RING_STROKE,
   },
-  ringNumber: { fontSize: 28, fontWeight: '700', color: colors.text, fontVariant: ['tabular-nums'] },
-  leftLine: { fontSize: 14, fontWeight: '600', color: colors.text },
+  ringNumber: { fontSize: 28, fontWeight: '700', color: colors.text, fontVariant: ['tabular-nums'], textAlign: 'center' },
+  ringSub: { fontSize: 13, color: colors.muted, textAlign: 'center' },
+  leftLine: { fontSize: 14, fontWeight: '600', color: colors.text, textAlign: 'center' },
   overLine: { color: colors.danger },
-  macro: { flex: 1 },
   macroText: { fontSize: 14, fontWeight: '600', color: colors.text },
   macroValue: { marginBottom: spacing.xs, fontVariant: ['tabular-nums'] },
   barTrack: { height: 6, borderRadius: 3, backgroundColor: colors.border, overflow: 'hidden' },

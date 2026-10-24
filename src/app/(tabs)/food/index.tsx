@@ -15,7 +15,7 @@ import {
 
 import { AppText } from '../../../components/AppText';
 import { Button } from '../../../components/Button';
-import { CalorieRing, MacroBar } from '../../../components/CalorieRing';
+import { NutritionSummary } from '../../../components/CalorieRing';
 import { Card } from '../../../components/Card';
 import { MonthCalendar } from '../../../components/MonthCalendar';
 import { TextLink } from '../../../components/TextLink';
@@ -286,13 +286,8 @@ function DiaryContent({
 
   return (
     <>
-      <Card style={{ gap: spacing.lg, marginBottom: spacing.lg }}>
-        <CalorieRing eaten={totals.calories} goal={goals?.caloriesKcal ?? null} />
-        <View style={styles.macroList}>
-          <MacroBar label="Carbs" value={totals.carbs} goal={goals?.carbsG} />
-          <MacroBar label="Protein" value={totals.protein} goal={goals?.proteinG} />
-          <MacroBar label="Fat" value={totals.fat} goal={goals?.fatG} />
-        </View>
+      <Card style={{ marginBottom: spacing.lg }}>
+        <NutritionSummary totals={totals} goals={goals} />
       </Card>
 
       {MEAL_TYPES.map((mealType) => {
@@ -560,7 +555,6 @@ const styles = StyleSheet.create({
   tickText: { fontSize: 14, color: colors.onPrimary, fontWeight: '700' },
   unticked: { color: colors.muted },
   content: { padding: 16, paddingBottom: spacing.xxl },
-  macroList: { flexDirection: 'row', gap: 12 },
   addButton: {
     width: 28,
     height: 28,

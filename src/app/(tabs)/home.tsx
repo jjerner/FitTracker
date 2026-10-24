@@ -12,7 +12,7 @@ import {
   View,
 } from 'react-native';
 
-import { CalorieRing, MacroBar } from '../../components/CalorieRing';
+import { NutritionSummary } from '../../components/CalorieRing';
 import { useDiaryDate } from '../../context/DiaryDateProvider';
 import { useDisplayName } from '../../hooks/useDisplayName';
 import { useFoodDiary } from '../../hooks/useFoodDiary';
@@ -142,14 +142,7 @@ export default function Home() {
         {isLoading ? (
           <ActivityIndicator />
         ) : (
-          <View style={styles.foodRow}>
-            <CalorieRing eaten={totals.calories} goal={goals?.caloriesKcal ?? null} />
-            <View style={styles.macroList}>
-              <MacroBar label="Carbs" value={totals.carbs} goal={goals?.carbsG} />
-              <MacroBar label="Protein" value={totals.protein} goal={goals?.proteinG} />
-              <MacroBar label="Fat" value={totals.fat} goal={goals?.fatG} />
-            </View>
-          </View>
+          <NutritionSummary totals={totals} goals={goals} />
         )}
       </Pressable>
 
@@ -224,8 +217,6 @@ const styles = StyleSheet.create({
   cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   cardTitle: { fontSize: 16, fontWeight: '600', color: colors.text },
   muted: { fontSize: 13, color: colors.muted },
-  foodRow: { gap: spacing.lg },
-  macroList: { flexDirection: 'row', gap: spacing.md },
   streak: { fontSize: 13, fontWeight: '600', color: colors.streak },
   weekRow: { flexDirection: 'row', justifyContent: 'space-between' },
   weekDay: { alignItems: 'center', gap: spacing.xs },
