@@ -154,22 +154,22 @@ export async function searchBasicFoods(query: string): Promise<Food[]> {
     .slice(0, 30);
 }
 
-// A saved food with this barcode: the user's own first, else the shared one. RLS shows only
-// shared rows and the user's own, so at most two match.
-export async function getFoodByBarcode(barcode: string): Promise<Food | null> {
+// Your own food with this barcode. Shared rows are never used, because anyone could have planted
+// them (FIX-3).
+export async function getFoodByBarcode(userId: string, barcode: string): Promise<Food | null> {
   const { data, error } = await supabase
     .from('foods')
     .select('*')
     .eq('barcode', barcode)
-    .order('created_by', { nullsFirst: false })
-    .limit(1)
+    .eq('created_by', userId)
     .maybeSingle();
   if (error) throw error;
   return data ? mapFoodRow(data) : null;
 }
 
-export async function upsertOffFood(off: OffFood): Promise<Food> {
+export async function upsertOffFood(userId: string, off: OffFood): Promise<Food> {
   const row = {
+    created_by: userId,
     source: 'off',
     barcode: off.barcode,
     name: off.name,
@@ -186,23 +186,38 @@ export async function upsertOffFood(off: OffFood): Promise<Food> {
   };
 
   if (off.barcode == null) {
+    // Reuse your earlier copy of this barcode-less product instead of saving it again (FIX-5).
+    const lookup = supabase
+      .from('foods')
+      .select('*')
+      .eq('created_by', userId)
+      .eq('source', 'off')
+      .is('barcode', null)
+      .eq('name', off.name);
+    const { data: existing, error: findError } = await (
+      off.brand == null ? lookup.is('brand', null) : lookup.eq('brand', off.brand)
+    )
+      .limit(1)
+      .maybeSingle();
+    if (findError) throw findError;
+    if (existing) return mapFoodRow(existing);
+
     const { data, error } = await supabase.from('foods').insert(row).select().single();
     if (error) throw error;
     return mapFoodRow(data);
   }
 
-  // Skip if the barcode is already saved (23505 from foods_barcode_owner_key): the database only
-  // lets people update their own foods, and these shared rows have no owner, so an update would be
-  // refused. A partial index can't be an upsert target, hence insert-and-ignore.
+  // Skip if you already saved this barcode (23505 from foods_barcode_owner_key), so the first save
+  // sticks. A partial index can't be an upsert target, hence insert-and-ignore.
   const { error } = await supabase.from('foods').insert(row);
   if (error && error.code !== '23505') throw error;
 
-  // Only the shared row: the user may also have their own custom food with this barcode.
+  // Your own row: this copy, or your custom food with this barcode.
   const { data, error: readError } = await supabase
     .from('foods')
     .select('*')
     .eq('barcode', off.barcode)
-    .is('created_by', null)
+    .eq('created_by', userId)
     .single();
   if (readError) throw readError;
   return mapFoodRow(data);

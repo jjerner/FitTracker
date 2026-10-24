@@ -46,17 +46,16 @@ What to build next lives on the [Plucky roadmap board](https://github.com/users/
 
 ## Database
 
-- Migrations live in `supabase/migrations/*.sql`, applied by the owner pasting them into the Supabase SQL Editor (no CLI link; Claude has only the anon key). **All of `0001`–`0020` are applied** (2026-10-20).
-- Next free number: **`0023`** (`0021` is planned by the drop-sets spec, `specs/3.4b-drop-sets.md`; `0022` is AU-1).
+- Migrations live in `supabase/migrations/*.sql`, applied by the owner pasting them into the Supabase SQL Editor (no CLI link; Claude has only the anon key). **`0001`–`0020` and `0022` are applied** (0022 confirmed 2026-10-24). `0023` is FIX-3: paste it only after its `eas update` (merge → `eas update` → paste 0023), because old app versions can't save OFF foods under the 0023 rule.
+- Next free number: **`0024`** (`0021` is planned by the drop-sets spec, `specs/3.4b-drop-sets.md`; `0022` is AU-1; `0023` is FIX-3).
 - Supabase auth: custom SMTP via the owner's own Gmail (app password "FitTrack", `smtp.gmail.com:465`; moving off it is #17). Sign-up and reset templates hold only `{{ .Token }}` (no links — Gmail's link scanner could burn the code); the app uses `verifyOtp`. The "Site URL" is still `localhost:3000`; it only matters if a link-based email is added.
-- Shared `foods` rows (Open Food Facts cache, Livsmedelsverket) have no owner. Any user can insert a fake shared OFF row (accepted risk while the app is shared with a few friends; revisit before a store release, see #35).
+- OFF foods are saved per user (0023). Old shared OFF rows stay readable for old diary entries, but scans never pick them.
 
 ## Known gotchas
 
 - **Never rewrite source files with PowerShell `Get-Content`/`Set-Content`** — it mangles UTF-8 (🔥 turned into `ðŸ”¥`, a BOM crept in). Use the Edit/Write tools or a Node script with explicit `utf8`. Check for damage: grep `src` for `Ã|â€|ðŸ`.
 - **Don't remove `.npmrc`** (`legacy-peer-deps=true`): EAS Build runs strict `npm ci`, which fails on the optional web-only `react-dom` peer without it.
 - `foods` barcodes are unique **per owner** (partial index `foods_barcode_owner_key`, migration 0022), and a partial index doesn't work as a PostgREST `onConflict` target. So `upsertOffFood` does a plain insert and ignores `23505` (barcode already saved) instead of an upsert.
-- RLS refuses updates to ownerless shared `foods` rows, which is why `upsertOffFood` skips existing barcodes rather than updating them.
 - Supabase caps a request at 1000 rows: read aggregates from the `daily_nutrition` view, not raw rows.
 - After any direct Supabase write that isn't done through a React Query mutation hook, `queryClient.invalidateQueries(...)` the relevant key or the UI won't update.
 - `StyleSheet.absoluteFillObject` no longer exists (RN 0.86) — use explicit `position: 'absolute', top/right/bottom/left: 0`.

@@ -3,6 +3,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 
+import { useSession } from '../../../context/AuthProvider';
 import { getFoodByBarcode, upsertOffFood } from '../../../lib/foods';
 import { getByBarcode } from '../../../lib/openFoodFacts';
 import { AppText } from '../../../components/AppText';
@@ -11,6 +12,7 @@ import { colors } from '../../../theme';
 
 export default function ScanBarcode() {
   const { meal, recipe } = useLocalSearchParams<{ meal?: string; recipe?: string }>();
+  const { session } = useSession();
   const [permission, requestPermission] = useCameraPermissions();
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -21,7 +23,7 @@ export default function ScanBarcode() {
     setError(null);
 
     try {
-      let saved = await getFoodByBarcode(barcode);
+      let saved = await getFoodByBarcode(session?.user.id as string, barcode);
 
       if (!saved) {
         const off = await getByBarcode(barcode);
@@ -33,7 +35,7 @@ export default function ScanBarcode() {
           return;
         }
 
-        saved = await upsertOffFood(off);
+        saved = await upsertOffFood(session?.user.id as string, off);
       }
       router.replace(
         `/(tabs)/food/food/${saved.id}${recipe ? '?recipe=1' : meal ? `?meal=${meal}` : ''}`
