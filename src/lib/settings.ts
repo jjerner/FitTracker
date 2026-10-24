@@ -59,3 +59,14 @@ export async function getMealReminder(): Promise<boolean> {
 export async function setMealReminder(enabled: boolean): Promise<void> {
   await AsyncStorage.setItem(MEAL_REMINDER_KEY, enabled ? 'on' : 'off');
 }
+
+// Tip on the active workout screen about how sets save. Open until the user closes it.
+const SETS_HINT_KEY = 'settings.setsHintOpen';
+
+export async function getSetsHintOpen(): Promise<boolean> {
+  return (await AsyncStorage.getItem(SETS_HINT_KEY)) !== 'closed';
+}
+
+export async function setSetsHintOpen(open: boolean): Promise<void> {
+  await AsyncStorage.setItem(SETS_HINT_KEY, open ? 'open' : 'closed');
+}
