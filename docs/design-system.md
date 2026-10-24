@@ -68,8 +68,7 @@ Use `<AppText variant="...">` (`src/components/AppText.tsx`), not `fontSize`. Th
 | `EmptyState` | "Nothing here yet" text, with optional children for one action below it (usually a `Button`). Only for *empty*, never for loading or errors. |
 | `TextLink`   | A blue text link (`label` in `primary`) with a 48 dp tap area that hugs the text. Read by TalkBack as "…, link". Handles the pressed look and `disabled`. `tone="danger"` makes it red (`dangerDark`) for deletes and removes. Pass `onPress` (e.g. `router.navigate(href)`). `style` is for layout only. |
 
-There is **no small button size yet**. Compact in-row buttons (like Progress's "Log" next to the
-weight box) stay as they are, until a migration ticket adds `size="sm"`. Do that through the system,
+There is **no small button size yet**. If a screen needs one, add `size="sm"` through the system,
 not by hand in one screen.
 
 Older shared pieces are still in use: `LabeledInput`, `Chips`, `SettingsList`, `CalorieRing`,
@@ -123,5 +122,4 @@ still sits on white only (4.4:1 on grey).
 
 Most screens still use hand-made buttons, cards and font sizes. They move over one area at a time
 through the "[DS] Design system: migrate …" issues on the Plucky roadmap (#64–#68). So far
-**Auth (Login, Signup, Forgot password)**, **Food**, **Workouts** and **Progress's cards and empty texts**
-have moved. The rest of Progress is still old style, so don't copy it as an example.
+**Auth (Login, Signup, Forgot password)**, **Food**, **Workouts** and **Progress** have moved.
