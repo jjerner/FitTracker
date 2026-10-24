@@ -110,7 +110,7 @@ function WeightCard({ chartWidth }: { chartWidth: number }) {
   const [rangeDays, setRangeDays] = useState(30);
 
   const parsed = Number(input.replace(',', '.'));
-  const isValid = input !== '' && parsed > 0;
+  const isValid = parsed >= 20 && parsed <= 400;
 
   function handleSave() {
     if (!isValid) return;
@@ -165,7 +165,8 @@ function WeightCard({ chartWidth }: { chartWidth: number }) {
             data2={trend.map((value) => ({ value }))}
             width={chartWidth}
             height={160}
-            adjustToWidth
+            // Not adjustToWidth: it puts the last point on the right edge and clips its date.
+            spacing={(chartWidth - 40) / (points.length - 1)}
             yAxisOffset={minValue}
             maxValue={maxValue - minValue}
             noOfSections={4}
