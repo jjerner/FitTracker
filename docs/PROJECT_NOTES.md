@@ -55,7 +55,8 @@ What to build next lives on the [Plucky roadmap board](https://github.com/users/
 
 - **Never rewrite source files with PowerShell `Get-Content`/`Set-Content`** — it mangles UTF-8 (🔥 turned into `ðŸ”¥`, a BOM crept in). Use the Edit/Write tools or a Node script with explicit `utf8`. Check for damage: grep `src` for `Ã|â€|ðŸ`.
 - **Don't remove `.npmrc`** (`legacy-peer-deps=true`): EAS Build runs strict `npm ci`, which fails on the optional web-only `react-dom` peer without it.
-- `foods` barcodes are unique **per owner** (partial index `foods_barcode_owner_key`, migration 0022), and a partial index doesn't work as a PostgREST `onConflict` target. So `upsertOffFood` does a plain insert and ignores `23505` (barcode already saved) instead of an upsert.- Supabase caps a request at 1000 rows: read aggregates from the `daily_nutrition` view, not raw rows.
+- `foods` barcodes are unique **per owner** (partial index `foods_barcode_owner_key`, migration 0022), and a partial index doesn't work as a PostgREST `onConflict` target. So `upsertOffFood` does a plain insert and ignores `23505` (barcode already saved) instead of an upsert.
+- Supabase caps a request at 1000 rows: read aggregates from the `daily_nutrition` view, not raw rows.
 - After any direct Supabase write that isn't done through a React Query mutation hook, `queryClient.invalidateQueries(...)` the relevant key or the UI won't update.
 - `StyleSheet.absoluteFillObject` no longer exists (RN 0.86) — use explicit `position: 'absolute', top/right/bottom/left: 0`.
 - The `react-hooks/refs` lint rule rejects reading a ref during render, including inside a `useState` initializer. Use a module-level counter or state instead (see `newRow` in `workouts/active.tsx`).
