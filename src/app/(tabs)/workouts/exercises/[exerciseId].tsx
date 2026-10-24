@@ -145,7 +145,8 @@ export default function ExerciseDetail() {
                 }))}
                 width={width - 110}
                 height={160}
-                adjustToWidth
+                // Not adjustToWidth: it puts the last point on the right edge and clips its date. 40 = default initialSpacing + endSpacing.
+                spacing={(width - 150) / (values.length - 1)}
                 noOfSections={4}
                 color={colors.primary}
                 dataPointsColor={colors.primary}

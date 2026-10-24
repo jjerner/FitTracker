@@ -129,5 +129,5 @@ export default function ChangePassword() {
 
 const styles = StyleSheet.create({
   error: { color: colors.danger, marginBottom: spacing.md },
-  success: { color: colors.success, marginBottom: spacing.md },
+  success: { color: colors.successDark, marginBottom: spacing.md },
 });
