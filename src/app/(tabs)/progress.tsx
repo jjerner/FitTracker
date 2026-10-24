@@ -13,6 +13,8 @@ import {
 } from 'react-native';
 import { LineChart } from 'react-native-gifted-charts';
 
+import { AppText } from '../../components/AppText';
+import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
 import { EmptyState } from '../../components/EmptyState';
 import { MonthCalendar } from '../../components/MonthCalendar';
@@ -30,7 +32,7 @@ import { useExerciseHistory, useExercises } from '../../hooks/useWorkouts';
 import { addDays, localDateDaysAgo, mondayOf, todayLocalDate } from '../../lib/dateUtils';
 import { estimateMaintenance, weeklyMuscleSets, weightTrend } from '../../lib/progress';
 import { trackedStats } from '../../lib/records';
-import { colors } from '../../theme';
+import { colors, radius, spacing, typography } from '../../theme';
 
 // "2026-09-24" -> "24/9"
 function shortDate(date: string): string {
@@ -83,10 +85,19 @@ function RangeTabs({ value, onChange }: { value: number; onChange: (days: number
   return (
     <View style={styles.rangeTabs}>
       {RANGES.map((r) => (
-        <Pressable key={r.days} onPress={() => onChange(r.days)} hitSlop={8}>
-          <Text style={[styles.rangeOptionText, r.days === value && styles.rangeOptionActive]}>
+        <Pressable
+          key={r.days}
+          style={styles.rangeTab}
+          onPress={() => onChange(r.days)}
+          accessibilityRole="button"
+          accessibilityState={{ selected: r.days === value }}
+        >
+          <AppText
+            variant={r.days === value ? 'labelSmall' : 'small'}
+            style={r.days === value ? styles.rangeOptionActive : styles.rangeOptionText}
+          >
             {r.label}
-          </Text>
+          </AppText>
         </Pressable>
       ))}
     </View>
@@ -120,11 +131,11 @@ function WeightCard({ chartWidth }: { chartWidth: number }) {
 
   return (
     <Card>
-      <Text style={styles.cardTitle}>Body weight</Text>
+      <AppText variant="heading">Body weight</AppText>
       {latest && (
-        <Text style={styles.cardSubtitle}>
+        <AppText variant="small">
           Latest: {latest.weightKg} kg ({shortDate(latest.date)})
-        </Text>
+        </AppText>
       )}
 
       <View style={styles.inputRow}>
@@ -135,17 +146,7 @@ function WeightCard({ chartWidth }: { chartWidth: number }) {
           value={input}
           onChangeText={setInput}
         />
-        <Pressable
-          style={[styles.button, !isValid && styles.buttonDisabled]}
-          onPress={handleSave}
-          disabled={!isValid || isSaving}
-        >
-          {isSaving ? (
-            <ActivityIndicator color={colors.onPrimary} />
-          ) : (
-            <Text style={styles.buttonText}>Log</Text>
-          )}
-        </Pressable>
+        <Button title="Log" onPress={handleSave} disabled={!isValid} loading={isSaving} />
       </View>
 
       <RangeTabs value={rangeDays} onChange={setRangeDays} />
@@ -178,10 +179,10 @@ function WeightCard({ chartWidth }: { chartWidth: number }) {
             xAxisLabelTextStyle={styles.axisLabel}
             yAxisTextStyle={styles.axisLabel}
           />
-          <Text style={styles.legend}>
+          <AppText variant="caption" style={styles.legend}>
             <Text style={styles.legendTrend}>━</Text> 7-day average{'   '}
             <Text style={styles.legendDaily}>━</Text> daily weigh-ins
-          </Text>
+          </AppText>
         </>
       )}
     </Card>
@@ -199,11 +200,13 @@ function MaintenanceCard() {
 
   return (
     <Card>
-      <Text style={styles.cardTitle}>Estimated maintenance</Text>
+      <AppText variant="heading">Estimated maintenance</AppText>
       {weights.isLoading || days.isLoading || goalsLoading ? (
         <ActivityIndicator />
       ) : weights.isError || days.isError ? (
-        <Text style={styles.empty}>Couldn&apos;t load your data. Try again later.</Text>
+        <AppText variant="small" style={styles.empty}>
+          Couldn&apos;t load your data. Try again later.
+        </AppText>
       ) : !estimate ? (
         <EmptyState message="Needs 14 days of food logged and weigh-ins at least 14 days apart, within the last 4 weeks. Half-logged days don't count." />
       ) : (
@@ -213,21 +216,21 @@ function MaintenanceCard() {
             accessible
             accessibilityLabel={`About ${estimate.kcal} kilocalories per day`}
           >
-            <Text style={styles.countValue} selectable>
+            <AppText variant="title" selectable>
               ≈ {estimate.kcal}
-            </Text>
-            <Text style={styles.cardSubtitle}>kcal / day</Text>
+            </AppText>
+            <AppText variant="small">kcal / day</AppText>
           </View>
-          <Text style={styles.cardSubtitle}>
+          <AppText variant="small">
             From {estimate.loggedDays} logged days and your weight trend ({changeText}) over{' '}
             {Math.round(estimate.daysBetween)} days.
-          </Text>
+          </AppText>
           {estimate.skippedDays > 0 ? (
-            <Text style={styles.cardSubtitle}>
+            <AppText variant="small">
               {estimate.skippedDays} {estimate.skippedDays === 1 ? 'day' : 'days'} skipped (looked incomplete)
-            </Text>
+            </AppText>
           ) : null}
-          {goals ? <Text style={styles.goalLine}>Your goal: {goals.caloriesKcal} kcal</Text> : null}
+          {goals ? <AppText variant="small" style={styles.goalLine}>Your goal: {goals.caloriesKcal} kcal</AppText> : null}
           <TextLink
             title="Set goals ›"
             // Puts Profile under Goals so the stack has a back arrow.
@@ -259,8 +262,8 @@ function NutritionAveragesCard() {
 
   return (
     <Card>
-      <Text style={styles.cardTitle}>Nutrition averages (per day)</Text>
-      <Text style={styles.cardSubtitle}>Over your last 7 / 30 / 90 logged days, excluding today</Text>
+      <AppText variant="heading">Nutrition averages (per day)</AppText>
+      <AppText variant="small">Over your last 7 / 30 / 90 logged days, excluding today</AppText>
 
       {isLoading ? (
         <ActivityIndicator />
@@ -269,26 +272,26 @@ function NutritionAveragesCard() {
       ) : (
         <View>
           <View style={styles.tableRow}>
-            <Text style={styles.tableLabel} />
+            <AppText variant="small" style={styles.tableLabel} />
             {WINDOWS.map((n) => (
-              <Text key={n} style={styles.tableHeader}>
+              <AppText key={n} variant="small" style={styles.tableHeader}>
                 {n} days
-              </Text>
+              </AppText>
             ))}
           </View>
           {NUTRIENTS.map((nutrient) => (
             <View key={nutrient.key} style={styles.tableRow}>
-              <Text style={styles.tableLabel}>{nutrient.label}</Text>
+              <AppText variant="small" style={styles.tableLabel}>{nutrient.label}</AppText>
               {windows.map((w, i) => (
-                <Text key={WINDOWS[i]} style={styles.tableCell}>
+                <AppText key={WINDOWS[i]} variant="labelSmall" style={styles.tableCell}>
                   {Math.round(w.reduce((sum, d) => sum + d[nutrient.key], 0) / w.length)}{' '}
                   {nutrient.unit}
-                </Text>
+                </AppText>
               ))}
             </View>
           ))}
           <View style={styles.tableRow}>
-            <Text style={styles.tableLabel} />
+            <AppText variant="small" style={styles.tableLabel} />
             {windows.map((w, i) => (
               <Text key={WINDOWS[i]} style={styles.tableFootnote}>
                 {w.length} logged
@@ -317,7 +320,7 @@ function WorkoutsCard() {
 
   return (
     <Card>
-      <Text style={styles.cardTitle}>Workouts</Text>
+      <AppText variant="heading">Workouts</AppText>
 
       {isLoading ? (
         <ActivityIndicator />
@@ -325,8 +328,8 @@ function WorkoutsCard() {
         <>
           <RangeTabs value={rangeDays} onChange={setRangeDays} />
           <View style={styles.countRow}>
-            <Text style={styles.countValue}>{count}</Text>
-            <Text style={styles.cardSubtitle}>completed</Text>
+            <AppText variant="title">{count}</AppText>
+            <AppText variant="small">completed</AppText>
           </View>
 
           <MonthCalendar dotDays={workoutDays} maxMonthsBack={MAX_MONTHS_BACK} />
@@ -348,7 +351,7 @@ function MuscleSetsCard() {
 
   return (
     <Card>
-      <Text style={styles.cardTitle}>Sets per muscle group</Text>
+      <AppText variant="heading">Sets per muscle group</AppText>
 
       {isLoading ? (
         <ActivityIndicator />
@@ -357,23 +360,26 @@ function MuscleSetsCard() {
       ) : (
         <View>
           <View style={styles.tableRow}>
-            <Text style={styles.tableLabel} />
+            <AppText variant="small" style={styles.tableLabel} />
             {WEEK_LABELS.map((label, i) => (
-              <Text
+              <AppText
                 key={label}
-                numberOfLines={1}
+                variant="small"
                 style={[styles.tableHeader, i === thisWeek && styles.thisWeek]}
               >
                 {label}
-              </Text>
+              </AppText>
             ))}
           </View>
           {groups.map(({ group, counts }) => (
             <View key={group} style={styles.tableRow}>
-              <Text style={styles.tableLabel}>{group[0].toUpperCase() + group.slice(1)}</Text>
+              <AppText variant="small" style={styles.tableLabel}>
+                {group[0].toUpperCase() + group.slice(1)}
+              </AppText>
               {counts.map((count, i) => (
-                <Text
+                <AppText
                   key={i}
+                  variant="labelSmall"
                   style={[
                     styles.tableCell,
                     i === thisWeek && styles.thisWeek,
@@ -381,13 +387,13 @@ function MuscleSetsCard() {
                   ]}
                 >
                   {count}
-                </Text>
+                </AppText>
               ))}
             </View>
           ))}
-          <Text style={[styles.cardSubtitle, styles.muscleFootnote]}>
+          <AppText variant="small" style={styles.muscleFootnote}>
             Weeks start Monday. Finished workouts only.
-          </Text>
+          </AppText>
         </View>
       )}
     </Card>
@@ -407,8 +413,8 @@ function TrackedExercisesCard() {
 
   return (
     <Card>
-      <Text style={styles.cardTitle}>Tracked exercises</Text>
-      <Text style={styles.cardSubtitle}>Heaviest weight you have logged</Text>
+      <AppText variant="heading">Tracked exercises</AppText>
+      <AppText variant="small">Heaviest weight you have logged</AppText>
 
       {isLoading ? (
         <ActivityIndicator />
@@ -425,9 +431,7 @@ function TrackedExercisesCard() {
         ))
       )}
 
-      <Pressable style={styles.button} onPress={() => setPickerOpen(true)}>
-        <Text style={styles.buttonText}>+ Add exercise</Text>
-      </Pressable>
+      <Button title="+ Add exercise" onPress={() => setPickerOpen(true)} />
       <ExercisePicker
         visible={pickerOpen}
         title="Track Exercise"
@@ -456,27 +460,32 @@ function TrackedRow({
       onPress={() => router.push(`/(tabs)/workouts/exercises/${exerciseId}`)}
     >
       <View style={styles.trackedMain}>
-        <Text style={styles.trackedName}>{name}</Text>
+        <AppText variant="label">{name}</AppText>
         {isLoading ? (
           <ActivityIndicator />
         ) : !stats.current || !stats.pr ? (
-          <Text style={styles.cardSubtitle}>Nothing logged yet</Text>
+          <AppText variant="small">Nothing logged yet</AppText>
         ) : (
           <>
-            <Text style={styles.trackedValue}>
+            <AppText variant="heading" accessibilityRole="text">
               {stats.current.weightKg} kg × {stats.current.reps}
-            </Text>
-            <Text style={styles.cardSubtitle}>
+            </AppText>
+            <AppText variant="small">
               🏆 {stats.pr.weightKg} kg × {stats.pr.reps} ({shortDate(stats.pr.date)})
-            </Text>
-            <Text style={styles.cardSubtitle}>
+            </AppText>
+            <AppText variant="small">
               30d {formatChange(stats.change30)} · 90d {formatChange(stats.change90)}
-            </Text>
+            </AppText>
           </>
         )}
       </View>
-      <Pressable onPress={onRemove} hitSlop={12}>
-        <Text style={styles.trackedRemove}>✕</Text>
+      <Pressable
+        style={styles.removeButton}
+        onPress={onRemove}
+        accessibilityRole="button"
+        accessibilityLabel={`Remove ${name}`}
+      >
+        <AppText style={styles.trackedRemove}>✕</AppText>
       </Pressable>
     </Pressable>
   );
@@ -484,55 +493,46 @@ function TrackedRow({
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.surface },
-  content: { padding: 16, gap: 16 },
-  cardTitle: { fontSize: 16, fontWeight: '600' },
-  cardSubtitle: { fontSize: 13, color: colors.muted },
-  empty: { fontSize: 14, color: colors.muted, paddingVertical: 16 },
+  content: { padding: spacing.lg, gap: spacing.lg },
+  empty: { paddingVertical: spacing.lg },
   axisLabel: { fontSize: 10, color: colors.muted },
-  tableRow: { flexDirection: 'row', paddingVertical: 6 },
-  tableLabel: { flex: 1.2, fontSize: 14, color: colors.textSecondary },
-  tableHeader: { flex: 1, fontSize: 13, color: colors.muted, textAlign: 'right' },
-  tableCell: { flex: 1, fontSize: 14, fontWeight: '600', textAlign: 'right' },
+  tableRow: { flexDirection: 'row', paddingVertical: spacing.sm },
+  tableLabel: { flex: 1.2, color: colors.textSecondary },
+  tableHeader: { flex: 1, textAlign: 'right' },
+  tableCell: { flex: 1, textAlign: 'right' },
   thisWeek: { color: colors.primary },
   // Dimmed so a skipped muscle group stands out.
   zeroSets: { color: colors.subtle },
-  muscleFootnote: { marginTop: 8 },
+  muscleFootnote: { marginTop: spacing.sm },
   tableFootnote: { flex: 1, fontSize: 11, color: colors.subtle, textAlign: 'right' },
-  countRow: { flexDirection: 'row', alignItems: 'baseline', gap: 6 },
-  countValue: { fontSize: 28, fontWeight: '700' },
-  rangeOptionText: { fontSize: 14, color: colors.textSecondary },
-  rangeOptionActive: { color: colors.primary, fontWeight: '600' },
-  rangeTabs: { flexDirection: 'row', gap: 20, marginBottom: 12 },
-  legend: { fontSize: 12, color: colors.textSecondary, marginTop: 8 },
+  countRow: { flexDirection: 'row', alignItems: 'baseline', gap: spacing.sm },
+  rangeOptionText: { color: colors.textSecondary },
+  rangeOptionActive: { color: colors.primary },
+  rangeTabs: { flexDirection: 'row', gap: spacing.xl },
+  // A real 48 dp box: hitSlop can't reach past the card's edge.
+  rangeTab: { minHeight: 48, justifyContent: 'center' },
+  legend: { color: colors.textSecondary, marginTop: spacing.sm },
   legendTrend: { color: colors.primary },
   legendDaily: { color: colors.subtle },
   trackedRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    paddingVertical: 8,
+    paddingVertical: spacing.sm,
     borderTopWidth: 1,
     borderTopColor: colors.surface,
   },
-  trackedMain: { flex: 1, gap: 2 },
-  trackedName: { fontSize: 15, fontWeight: '600' },
-  trackedValue: { fontSize: 20, fontWeight: '700' },
-  trackedRemove: { fontSize: 16, color: colors.subtle, paddingHorizontal: 4 },
-  inputRow: { flexDirection: 'row', gap: 8, marginBottom: 8 },
+  trackedMain: { flex: 1, gap: spacing.xs },
+  trackedRemove: { color: colors.muted },
+  // 48 dp tap box that grows left and down, so the ✕ stays top-right.
+  removeButton: { minWidth: 48, minHeight: 48, alignItems: 'flex-end', justifyContent: 'flex-start' },
+  inputRow: { flexDirection: 'row', gap: spacing.sm },
   input: {
     flex: 1,
     borderWidth: 1,
     borderColor: colors.borderStrong,
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
+    borderRadius: radius.md,
+    padding: spacing.md,
+    ...typography.body,
   },
-  button: {
-    backgroundColor: colors.primary,
-    borderRadius: 8,
-    paddingHorizontal: 20,
-    justifyContent: 'center',
-  },
-  buttonDisabled: { opacity: 0.5 },
-  goalLine: { fontSize: 14, color: colors.textSecondary },
-  buttonText: { color: colors.onPrimary, fontSize: 16, fontWeight: '600' },
+  goalLine: { color: colors.textSecondary },
 });
