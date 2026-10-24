@@ -48,7 +48,7 @@ function CalorieRing({ eaten, goal }: { eaten: number; goal: number | null }) {
         </Svg>
         <View style={styles.ringCenter}>
           <Text style={styles.ringNumber}>{eatenKcal}</Text>
-          <Text style={styles.muted}>{goal != null ? `of ${goal} kcal` : 'kcal'}</Text>
+          <Text style={styles.ringSub}>{goal != null ? `of ${goal} kcal` : 'kcal'}</Text>
         </View>
       </View>
       {left != null ? (
@@ -122,8 +122,9 @@ const styles = StyleSheet.create({
     // Keep the text inside the hole so big font sizes wrap instead of running over the stroke.
     paddingHorizontal: RING_STROKE,
   },
-  ringNumber: { fontSize: 28, fontWeight: '700', color: colors.text, fontVariant: ['tabular-nums'] },
-  leftLine: { fontSize: 14, fontWeight: '600', color: colors.text },
+  ringNumber: { fontSize: 28, fontWeight: '700', color: colors.text, fontVariant: ['tabular-nums'], textAlign: 'center' },
+  ringSub: { fontSize: 13, color: colors.muted, textAlign: 'center' },
+  leftLine: { fontSize: 14, fontWeight: '600', color: colors.text, textAlign: 'center' },
   overLine: { color: colors.danger },
   macroText: { fontSize: 14, fontWeight: '600', color: colors.text },
   macroValue: { marginBottom: spacing.xs, fontVariant: ['tabular-nums'] },
