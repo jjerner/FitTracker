@@ -18,6 +18,12 @@ export default function AccountSettings() {
           chevron
           onPress={() => router.push('/(tabs)/profile/password')}
         />
+        <SettingsRow
+          icon={{ ios: 'square.and.arrow.up', android: 'download' }}
+          label="Export my data"
+          chevron
+          onPress={() => router.push('/(tabs)/profile/export')}
+        />
       </SettingsGroup>
       <SettingsGroup>
         <SettingsRow

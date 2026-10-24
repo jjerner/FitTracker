@@ -13,6 +13,7 @@ export default function ProfileLayout() {
       <Stack.Screen name="account" options={{ title: 'Account' }} />
       <Stack.Screen name="password" options={{ title: 'Change password' }} />
       <Stack.Screen name="delete-account" options={{ title: 'Delete account' }} />
+      <Stack.Screen name="export" options={{ title: 'Export my data' }} />
     </Stack>
   );
 }
