@@ -87,7 +87,7 @@ let inFlight: Promise<{ sent: boolean; allSent: boolean }> | null = null;
 
 // Tries to send every waiting set, oldest first. Stops at the first failure that looks like
 // "no signal"; drops a set only if the database says it can never be saved (for example the
-// workout was deleted). `sent`: at least one set went through. `allSent`: nothing is left waiting.
+// workout was deleted, or it is not yours: another account's set). `sent`: at least one set went through. `allSent`: nothing is left waiting.
 export function flushPendingSets(): Promise<{ sent: boolean; allSent: boolean }> {
   inFlight ??= doFlush().finally(() => {
     inFlight = null;
@@ -113,7 +113,7 @@ async function doFlush(): Promise<{ sent: boolean; allSent: boolean }> {
       { onConflict: 'id', ignoreDuplicates: true }
     );
     if (error) {
-      if (error.code?.startsWith('23')) {
+      if (error.code?.startsWith('23') || error.code === '42501') {
         await removePending(set.id);
         continue;
       }

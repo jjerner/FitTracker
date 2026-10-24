@@ -57,7 +57,6 @@ describe('flushPendingSets', () => {
 
   it.each([
     ['network', { message: 'TypeError: Network request failed', code: '' }],
-    ['other code', { message: 'permission denied', code: '42501' }],
   ])('keeps the set and stops on a non-23 error (%s)', async (_name, error) => {
     await queueSet(set('set-a'));
     await queueSet(set('set-b'));
@@ -83,6 +82,22 @@ describe('flushPendingSets', () => {
     expect(upsertIds()).toEqual(['set-a', 'set-b']);
 
     // Sent sets stay queued until pruneSaved sees them saved, so set-b comes back.
+    mockUpsert.mockReset();
+    mockUpsert.mockResolvedValueOnce({ error: null });
+    await flushPendingSets();
+    expect(upsertIds()).toEqual(['set-b']);
+  });
+
+  it('drops a set that is not yours (42501) and goes on', async () => {
+    await queueSet(set('set-a'));
+    await queueSet(set('set-b'));
+    mockUpsert
+      .mockResolvedValueOnce({ error: { message: 'permission denied', code: '42501' } })
+      .mockResolvedValueOnce({ error: null });
+
+    expect(await flushPendingSets()).toEqual({ sent: true, allSent: true });
+    expect(upsertIds()).toEqual(['set-a', 'set-b']);
+
     mockUpsert.mockReset();
     mockUpsert.mockResolvedValueOnce({ error: null });
     await flushPendingSets();
