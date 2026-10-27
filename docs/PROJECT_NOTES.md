@@ -48,7 +48,7 @@ What to build next lives on the [Plucky roadmap board](https://github.com/users/
 ## Database
 
 - Migrations live in `supabase/migrations/*.sql`, applied by the owner pasting them into the Supabase SQL Editor (no CLI link; Claude has only the anon key). **`0001`–`0020` and `0022` are applied** (0022 confirmed 2026-10-24). `0023` is FIX-3: paste it only after its `eas update` (merge → `eas update` → paste 0023), because old app versions can't save OFF foods under the 0023 rule.
-- Next free number: **`0026`** (`0021` was never used; `0022` is AU-1; `0023` is FIX-3; `0024` is 3.3, exercise notes; `0025` is 3.4b, drop sets).
+- Next free number: **`0027`** (`0021` was never used; `0022` is AU-1; `0023` is FIX-3; `0024` is 3.3, exercise notes; `0025` is 3.4b, drop sets; `0026` is 3.7, supersets).
 - Supabase auth: custom SMTP via the owner's own Gmail (app password "FitTrack", `smtp.gmail.com:465`; moving off it is #17). Sign-up and reset templates hold only `{{ .Token }}` (no links — Gmail's link scanner could burn the code); the app uses `verifyOtp`. The "Site URL" is still `localhost:3000`; it only matters if a link-based email is added.
 - OFF foods are saved per user (0023). Old shared OFF rows stay readable for old diary entries, but scans never pick them.
 

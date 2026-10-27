@@ -18,6 +18,7 @@ import { Card } from '../../../../components/Card';
 import { Chips } from '../../../../components/Chips';
 import { LabeledInput } from '../../../../components/LabeledInput';
 import { TextLink } from '../../../../components/TextLink';
+import { SupersetFrame } from '../../../../components/workouts/SupersetFrame';
 import { useSession } from '../../../../context/AuthProvider';
 import { useWorkoutHistory, useWorkoutLog } from '../../../../hooks/useWorkouts';
 import { DATE_LOCALE } from '../../../../lib/dateUtils';
@@ -29,6 +30,7 @@ import {
   findNewRecords,
   setLabels,
   setsVolume,
+  supersetRoles,
 } from '../../../../lib/records';
 import {
   deleteSet,
@@ -119,6 +121,8 @@ export default function WorkoutSummary() {
         : `${e.exercise.name}: est. 1RM ${Math.round(now.oneRM)} kg (was ${Math.round(before.oneRM)} kg)`,
     ];
   });
+
+  const roles = supersetRoles(log.exercises.map((e) => e.supersetWithNext));
 
   function openEdit(set: WorkoutSet, cardio: boolean, label: string) {
     setEditing({ set, cardio, label });
@@ -259,51 +263,53 @@ export default function WorkoutSummary() {
         </View>
       ) : null}
 
-      {log.exercises.map((e) => {
+      {log.exercises.map((e, index) => {
         const types = e.sets.map((s) => s.setType);
         const labels = setLabels(types);
         return (
-          <Card key={e.id} style={styles.exercise}>
-            <AppText variant="label" style={styles.exerciseName}>
-              {e.exercise.name}
-            </AppText>
-            {e.sets.length === 0 ? (
-              <AppText variant="small">No sets</AppText>
-            ) : (
-              // One line per set; a drop set's steps share the line and each step taps on its own.
-              dropGroups(types).map((group) => {
-                const head = labels[group[0]] === 'W' ? 'Warm-up' : `Set ${labels[group[0]]}`;
-                return (
-                  <View key={e.sets[group[0]].id} style={styles.setLine}>
-                    <AppText style={styles.setText} importantForAccessibility="no">
-                      {head}:
-                    </AppText>
-                    {group.map((i, n) => {
-                      const set = e.sets[i];
-                      return (
-                        <Pressable
-                          key={set.id}
-                          style={styles.setRow}
-                          onPress={() => openEdit(set, e.exercise.category === 'cardio', labels[i])}
-                          accessibilityRole="button"
-                          accessibilityLabel={
-                            set.setType === 'drop' ? `Drop step, ${formatSet(set)}` : `${head}: ${formatSet(set)}`
-                          }
-                          accessibilityHint="Edit set"
-                        >
-                          <AppText style={styles.setText}>
-                            {n > 0 ? '↓ ' : ''}
-                            {formatSet(set)}
-                            {n === group.length - 1 ? <Text style={styles.editHint}> ✎</Text> : null}
-                          </AppText>
-                        </Pressable>
-                      );
-                    })}
-                  </View>
-                );
-              })
-            )}
-          </Card>
+          <SupersetFrame key={e.id} role={roles[index]} spaceBelow={spacing.md}>
+            <Card style={styles.exercise}>
+              <AppText variant="label" style={styles.exerciseName}>
+                {e.exercise.name}
+              </AppText>
+              {e.sets.length === 0 ? (
+                <AppText variant="small">No sets</AppText>
+              ) : (
+                // One line per set; a drop set's steps share the line and each step taps on its own.
+                dropGroups(types).map((group) => {
+                  const head = labels[group[0]] === 'W' ? 'Warm-up' : `Set ${labels[group[0]]}`;
+                  return (
+                    <View key={e.sets[group[0]].id} style={styles.setLine}>
+                      <AppText style={styles.setText} importantForAccessibility="no">
+                        {head}:
+                      </AppText>
+                      {group.map((i, n) => {
+                        const set = e.sets[i];
+                        return (
+                          <Pressable
+                            key={set.id}
+                            style={styles.setRow}
+                            onPress={() => openEdit(set, e.exercise.category === 'cardio', labels[i])}
+                            accessibilityRole="button"
+                            accessibilityLabel={
+                              set.setType === 'drop' ? `Drop step, ${formatSet(set)}` : `${head}: ${formatSet(set)}`
+                            }
+                            accessibilityHint="Edit set"
+                          >
+                            <AppText style={styles.setText}>
+                              {n > 0 ? '↓ ' : ''}
+                              {formatSet(set)}
+                              {n === group.length - 1 ? <Text style={styles.editHint}> ✎</Text> : null}
+                            </AppText>
+                          </Pressable>
+                        );
+                      })}
+                    </View>
+                  );
+                })
+              )}
+            </Card>
+          </SupersetFrame>
         );
       })}
 
@@ -389,7 +395,7 @@ const styles = StyleSheet.create({
   highlightText: { color: colors.warningText, paddingVertical: spacing.xs },
   stat: { flex: 1, alignItems: 'center' },
   statLabel: { color: colors.textSecondary, marginTop: spacing.xs },
-  exercise: { gap: 0, marginBottom: spacing.md },
+  exercise: { gap: 0 },
   exerciseName: { marginBottom: spacing.xs },
   setLine: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', columnGap: spacing.xs },
   setRow: { minHeight: 48, justifyContent: 'center' },

@@ -121,6 +121,7 @@ function mapTemplateRow(row: any): WorkoutTemplate {
         targetReps: te.target_reps,
         targetWeightKg: te.target_weight_kg,
         restSeconds: te.rest_seconds,
+        supersetWithNext: te.superset_with_next,
       })
     );
 
@@ -172,6 +173,7 @@ export async function saveTemplate(input: {
         target_reps: te.targetReps,
         target_weight_kg: te.targetWeightKg,
         rest_seconds: te.restSeconds,
+        superset_with_next: te.supersetWithNext,
       }))
     );
     if (error) {
@@ -232,6 +234,7 @@ export async function startWorkout(input: {
         log_id: logId,
         exercise_id: te.exercise.id,
         position: index,
+        superset_with_next: te.supersetWithNext,
       }))
     );
     if (exError) {
@@ -258,6 +261,7 @@ export async function getWorkoutLog(id: string): Promise<WorkoutLog> {
       id: le.id,
       exercise: mapExerciseRow(le.exercises),
       position: le.position,
+      supersetWithNext: le.superset_with_next,
       sets: [...(le.workout_log_sets ?? [])]
         .sort((a: any, b: any) => a.set_number - b.set_number)
         .map(mapSetRow),
@@ -321,12 +325,22 @@ export async function addExerciseToLog(input: {
   logId: string;
   exerciseId: string;
   position: number;
+  supersetWithNext?: boolean;
 }): Promise<void> {
   const { error } = await supabase.from('workout_log_exercises').insert({
     log_id: input.logId,
     exercise_id: input.exerciseId,
     position: input.position,
+    superset_with_next: input.supersetWithNext,
   });
+  if (error) throw error;
+}
+
+export async function setLogSuperset(logExerciseId: string, value: boolean): Promise<void> {
+  const { error } = await supabase
+    .from('workout_log_exercises')
+    .update({ superset_with_next: value })
+    .eq('id', logExerciseId);
   if (error) throw error;
 }
 
@@ -344,6 +358,7 @@ export async function insertExerciseAfter(input: {
   logId: string;
   afterPosition: number;
   exerciseId: string;
+  supersetWithNext?: boolean;
 }): Promise<void> {
   const { data, error } = await supabase
     .from('workout_log_exercises')
@@ -366,6 +381,7 @@ export async function insertExerciseAfter(input: {
     logId: input.logId,
     exerciseId: input.exerciseId,
     position: input.afterPosition + 1,
+    supersetWithNext: input.supersetWithNext,
   });
 }
 

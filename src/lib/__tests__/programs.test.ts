@@ -29,6 +29,6 @@ describe('programs', () => {
   it('picks the built-in exercise over a custom one with the same name', () => {
     const catalog = [exercise('Bench Press', true), exercise('Bench Press', false)];
     const [row] = routineExercises({ name: 'Day', exercises: [['Bench Press', 5, 5]] }, catalog);
-    expect(row).toEqual({ exercise: catalog[1], targetSets: 5, targetReps: 5, targetWeightKg: null, restSeconds: null });
+    expect(row).toEqual({ exercise: catalog[1], targetSets: 5, targetReps: 5, targetWeightKg: null, restSeconds: null, supersetWithNext: false });
   });
 });

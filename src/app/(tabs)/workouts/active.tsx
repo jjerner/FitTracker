@@ -21,6 +21,7 @@ import { Card } from '../../../components/Card';
 import { LabeledInput } from '../../../components/LabeledInput';
 import { TextLink } from '../../../components/TextLink';
 import { ExercisePicker } from '../../../components/workouts/ExercisePicker';
+import { SupersetFrame } from '../../../components/workouts/SupersetFrame';
 import { SwapExercisePicker } from '../../../components/workouts/SwapExercisePicker';
 import { useSession } from '../../../context/AuthProvider';
 import { useDefaultRest } from '../../../hooks/useDefaultRest';
@@ -42,6 +43,7 @@ import {
   removeExerciseFromLog,
   saveExerciseNote,
   saveWorkoutNote,
+  setLogSuperset,
   swapLogExercise,
 } from '../../../lib/workouts';
 import {
@@ -53,7 +55,15 @@ import {
   usePendingSync,
 } from '../../../lib/pendingSets';
 import { toNumberOrNull } from '../../../lib/numbers';
-import { bestOf, findNewRecords, matchingSet, nextSetType, setLabels, setsVolume } from '../../../lib/records';
+import {
+  bestOf,
+  findNewRecords,
+  matchingSet,
+  nextSetType,
+  setLabels,
+  setsVolume,
+  supersetRoles,
+} from '../../../lib/records';
 import { colors, radius, spacing, typography } from '../../../theme';
 import type {
   Exercise,
@@ -187,6 +197,17 @@ export default function ActiveWorkout() {
         })),
     ],
   }));
+  const roles = supersetRoles(exercises.map((e) => e.supersetWithNext));
+
+  async function handleUnlink(first: WorkoutLogExercise) {
+    try {
+      await setLogSuperset(first.id, false);
+    } catch {
+      Alert.alert('Could not unlink', 'Check your connection and try again.');
+      return;
+    }
+    await refresh();
+  }
 
   return (
     <View style={styles.container}>
@@ -237,21 +258,33 @@ export default function ActiveWorkout() {
           onBlur={handleNoteBlur}
         />
 
-        {exercises.map((logExercise) => {
+        {exercises.map((logExercise, index) => {
           const target = template?.exercises.find((te) => te.exercise.id === logExercise.exercise.id);
+          const next = exercises[index + 1];
           return (
-            <ExerciseCard
+            <SupersetFrame
               // Includes the exercise so a swap resets the card's local rows.
               key={`${logExercise.id}-${logExercise.exercise.id}`}
-              logId={log.id}
-              logExercise={logExercise}
-              pendingIds={pendingIds}
-              target={target}
-              onChanged={refresh}
-              onSetDone={() =>
-                setRestEndsAt(Date.now() + (target?.restSeconds ?? defaultRest.seconds) * 1000)
-              }
-            />
+              role={roles[index]}
+              spaceBelow={spacing.md}
+              onUnlink={() => handleUnlink(logExercise)}
+              unlinkLabel={`Unlink ${logExercise.exercise.name} and ${next?.exercise.name}`}
+            >
+              <ExerciseCard
+                logId={log.id}
+                logExercise={logExercise}
+                pendingIds={pendingIds}
+                target={target}
+                pairedWithNext={roles[index] === 'first'}
+                pairFirst={roles[index] === 'second' ? exercises[index - 1] : undefined}
+                canLink={roles[index] == null && next != null && roles[index + 1] == null}
+                nextName={next?.exercise.name}
+                onChanged={refresh}
+                onSetDone={() =>
+                  setRestEndsAt(Date.now() + (target?.restSeconds ?? defaultRest.seconds) * 1000)
+                }
+              />
+            </SupersetFrame>
           );
         })}
 
@@ -386,6 +419,10 @@ function ExerciseCard({
   logExercise,
   pendingIds,
   target,
+  pairedWithNext,
+  pairFirst,
+  canLink,
+  nextName,
   onChanged,
   onSetDone,
 }: {
@@ -393,6 +430,12 @@ function ExerciseCard({
   logExercise: WorkoutLogExercise;
   pendingIds: Set<string>;
   target: WorkoutTemplateExercise | undefined;
+  // First card of a superset: its sets start no rest.
+  pairedWithNext: boolean;
+  // The card above, when this one is the second card of a superset.
+  pairFirst: WorkoutLogExercise | undefined;
+  canLink: boolean;
+  nextName: string | undefined;
   onChanged: () => Promise<void>;
   onSetDone: () => void;
 }) {
@@ -417,6 +460,7 @@ function ExerciseCard({
   });
   const [savingKey, setSavingKey] = useState<number | null>(null);
   const [swapOpen, setSwapOpen] = useState(false);
+  const [linking, setLinking] = useState(false);
 
   // Suggested values shown greyed out; used when the input is left empty.
   // Row types, done sets first then drafts; same order as the rows on screen.
@@ -473,8 +517,8 @@ function ExerciseCard({
       }
       setDrafts((prev) => prev.filter((d) => d.key !== draft.key));
       if (saved) await onChanged();
-      // No rest between drop steps; rest starts after the last one.
-      if (!isCardio && types[index + 1] !== 'drop') onSetDone();
+      // No rest between drop steps or after the first exercise of a superset.
+      if (!isCardio && !pairedWithNext && types[index + 1] !== 'drop') onSetDone();
     } finally {
       setSavingKey(null);
     }
@@ -531,29 +575,48 @@ function ExerciseCard({
 
   async function handleSwap(exercise: Exercise) {
     // No sets yet: replace in place. Sets logged: keep them and add the new exercise below.
+    // In a superset the new exercise takes the old one's place, and the old one leaves with its sets.
     try {
       if (doneSets.length === 0) {
         await swapLogExercise(logExercise.id, exercise.id);
+      } else if (pairFirst) {
+        await insertExerciseAfter({ logId, afterPosition: pairFirst.position, exerciseId: exercise.id });
       } else {
         await insertExerciseAfter({
           logId,
           afterPosition: logExercise.position,
           exerciseId: exercise.id,
+          supersetWithNext: pairedWithNext,
         });
+        if (pairedWithNext) await setLogSuperset(logExercise.id, false);
       }
     } catch {
       Alert.alert('Could not swap', 'Check your connection and try again.');
-      return;
     }
+    // Also after an error: the new exercise may already be in.
     await onChanged();
   }
 
   async function handleRemoveExercise() {
     try {
+      // Otherwise the card above would pair with the next card.
+      if (pairFirst) await setLogSuperset(pairFirst.id, false);
       await removeExerciseFromLog(logExercise.id);
     } catch {
       Alert.alert('Could not remove', 'Check your connection and try again.');
-      return;
+    }
+    // Also after a failure: the unlink above may have gone through.
+    await onChanged();
+  }
+
+  async function handleLink() {
+    setLinking(true);
+    try {
+      await setLogSuperset(logExercise.id, true);
+    } catch {
+      Alert.alert('Could not link', 'Check your connection and try again.');
+    } finally {
+      setLinking(false);
     }
     await onChanged();
   }
@@ -818,6 +881,15 @@ function ExerciseCard({
       >
         <AppText variant="label" style={styles.addSetText}>+ Add set</AppText>
       </Pressable>
+      {canLink ? (
+        <TextLink
+          title="⛓ Superset with next"
+          onPress={handleLink}
+          disabled={linking}
+          accessibilityLabel={`Superset ${logExercise.exercise.name} with ${nextName}`}
+          style={styles.supersetLink}
+        />
+      ) : null}
 
       <SwapExercisePicker
         current={logExercise.exercise}
@@ -856,7 +928,7 @@ const styles = StyleSheet.create({
   },
   hintText: { flex: 1, color: colors.text },
   hintClose: { color: colors.textSecondary },
-  card: { padding: spacing.md, gap: 0, marginBottom: spacing.md },
+  card: { padding: spacing.md, gap: 0 },
   cardHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   cardTitle: { flex: 1 },
   swapText: { color: colors.primary },
@@ -928,6 +1000,7 @@ const styles = StyleSheet.create({
     marginTop: spacing.xs,
   },
   addSetText: { color: colors.primary },
+  supersetLink: { alignSelf: 'flex-start', paddingHorizontal: 0 },
   finishButton: { marginTop: spacing.xl },
   discardLink: { marginTop: spacing.md },
   restBar: {
