@@ -604,8 +604,8 @@ function ExerciseCard({
       await removeExerciseFromLog(logExercise.id);
     } catch {
       Alert.alert('Could not remove', 'Check your connection and try again.');
-      return;
     }
+    // Also after a failure: the unlink above may have gone through.
     await onChanged();
   }
 
@@ -613,12 +613,12 @@ function ExerciseCard({
     setLinking(true);
     try {
       await setLogSuperset(logExercise.id, true);
-      await onChanged();
     } catch {
       Alert.alert('Could not link', 'Check your connection and try again.');
     } finally {
       setLinking(false);
     }
+    await onChanged();
   }
 
   async function handleNoteBlur() {
