@@ -86,14 +86,16 @@ describe('workoutRows', () => {
           workout_log_sets: [
             { set_number: 2, reps: 5, weight_kg: 100, duration_s: null, distance_m: null, set_type: 'normal' },
             { set_number: 1, reps: 8, weight_kg: 60, duration_s: null, distance_m: null, set_type: 'warmup' },
+            { set_number: 3, reps: 8, weight_kg: 80, duration_s: null, distance_m: null, set_type: 'drop' },
           ],
         },
       ],
     };
     expect(workoutRows(log).map((row) => row.slice(2))).toEqual([
-      ['Squat', 1, 8, 60, null, null, 'yes'],
-      ['Squat', 2, 5, 100, null, null, 'no'],
-      ['Running', 1, null, null, 1800, 5, 'no'],
+      ['Squat', 1, 8, 60, null, null, 'warmup'],
+      ['Squat', 2, 5, 100, null, null, 'normal'],
+      ['Squat', 3, 8, 80, null, null, 'drop'],
+      ['Running', 1, null, null, 1800, 5, 'normal'],
     ]);
   });
 });

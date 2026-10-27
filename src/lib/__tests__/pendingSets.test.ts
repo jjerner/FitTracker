@@ -63,6 +63,14 @@ describe('flushPendingSets', () => {
     );
   });
 
+  it('keeps a drop step a drop step', async () => {
+    await queueSet({ ...set('set-a'), setType: 'drop' });
+    mockUpsert.mockResolvedValueOnce({ error: null });
+
+    expect(await flushPendingSets()).toEqual({ sent: true, allSent: true });
+    expect(mockUpsert).toHaveBeenCalledWith(expect.objectContaining({ set_type: 'drop' }), expect.anything());
+  });
+
   it('keeps the set and stops on a network error', async () => {
     await queueSet(set('set-a'));
     await queueSet(set('set-b'));

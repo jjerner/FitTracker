@@ -22,7 +22,14 @@ import { useSession } from '../../../../context/AuthProvider';
 import { useWorkoutHistory, useWorkoutLog } from '../../../../hooks/useWorkouts';
 import { DATE_LOCALE } from '../../../../lib/dateUtils';
 import { toNumberOrNull } from '../../../../lib/numbers';
-import { bestOf, bestOfSessions, findNewRecords, setLabels, workingSets } from '../../../../lib/records';
+import {
+  bestOf,
+  bestOfSessions,
+  dropGroups,
+  findNewRecords,
+  setLabels,
+  setsVolume,
+} from '../../../../lib/records';
 import {
   deleteSet,
   deleteWorkoutLog,
@@ -34,12 +41,10 @@ import { colors, radius, spacing } from '../../../../theme';
 import type { SetType, WorkoutSet } from '../../../../types/domain';
 
 function logVolume(exercises: { sets: WorkoutSet[] }[]) {
-  return exercises.reduce(
-    (sum, e) =>
-      sum + workingSets(e.sets).reduce((s, set) => s + (set.weightKg ?? 0) * (set.reps ?? 0), 0),
-    0
-  );
+  return exercises.reduce((sum, e) => sum + setsVolume(e.sets), 0);
 }
+
+const TYPES: SetType[] = ['normal', 'warmup', 'drop'];
 
 export default function WorkoutSummary() {
   const { logId } = useLocalSearchParams<{ logId: string }>();
@@ -91,7 +96,11 @@ export default function WorkoutSummary() {
   const durationMin = log.completedAt
     ? Math.round((new Date(log.completedAt).getTime() - new Date(log.startedAt).getTime()) / 60_000)
     : null;
-  const totalSets = log.exercises.reduce((sum, e) => sum + e.sets.length, 0);
+  // A drop set counts as one set.
+  const totalSets = log.exercises.reduce(
+    (sum, e) => sum + e.sets.filter((s) => s.setType !== 'drop').length,
+    0
+  );
   const volumeKg = logVolume(log.exercises);
   const volumeDiff = previousLog ? Math.round(volumeKg - logVolume(previousLog.exercises)) : null;
 
@@ -250,33 +259,53 @@ export default function WorkoutSummary() {
         </View>
       ) : null}
 
-      {log.exercises.map((e) => (
-        <Card key={e.id} style={styles.exercise}>
-          <AppText variant="label" style={styles.exerciseName}>
-            {e.exercise.name}
-          </AppText>
-          {e.sets.length === 0 ? (
-            <AppText variant="small">No sets</AppText>
-          ) : (
-            setLabels(e.sets.map((s) => s.setType)).map((label, i) => {
-              const set = e.sets[i];
-              return (
-                <Pressable
-                  key={set.id}
-                  style={styles.setRow}
-                  onPress={() => openEdit(set, e.exercise.category === 'cardio', label)}
-                  accessibilityRole="button"
-                  accessibilityHint="Edit set"
-                >
-                  <AppText style={styles.setText}>
-                    {label === 'W' ? 'Warm-up' : `Set ${label}`}: {formatSet(set)} <Text style={styles.editHint}>✎</Text>
-                  </AppText>
-                </Pressable>
-              );
-            })
-          )}
-        </Card>
-      ))}
+      {log.exercises.map((e) => {
+        const types = e.sets.map((s) => s.setType);
+        const labels = setLabels(types);
+        return (
+          <Card key={e.id} style={styles.exercise}>
+            <AppText variant="label" style={styles.exerciseName}>
+              {e.exercise.name}
+            </AppText>
+            {e.sets.length === 0 ? (
+              <AppText variant="small">No sets</AppText>
+            ) : (
+              // One line per set; a drop set's steps share the line and each step taps on its own.
+              dropGroups(types).map((group) => {
+                const head = labels[group[0]] === 'W' ? 'Warm-up' : `Set ${labels[group[0]]}`;
+                return (
+                  <View key={e.sets[group[0]].id} style={styles.setLine}>
+                    <AppText style={styles.setText} importantForAccessibility="no">
+                      {head}:
+                    </AppText>
+                    {group.map((i, n) => {
+                      const set = e.sets[i];
+                      return (
+                        <Pressable
+                          key={set.id}
+                          style={styles.setRow}
+                          onPress={() => openEdit(set, e.exercise.category === 'cardio', labels[i])}
+                          accessibilityRole="button"
+                          accessibilityLabel={
+                            set.setType === 'drop' ? `Drop step, ${formatSet(set)}` : `${head}: ${formatSet(set)}`
+                          }
+                          accessibilityHint="Edit set"
+                        >
+                          <AppText style={styles.setText}>
+                            {n > 0 ? '↓ ' : ''}
+                            {formatSet(set)}
+                            {n === group.length - 1 ? <Text style={styles.editHint}> ✎</Text> : null}
+                          </AppText>
+                        </Pressable>
+                      );
+                    })}
+                  </View>
+                );
+              })
+            )}
+          </Card>
+        );
+      })}
 
       <Modal
         visible={editing != null}
@@ -292,9 +321,9 @@ export default function WorkoutSummary() {
               </AppText>
               {editing && !editing.cardio ? (
                 <Chips
-                  labels={['Normal', 'Warm-up']}
-                  selected={type === 'normal' ? 0 : 1}
-                  onSelect={(i) => setType(i === 0 ? 'normal' : 'warmup')}
+                  labels={['Normal', 'Warm-up', 'Drop']}
+                  selected={TYPES.indexOf(type)}
+                  onSelect={(i) => setType(TYPES[i])}
                 />
               ) : null}
               <LabeledInput
@@ -362,6 +391,7 @@ const styles = StyleSheet.create({
   statLabel: { color: colors.textSecondary, marginTop: spacing.xs },
   exercise: { gap: 0, marginBottom: spacing.md },
   exerciseName: { marginBottom: spacing.xs },
+  setLine: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', columnGap: spacing.xs },
   setRow: { minHeight: 48, justifyContent: 'center' },
   setText: { color: colors.textSecondary },
   editHint: { color: colors.subtle },

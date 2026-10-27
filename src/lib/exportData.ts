@@ -72,7 +72,7 @@ export function workoutRows(log: any): Cell[][] {
           s.weight_kg,
           s.duration_s,
           s.distance_m == null ? null : s.distance_m / 1000,
-          s.set_type === 'warmup' ? 'yes' : 'no',
+          s.set_type,
         ])
     );
 }
@@ -109,7 +109,7 @@ export async function workoutsCsv(userId: string): Promise<string> {
       .range(from, to)
   );
   return toCsv([
-    ['Date', 'Workout', 'Exercise', 'Set', 'Reps', 'Weight (kg)', 'Duration (s)', 'Distance (km)', 'Warm-up'],
+    ['Date', 'Workout', 'Exercise', 'Set', 'Reps', 'Weight (kg)', 'Duration (s)', 'Distance (km)', 'Type'],
     ...logs.flatMap(workoutRows),
   ]);
 }

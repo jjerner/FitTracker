@@ -109,7 +109,7 @@ async function doFlush(): Promise<{ sent: boolean; allSent: boolean }> {
         reps: set.reps,
         duration_s: set.durationS,
         distance_m: set.distanceM,
-        set_type: set.setType === 'warmup' ? 'warmup' : 'normal',
+        set_type: set.setType ?? 'normal',
       },
       { onConflict: 'id', ignoreDuplicates: true }
     );

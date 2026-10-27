@@ -1,8 +1,10 @@
 import {
   bestOf,
   bestVolume,
+  dropGroups,
   findNewRecords,
   matchingSet,
+  nextSetType,
   repBests,
   setLabels,
   setsVolume,
@@ -218,5 +220,71 @@ describe('findNewRecords volume', () => {
   it('can be a weight record and a volume record at once', () => {
     const now = session('2026-10-10', [{ weightKg: 110, reps: 5 }, { weightKg: 100, reps: 5 }]).sets;
     expect(findNewRecords(now, earlier)).toMatchObject({ weight: true, volume: true });
+  });
+});
+
+const drop = (weightKg: number, reps: number): TestSet => ({ weightKg, reps, setType: 'drop' });
+
+describe('drop sets', () => {
+  beforeEach(() => {
+    jest.useFakeTimers().setSystemTime(new Date('2026-10-11T12:00:00Z'));
+  });
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
+  it('setLabels gives drop steps no number', () => {
+    expect(setLabels(['warmup', 'normal', 'drop', 'drop', 'normal'])).toEqual(['W', '1', '↓', '↓', '2']);
+  });
+
+  it('nextSetType cycles 1 → W → ↓ → 1, with ↓ only under a working set or a drop', () => {
+    expect(nextSetType(['normal'], 0)).toBe('warmup');
+    expect(nextSetType(['warmup'], 0)).toBe('normal');
+    for (const above of ['normal', 'drop'] as SetType[]) {
+      expect(nextSetType([above, 'normal'], 1)).toBe('warmup');
+      expect(nextSetType([above, 'warmup'], 1)).toBe('drop');
+      expect(nextSetType([above, 'drop'], 1)).toBe('normal');
+    }
+    expect(nextSetType(['warmup', 'normal'], 1)).toBe('warmup');
+    expect(nextSetType(['warmup', 'warmup'], 1)).toBe('normal');
+  });
+
+  it('dropGroups puts a drop step on the line above it', () => {
+    expect(dropGroups(['warmup', 'normal', 'drop', 'drop', 'normal'])).toEqual([[0], [1, 2, 3], [4]]);
+    expect(dropGroups(['drop', 'normal'])).toEqual([[0], [1]]);
+    expect(dropGroups(['warmup', 'drop'])).toEqual([[0, 1]]);
+  });
+
+  it('matchingSet matches a drop step by its place under the matching set', () => {
+    // Last time: 1: 80×8 ↓ 60×6 ↓ 40×6, 2: 75×8
+    const last = session('2026-10-10', [{ weightKg: 80, reps: 8 }, drop(60, 6), drop(40, 6), { weightKg: 75, reps: 8 }]).sets;
+    const types: SetType[] = ['normal', 'drop', 'drop', 'normal', 'drop'];
+    expect(matchingSet(last, types, 1)?.weightKg).toBe(60);
+    expect(matchingSet(last, types, 2)?.weightKg).toBe(40);
+    expect(matchingSet(last, types, 3)?.weightKg).toBe(75);
+    expect(matchingSet(last, types, 4)).toBeUndefined();
+  });
+
+  it('records count only the first step', () => {
+    const { sets } = session('2026-10-10', [{ weightKg: 80, reps: 8 }, drop(75, 12)]);
+    expect(workingSets(sets).map((s) => s.weightKg)).toEqual([80]);
+    expect(bestOf(sets).oneRM).toBeCloseTo(101.33, 1);
+    const rows = repBests([session('2026-10-10', [{ weightKg: 80, reps: 5 }, drop(70, 10)])]);
+    expect(rows).toHaveLength(5);
+    expect(rows.every((r) => r.weightKg === 80)).toBe(true);
+    const stats = trackedStats([session('2026-10-10', [{ weightKg: 60, reps: 5 }, drop(100, 5)])]);
+    expect(stats.current).toMatchObject({ weightKg: 60 });
+  });
+
+  it('setsVolume counts every step, not warm-ups', () => {
+    const sets = session('2026-10-10', [{ weightKg: 50, reps: 2 }, drop(40, 3), drop(30, 3), { weightKg: 45, reps: 5 }]).sets;
+    expect(setsVolume(sets)).toBe(535);
+    expect(setsVolume(session('2026-10-10', [warmup(20, 10), { weightKg: 50, reps: 2 }, drop(40, 3)]).sets)).toBe(220);
+  });
+
+  it('findNewRecords: drop steps can make a volume record, never a weight or 1RM one', () => {
+    const earlier = [session('2026-10-05', [{ weightKg: 80, reps: 5 }])];
+    const now = session('2026-10-10', [{ weightKg: 60, reps: 5 }, drop(120, 5)]).sets;
+    expect(findNewRecords(now, earlier)).toEqual({ weight: false, oneRM: false, volume: true });
   });
 });

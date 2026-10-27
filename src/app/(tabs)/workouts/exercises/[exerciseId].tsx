@@ -15,7 +15,7 @@ import { Card } from '../../../../components/Card';
 import { Chips } from '../../../../components/Chips';
 import { EmptyState } from '../../../../components/EmptyState';
 import { useExerciseHistory, useExerciseNotes, useExercises } from '../../../../hooks/useWorkouts';
-import { bestOf, bestVolume, repBests, setLabels, workingSets } from '../../../../lib/records';
+import { bestOf, bestVolume, dropGroups, repBests, setLabels, workingSets } from '../../../../lib/records';
 import { DATE_LOCALE } from '../../../../lib/dateUtils';
 import { formatSet } from '../../../../lib/workouts';
 import type { ExerciseSession } from '../../../../types/domain';
@@ -186,20 +186,26 @@ export default function ExerciseDetail() {
             ) : null}
           </View>
         }
-        renderItem={({ item }) => (
-          <Pressable onPress={() => router.push(`/(tabs)/workouts/log/${item.logId}`)}>
-            <Card style={styles.session}>
-              <AppText variant="label" style={styles.sessionDate}>
-                {formatDate(item.startedAt)}
-              </AppText>
-              {setLabels(item.sets.map((s) => s.setType)).map((label, i) => (
-                <AppText key={item.sets[i].id} variant="small" style={styles.setText}>
-                  {label === 'W' ? 'Warm-up' : `Set ${label}`}: {formatSet(item.sets[i])}
+        renderItem={({ item }) => {
+          const types = item.sets.map((s) => s.setType);
+          const labels = setLabels(types);
+          return (
+            <Pressable onPress={() => router.push(`/(tabs)/workouts/log/${item.logId}`)}>
+              <Card style={styles.session}>
+                <AppText variant="label" style={styles.sessionDate}>
+                  {formatDate(item.startedAt)}
                 </AppText>
-              ))}
-            </Card>
-          </Pressable>
-        )}
+                {/* A drop set and its steps share one line. */}
+                {dropGroups(types).map((group) => (
+                  <AppText key={item.sets[group[0]].id} variant="small" style={styles.setText}>
+                    {labels[group[0]] === 'W' ? 'Warm-up' : `Set ${labels[group[0]]}`}:{' '}
+                    {group.map((i) => formatSet(item.sets[i])).join(' ↓ ')}
+                  </AppText>
+                ))}
+              </Card>
+            </Pressable>
+          );
+        }}
       />
     </View>
   );
