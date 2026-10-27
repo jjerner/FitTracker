@@ -812,7 +812,9 @@ function ExerciseCard({
         accessibilityLabel={`Add set to ${logExercise.exercise.name}`}
         onPress={() => {
           const last = drafts.at(-1);
-          setDrafts((prev) => [...prev, newRow(last?.a, last?.b, last?.type)]);
+          // After a drop step the next row is usually a new set; tap its badge for another ↓.
+          const type = last?.type === 'drop' ? 'normal' : last?.type;
+          setDrafts((prev) => [...prev, newRow(last?.a, last?.b, type)]);
         }}
       >
         <AppText variant="label" style={styles.addSetText}>+ Add set</AppText>
