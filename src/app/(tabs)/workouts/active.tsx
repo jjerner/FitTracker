@@ -464,6 +464,8 @@ function ExerciseCard({
     return Array.from({ length: count }, () => newRow());
   });
   const [savingKey, setSavingKey] = useState<number | null>(null);
+  // Un-tick runs several deletes; a second tap meanwhile would bring the rows back twice.
+  const [undoing, setUndoing] = useState(false);
   const [swapOpen, setSwapOpen] = useState(false);
   const [linking, setLinking] = useState(false);
 
@@ -569,6 +571,7 @@ function ExerciseCard({
 
   // Un-ticking a set (and its ↓ rows) deletes it but keeps its numbers in rows to redo.
   async function handleUndo(index: number) {
+    setUndoing(true);
     const group = withDrops(doneTypes, index).map((j) => doneSets[j]);
     // Bottom up: if a delete fails, what stays done is the top of the group.
     const deleted: WorkoutSet[] = [];
@@ -581,6 +584,7 @@ function ExerciseCard({
       }
       deleted.unshift(set);
     }
+    setUndoing(false);
     if (!deleted.length) return;
     const rows = deleted.map((set) => {
       const a = isCardio
@@ -832,6 +836,8 @@ function ExerciseCard({
             <Pressable
               style={[styles.check, styles.checkDone]}
               onPress={() => handleUndo(index)}
+              disabled={undoing || savingKey != null}
+              accessibilityState={{ disabled: undoing || savingKey != null }}
               accessibilityRole="button"
               accessibilityLabel={`Set ${labels[index]} done`}
               accessibilityHint={
