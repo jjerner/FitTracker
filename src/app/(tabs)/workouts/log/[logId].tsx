@@ -20,6 +20,7 @@ import { LabeledInput } from '../../../../components/LabeledInput';
 import { TextLink } from '../../../../components/TextLink';
 import { useSession } from '../../../../context/AuthProvider';
 import { useWorkoutHistory, useWorkoutLog } from '../../../../hooks/useWorkouts';
+import { DATE_LOCALE } from '../../../../lib/dateUtils';
 import { toNumberOrNull } from '../../../../lib/numbers';
 import { bestOf, bestOfSessions, findNewRecords, setLabels, workingSets } from '../../../../lib/records';
 import {
@@ -208,7 +209,14 @@ export default function WorkoutSummary() {
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <AppText variant="heading">{log.name}</AppText>
       <AppText variant="small" style={styles.subtitle}>
-        {new Date(log.startedAt).toLocaleString()}
+        {new Date(log.startedAt).toLocaleString(DATE_LOCALE, {
+          weekday: 'short',
+          day: 'numeric',
+          month: 'short',
+          year: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
+        })}
       </AppText>
 
       <Card style={styles.statsCard}>

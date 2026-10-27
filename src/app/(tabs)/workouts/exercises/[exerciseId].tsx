@@ -16,12 +16,13 @@ import { Chips } from '../../../../components/Chips';
 import { EmptyState } from '../../../../components/EmptyState';
 import { useExerciseHistory, useExercises } from '../../../../hooks/useWorkouts';
 import { bestOf, bestVolume, repBests, setLabels, workingSets } from '../../../../lib/records';
+import { DATE_LOCALE } from '../../../../lib/dateUtils';
 import { formatSet } from '../../../../lib/workouts';
 import type { ExerciseSession } from '../../../../types/domain';
 import { colors, radius, spacing } from '../../../../theme';
 
 function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString(undefined, {
+  return new Date(iso).toLocaleDateString(DATE_LOCALE, {
     weekday: 'short',
     month: 'short',
     day: 'numeric',
@@ -145,7 +146,7 @@ export default function ExerciseDetail() {
                     value: v.value,
                     label:
                       i % Math.max(1, Math.ceil(values.length / 5)) === 0
-                        ? new Date(v.date).toLocaleDateString(undefined, {
+                        ? new Date(v.date).toLocaleDateString(DATE_LOCALE, {
                             month: 'numeric',
                             day: 'numeric',
                           })

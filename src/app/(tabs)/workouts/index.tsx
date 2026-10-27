@@ -10,6 +10,7 @@ import { EmptyState } from '../../../components/EmptyState';
 import { TextLink } from '../../../components/TextLink';
 import { useSession } from '../../../context/AuthProvider';
 import { useWorkoutHistory, useWorkoutTemplates } from '../../../hooks/useWorkouts';
+import { DATE_LOCALE } from '../../../lib/dateUtils';
 import { startWorkout } from '../../../lib/workouts';
 import type { WorkoutTemplate } from '../../../types/domain';
 import { colors, radius, spacing } from '../../../theme';
@@ -160,7 +161,12 @@ export default function WorkoutsHome() {
               onPress={() => router.push(`/(tabs)/workouts/log/${log.id}`)}
             >
               <AppText variant="label">{log.name}</AppText>
-              <AppText variant="small">{new Date(log.startedAt).toLocaleDateString()}</AppText>
+              <AppText variant="small">{new Date(log.startedAt).toLocaleDateString(DATE_LOCALE, {
+                  weekday: 'short',
+                  day: 'numeric',
+                  month: 'short',
+                  year: 'numeric',
+                })}</AppText>
             </Pressable>
           ))
         )}
