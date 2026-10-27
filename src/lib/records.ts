@@ -57,6 +57,13 @@ export function dropGroups(types: SetType[]): number[][] {
   return groups;
 }
 
+// Row `index` plus the ↓ rows directly below it.
+export function withDrops(types: SetType[], index: number): number[] {
+  const rows = [index];
+  for (let j = index + 1; types[j] === 'drop'; j++) rows.push(j);
+  return rows;
+}
+
 // Superset role per card, top to bottom: a flag pairs a card with the one below, pairs only.
 export function supersetRoles(flags: boolean[]): ('first' | 'second' | null)[] {
   const roles: ('first' | 'second' | null)[] = [];
