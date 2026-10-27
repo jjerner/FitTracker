@@ -230,3 +230,39 @@ export function estimateMaintenance(
     trendChangeKg,
   };
 }
+
+export type WeeklyMaintenance = { date: string; estimate: MaintenanceEstimate };
+
+// One estimate per week: today's rule run with "today" set 0, 7, 14 … days back.
+// Oldest first. Weeks without enough data are left out.
+export function weeklyMaintenance(
+  weights: BodyWeight[],
+  days: DailyNutrition[],
+  today: string,
+  weeks: number
+): WeeklyMaintenance[] {
+  return Array.from({ length: weeks }, (_, i) => addDays(today, -7 * (weeks - 1 - i))).flatMap(
+    (date) => {
+      const estimate = estimateMaintenance(weights, days, date);
+      return estimate ? [{ date, estimate }] : [];
+    }
+  );
+}
+
+// Average of the weekly estimates from the last 3 weeks (date >= today − 14), rounded to 10 kcal.
+// `latest` is the newest of those weeks and feeds the detail line. Null when none of the 3 weeks has data.
+export function smoothedMaintenance(
+  weekly: WeeklyMaintenance[],
+  today: string
+): { kcal: number; latest: MaintenanceEstimate } | null {
+  const recent = weekly.filter((w) => w.date >= addDays(today, -14));
+  if (recent.length === 0) return null;
+  const avg = recent.reduce((sum, w) => sum + w.estimate.kcal, 0) / recent.length;
+  return { kcal: Math.round(avg / 10) * 10, latest: recent[recent.length - 1].estimate };
+}
+
+// Chart label for a weekly point: "Now" for today, else "N weeks ago".
+export function weeksAgoLabel(date: string, today: string): string {
+  const weeks = Math.round((Date.parse(today) - Date.parse(date)) / (7 * 86_400_000));
+  return weeks === 0 ? 'Now' : `${weeks} ${weeks === 1 ? 'week' : 'weeks'} ago`;
+}

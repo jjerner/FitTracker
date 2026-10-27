@@ -1,5 +1,13 @@
 import { addDays, mondayOf } from '../dateUtils';
-import { estimateMaintenance, goalStreak, weeklyMuscleSets, weightTrend } from '../progress';
+import {
+  estimateMaintenance,
+  goalStreak,
+  smoothedMaintenance,
+  weeklyMaintenance,
+  weeklyMuscleSets,
+  weeksAgoLabel,
+  weightTrend,
+} from '../progress';
 
 jest.mock('../supabase', () => ({ supabase: {} }));
 
@@ -207,5 +215,60 @@ describe('estimateMaintenance', () => {
   test('no weigh-ins in the window gives null', () => {
     expect(estimateMaintenance([], food(fourWeeks), today)).toBeNull();
     expect(estimateMaintenance(span(60, 29).map((date) => ({ date, weightKg: 80 })), food(fourWeeks), today)).toBeNull();
+  });
+
+  // Nested so they reuse span/food/weighIns above.
+  describe('weeklyMaintenance', () => {
+    const longWeights = span(120, 1).map((date) => ({ date, weightKg: 80 }));
+    const longFood = food(span(120, 1));
+
+    test('one estimate per week, oldest first, each the rule run on that date', () => {
+      const result = weeklyMaintenance(longWeights, longFood, today, 12);
+      expect(result.map((w) => w.date)).toEqual(
+        Array.from({ length: 12 }, (_, i) => addDays(today, -7 * (11 - i)))
+      );
+      for (const w of result) expect(w.estimate).toEqual(estimateMaintenance(longWeights, longFood, w.date));
+    });
+
+    test('weeks without enough data are left out', () => {
+      const result = weeklyMaintenance(longWeights, food(fourWeeks), today, 12);
+      expect(result.map((w) => w.date)).toEqual([addDays(today, -14), addDays(today, -7), today]);
+    });
+
+    test('no data gives []', () => {
+      expect(weeklyMaintenance([], [], today, 12)).toEqual([]);
+    });
+  });
+
+  describe('smoothedMaintenance', () => {
+    const wk = (daysBack: number, kcal: number) => ({
+      date: addDays(today, -daysBack),
+      estimate: { kcal, loggedDays: 20, skippedDays: 0, daysBetween: 20, trendChangeKg: 0 },
+    });
+
+    test('averages the last 3 weeks, rounded to 10, older weeks ignored', () => {
+      const weekly = [wk(21, 9000), wk(14, 2000), wk(7, 2100), wk(0, 2300)];
+      expect(smoothedMaintenance(weekly, today)).toEqual({ kcal: 2130, latest: weekly[3].estimate });
+    });
+
+    test('a missing week is not counted as 0', () => {
+      expect(smoothedMaintenance([wk(14, 2000), wk(0, 2100)], today)?.kcal).toBe(2050);
+    });
+
+    test('without this week, latest is the week before', () => {
+      const weekly = [wk(14, 2000), wk(7, 2100)];
+      expect(smoothedMaintenance(weekly, today)?.latest).toBe(weekly[1].estimate);
+    });
+
+    test('only older weeks, or none, gives null', () => {
+      expect(smoothedMaintenance([wk(21, 2000)], today)).toBeNull();
+      expect(smoothedMaintenance([], today)).toBeNull();
+    });
+  });
+
+  test('weeksAgoLabel', () => {
+    expect(weeksAgoLabel(today, today)).toBe('Now');
+    expect(weeksAgoLabel(addDays(today, -7), today)).toBe('1 week ago');
+    expect(weeksAgoLabel(addDays(today, -77), today)).toBe('11 weeks ago');
   });
 });
