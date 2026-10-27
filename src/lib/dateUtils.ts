@@ -1,3 +1,6 @@
+// Shown dates follow the app's language (English), not the phone's language setting.
+export const DATE_LOCALE = 'en-GB';
+
 export function todayLocalDate(): string {
   return localDateDaysAgo(0);
 }
