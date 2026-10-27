@@ -269,6 +269,7 @@ export async function getWorkoutLog(id: string): Promise<WorkoutLog> {
     name: data.name,
     startedAt: data.started_at,
     completedAt: data.completed_at,
+    notes: data.notes,
     exercises,
   };
 }
@@ -433,6 +434,36 @@ export async function finishWorkout(id: string): Promise<void> {
     .from('workout_logs')
     .update({ completed_at: new Date().toISOString() })
     .eq('id', id);
+  if (error) throw error;
+}
+
+export async function saveWorkoutNote(logId: string, note: string): Promise<void> {
+  const { error } = await supabase
+    .from('workout_logs')
+    .update({ notes: note.trim() || null })
+    .eq('id', logId);
+  if (error) throw error;
+}
+
+// --- Exercise notes (one sticky note per user per exercise) ---
+
+export async function getExerciseNotes(userId: string): Promise<Record<string, string>> {
+  const { data, error } = await supabase
+    .from('exercise_notes')
+    .select('exercise_id, note')
+    .eq('user_id', userId);
+  if (error) throw error;
+  return Object.fromEntries((data ?? []).map((row: any) => [row.exercise_id, row.note]));
+}
+
+// An empty note deletes the row.
+export async function saveExerciseNote(userId: string, exerciseId: string, note: string): Promise<void> {
+  const text = note.trim();
+  const { error } = text
+    ? await supabase
+        .from('exercise_notes')
+        .upsert({ user_id: userId, exercise_id: exerciseId, note: text }, { onConflict: 'user_id,exercise_id' })
+    : await supabase.from('exercise_notes').delete().eq('user_id', userId).eq('exercise_id', exerciseId);
   if (error) throw error;
 }
 

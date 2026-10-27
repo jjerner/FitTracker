@@ -218,6 +218,11 @@ export default function WorkoutSummary() {
           minute: '2-digit',
         })}
       </AppText>
+      {log.notes ? (
+        <AppText variant="small" style={styles.subtitle}>
+          Note: {log.notes}
+        </AppText>
+      ) : null}
 
       <Card style={styles.statsCard}>
         <Stat label="Minutes" value={durationMin != null ? String(durationMin) : '–'} />

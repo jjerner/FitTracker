@@ -14,7 +14,7 @@ import { AppText } from '../../../../components/AppText';
 import { Card } from '../../../../components/Card';
 import { Chips } from '../../../../components/Chips';
 import { EmptyState } from '../../../../components/EmptyState';
-import { useExerciseHistory, useExercises } from '../../../../hooks/useWorkouts';
+import { useExerciseHistory, useExerciseNotes, useExercises } from '../../../../hooks/useWorkouts';
 import { bestOf, bestVolume, repBests, setLabels, workingSets } from '../../../../lib/records';
 import { DATE_LOCALE } from '../../../../lib/dateUtils';
 import { formatSet } from '../../../../lib/workouts';
@@ -52,6 +52,8 @@ export default function ExerciseDetail() {
   const { width } = useWindowDimensions();
   const { data: exercises } = useExercises();
   const { data: sessions, isLoading } = useExerciseHistory(exerciseId);
+  const { data: notes } = useExerciseNotes();
+  const note = exerciseId ? notes?.[exerciseId] : undefined;
   const [metric, setMetric] = useState<'weight' | 'oneRM'>('weight');
 
   const exercise = exercises?.find((e) => e.id === exerciseId);
@@ -96,6 +98,7 @@ export default function ExerciseDetail() {
         ListHeaderComponent={
           <View style={styles.header}>
             <Card>
+              {note ? <AppText variant="small">Note: {note}</AppText> : null}
               {!isCardio && charted.length > 0 ? (
                 <View style={styles.recordsRow}>
                   <View style={styles.record}>

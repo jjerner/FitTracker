@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Keyboard,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -17,6 +18,7 @@ import {
 import { AppText } from '../../../components/AppText';
 import { Button } from '../../../components/Button';
 import { Card } from '../../../components/Card';
+import { LabeledInput } from '../../../components/LabeledInput';
 import { TextLink } from '../../../components/TextLink';
 import { ExercisePicker } from '../../../components/workouts/ExercisePicker';
 import { SwapExercisePicker } from '../../../components/workouts/SwapExercisePicker';
@@ -26,6 +28,7 @@ import { useRestVibration } from '../../../hooks/useRestVibration';
 import { useSetsHint } from '../../../hooks/useSetsHint';
 import {
   useExerciseHistory,
+  useExerciseNotes,
   useWorkoutLog,
   useWorkoutTemplate,
 } from '../../../hooks/useWorkouts';
@@ -37,6 +40,8 @@ import {
   finishWorkout,
   insertExerciseAfter,
   removeExerciseFromLog,
+  saveExerciseNote,
+  saveWorkoutNote,
   swapLogExercise,
 } from '../../../lib/workouts';
 import {
@@ -78,6 +83,8 @@ export default function ActiveWorkout() {
   const [isFinishing, setIsFinishing] = useState(false);
   // When the current rest ends (ms timestamp), or null when not resting.
   const [restEndsAt, setRestEndsAt] = useState<number | null>(null);
+  // Workout note being typed; null = not touched yet, so the saved one shows.
+  const [note, setNote] = useState<string | null>(null);
 
   function refresh() {
     return queryClient.invalidateQueries({ queryKey: ['workoutLog', logId] });
@@ -93,6 +100,8 @@ export default function ActiveWorkout() {
 
   async function handleFinish() {
     if (!log) return;
+    // A tap on Finish doesn't blur a focused box on Android; dismissing starts its blur save.
+    Keyboard.dismiss();
     setIsFinishing(true);
     try {
       const { allSent } = await flushPendingSets();
@@ -103,6 +112,8 @@ export default function ActiveWorkout() {
         );
         return;
       }
+      // So the summary shows a note typed without leaving the box first.
+      if (note != null) await saveWorkoutNote(log.id, note);
       await finishWorkout(log.id);
       await queryClient.invalidateQueries({ queryKey: ['workoutHistory', session?.user.id] });
       // So the "Previous" column shows this workout next time.
@@ -135,6 +146,17 @@ export default function ActiveWorkout() {
         },
       },
     ]);
+  }
+
+  async function handleNoteBlur() {
+    if (!log || note == null || note.trim() === (log.notes ?? '')) return;
+    try {
+      await saveWorkoutNote(log.id, note);
+    } catch {
+      Alert.alert('Could not save note', 'Check your connection and try again.');
+      return;
+    }
+    await refresh();
   }
 
   if (isLoading || !log) {
@@ -204,6 +226,15 @@ export default function ActiveWorkout() {
             </Pressable>
           </View>
         )}
+
+        <LabeledInput
+          label="Workout note"
+          multiline
+          maxLength={500}
+          value={note ?? log.notes ?? ''}
+          onChangeText={setNote}
+          onBlur={handleNoteBlur}
+        />
 
         {exercises.map((logExercise) => {
           const target = template?.exercises.find((te) => te.exercise.id === logExercise.exercise.id);
@@ -368,6 +399,13 @@ function ExerciseCard({
   const doneSets = logExercise.sets;
   const lastDone = doneSets.at(-1);
   const { data: history } = useExerciseHistory(logExercise.exercise.id);
+  const { session } = useSession();
+  const userId = session?.user.id;
+  const queryClient = useQueryClient();
+  const { data: notes, isLoading: notesLoading } = useExerciseNotes();
+  const savedNote = notes?.[logExercise.exercise.id];
+  // Note being edited; null = not editing.
+  const [noteDraft, setNoteDraft] = useState<string | null>(null);
   // History only has completed workouts, so [0] is the last time before this one.
   const previous = history?.[0];
 
@@ -518,6 +556,23 @@ function ExerciseCard({
     await onChanged();
   }
 
+  async function handleNoteBlur() {
+    if (noteDraft == null || !userId) return;
+    if (noteDraft.trim() === (savedNote ?? '')) {
+      setNoteDraft(null);
+      return;
+    }
+    try {
+      await saveExerciseNote(userId, logExercise.exercise.id, noteDraft);
+    } catch {
+      Alert.alert('Could not save note', 'Check your connection and try again.');
+      return;
+    }
+    // Wait for the new note so the old one doesn't flash back.
+    await queryClient.invalidateQueries({ queryKey: ['exerciseNotes', userId] });
+    setNoteDraft(null);
+  }
+
   function previousText(index: number): string {
     const prev = previous && matchingSet(previous.sets, types, index);
     if (!prev) return '—';
@@ -584,6 +639,37 @@ function ExerciseCard({
           </Pressable>
         ) : null}
       </View>
+      {noteDraft != null ? (
+        <LabeledInput
+          label="Note"
+          placeholder="e.g. Seat at 4"
+          multiline
+          autoFocus
+          maxLength={200}
+          value={noteDraft}
+          onChangeText={setNoteDraft}
+          onBlur={handleNoteBlur}
+        />
+      ) : notesLoading ? null : savedNote ? (
+        <Pressable
+          style={styles.noteLine}
+          onPress={() => setNoteDraft(savedNote)}
+          accessibilityRole="button"
+          accessibilityHint="Edit note"
+        >
+          <AppText variant="small">Note: {savedNote}</AppText>
+        </Pressable>
+      ) : (
+        <Pressable
+          style={styles.addNote}
+          onPress={() => setNoteDraft('')}
+          hitSlop={headerHitSlop}
+          accessibilityRole="button"
+          accessibilityLabel={`Add note to ${logExercise.exercise.name}`}
+        >
+          <AppText style={styles.swapText}>+ Note</AppText>
+        </Pressable>
+      )}
       {targetText ? (
         <AppText variant="small" style={styles.targetText}>
           {targetText}
@@ -756,6 +842,8 @@ const styles = StyleSheet.create({
   cardTitle: { flex: 1 },
   swapText: { color: colors.primary },
   removeText: { color: colors.danger },
+  addNote: { alignSelf: 'flex-start' },
+  noteLine: { minHeight: 48, justifyContent: 'center' },
   waitingText: { color: colors.warning, marginBottom: spacing.sm },
   recordText: { color: colors.warning, marginBottom: spacing.sm },
   targetText: { marginTop: spacing.xs },
