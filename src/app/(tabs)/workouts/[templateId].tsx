@@ -20,10 +20,12 @@ import { LabeledInput } from '../../../components/LabeledInput';
 import { RestTimeInput } from '../../../components/RestTimeInput';
 import { TextLink } from '../../../components/TextLink';
 import { ExercisePicker } from '../../../components/workouts/ExercisePicker';
+import { SupersetFrame } from '../../../components/workouts/SupersetFrame';
 import { useSession } from '../../../context/AuthProvider';
 import { useDefaultRest } from '../../../hooks/useDefaultRest';
 import { useWorkoutTemplate } from '../../../hooks/useWorkouts';
 import { toNumberOrNull } from '../../../lib/numbers';
+import { supersetRoles } from '../../../lib/records';
 import { formatRest } from '../../../lib/restTime';
 import { deleteTemplate, saveTemplate, setTemplateArchived } from '../../../lib/workouts';
 import type { WorkoutTemplate, WorkoutTemplateExercise } from '../../../types/domain';
@@ -58,6 +60,7 @@ type DraftExercise = {
   showTargets: boolean;
   // Own rest time for this exercise; null = the default from Profile.
   restSeconds: number | null;
+  supersetWithNext: boolean;
 };
 
 let nextDraftKey = 0;
@@ -76,6 +79,7 @@ function TemplateForm({ template }: { template: WorkoutTemplate | null }) {
       weight: te.targetWeightKg?.toString() ?? '',
       showTargets: te.targetSets != null || te.targetReps != null || te.targetWeightKg != null,
       restSeconds: te.restSeconds,
+      supersetWithNext: te.supersetWithNext,
     }))
   );
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -90,7 +94,9 @@ function TemplateForm({ template }: { template: WorkoutTemplate | null }) {
     setExercises((prev) => {
       const next = [...prev];
       [next[index], next[index + direction]] = [next[index + direction], next[index]];
-      return next;
+      // A move breaks every pair it touches: the two cards and the one above them.
+      const lo = Math.min(index, index + direction);
+      return next.map((e, i) => (i >= lo - 1 && i <= lo + 1 ? { ...e, supersetWithNext: false } : e));
     });
   }
 
@@ -101,8 +107,20 @@ function TemplateForm({ template }: { template: WorkoutTemplate | null }) {
       targetReps: toNumberOrNull(e.reps),
       targetWeightKg: toNumberOrNull(e.weight),
       restSeconds: e.exercise.category === 'strength' ? e.restSeconds : null,
+      supersetWithNext: e.supersetWithNext,
     }));
   }
+
+  // The card above a removed one would otherwise pair with the next card.
+  function removeExercise(index: number) {
+    setExercises((prev) =>
+      prev
+        .filter((_, i) => i !== index)
+        .map((e, i) => (i === index - 1 ? { ...e, supersetWithNext: false } : e))
+    );
+  }
+
+  const roles = supersetRoles(exercises.map((e) => e.supersetWithNext));
 
   async function invalidate() {
     await queryClient.invalidateQueries({ queryKey: ['workoutTemplates', session?.user.id] });
@@ -209,108 +227,124 @@ function TemplateForm({ template }: { template: WorkoutTemplate | null }) {
         </Card>
       ) : null}
       {exercises.map((e, index) => (
-        <Card key={e.key} style={styles.exerciseCard}>
-          <View style={styles.exerciseHeader}>
-            <AppText variant="label" style={styles.exerciseName}>
-              {e.exercise.name}
-            </AppText>
-            <Pressable
-              style={styles.moveButton}
-              onPress={() => moveExercise(index, -1)}
-              disabled={index === 0}
-              accessibilityRole="button"
-              accessibilityLabel={`Move ${e.exercise.name} up`}
-              accessibilityState={{ disabled: index === 0 }}
-            >
-              <Text style={index === 0 ? styles.moveTextDisabled : styles.moveText}>↑</Text>
-            </Pressable>
-            <Pressable
-              style={styles.moveButton}
-              onPress={() => moveExercise(index, 1)}
-              disabled={index === exercises.length - 1}
-              accessibilityRole="button"
-              accessibilityLabel={`Move ${e.exercise.name} down`}
-              accessibilityState={{ disabled: index === exercises.length - 1 }}
-            >
-              <Text
-                style={index === exercises.length - 1 ? styles.moveTextDisabled : styles.moveText}
-              >
-                ↓
-              </Text>
-            </Pressable>
-            <Pressable
-              style={styles.removeButton}
-              onPress={() => setExercises((prev) => prev.filter((_, i) => i !== index))}
-              accessibilityRole="button"
-              accessibilityLabel={`Remove ${e.exercise.name}`}
-            >
-              <AppText variant="small" style={styles.removeText}>
-                Remove
+        <SupersetFrame
+          key={e.key}
+          role={roles[index]}
+          spaceBelow={spacing.sm}
+          onUnlink={() => updateExercise(index, { supersetWithNext: false })}
+          unlinkLabel={`Unlink ${e.exercise.name} and ${exercises[index + 1]?.exercise.name}`}
+        >
+          <Card style={styles.exerciseCard}>
+            <View style={styles.exerciseHeader}>
+              <AppText variant="label" style={styles.exerciseName}>
+                {e.exercise.name}
               </AppText>
-            </Pressable>
-          </View>
-          {e.exercise.category === 'strength' ? (
-            <>
-              {!e.showTargets ? (
-                <Pressable
-                  style={styles.linkButton}
-                  onPress={() => updateExercise(index, { showTargets: true })}
-                  hitSlop={14}
-                  accessibilityRole="button"
+              <Pressable
+                style={styles.moveButton}
+                onPress={() => moveExercise(index, -1)}
+                disabled={index === 0}
+                accessibilityRole="button"
+                accessibilityLabel={`Move ${e.exercise.name} up`}
+                accessibilityState={{ disabled: index === 0 }}
+              >
+                <Text style={index === 0 ? styles.moveTextDisabled : styles.moveText}>↑</Text>
+              </Pressable>
+              <Pressable
+                style={styles.moveButton}
+                onPress={() => moveExercise(index, 1)}
+                disabled={index === exercises.length - 1}
+                accessibilityRole="button"
+                accessibilityLabel={`Move ${e.exercise.name} down`}
+                accessibilityState={{ disabled: index === exercises.length - 1 }}
+              >
+                <Text
+                  style={index === exercises.length - 1 ? styles.moveTextDisabled : styles.moveText}
                 >
-                  <AppText variant="small" style={styles.addTargetsText}>
-                    + Targets
-                  </AppText>
-                </Pressable>
-              ) : null}
-              {e.showTargets ? (
-                <View style={styles.targetsRow}>
-                  <TargetInput label="Sets" value={e.sets} onChange={(v) => updateExercise(index, { sets: v })} />
-                  <TargetInput label="Reps" value={e.reps} onChange={(v) => updateExercise(index, { reps: v })} />
-                  <TargetInput label="kg" value={e.weight} onChange={(v) => updateExercise(index, { weight: v })} />
-                </View>
-              ) : null}
-              {e.restSeconds == null ? (
-                <View style={styles.defaultRestRow}>
-                  <AppText variant="small" style={styles.defaultRestText}>
-                    Uses your default rest ({formatRest(defaultRest.seconds)})
-                  </AppText>
+                  ↓
+                </Text>
+              </Pressable>
+              <Pressable
+                style={styles.removeButton}
+                onPress={() => removeExercise(index)}
+                accessibilityRole="button"
+                accessibilityLabel={`Remove ${e.exercise.name}`}
+              >
+                <AppText variant="small" style={styles.removeText}>
+                  Remove
+                </AppText>
+              </Pressable>
+            </View>
+            {e.exercise.category === 'strength' ? (
+              <>
+                {!e.showTargets ? (
                   <Pressable
-                    onPress={() => updateExercise(index, { restSeconds: defaultRest.seconds })}
+                    style={styles.linkButton}
+                    onPress={() => updateExercise(index, { showTargets: true })}
                     hitSlop={14}
                     accessibilityRole="button"
                   >
                     <AppText variant="small" style={styles.addTargetsText}>
-                      + Rest time
+                      + Targets
                     </AppText>
                   </Pressable>
-                </View>
-              ) : (
-                <View style={styles.restRow}>
-                  <AppText variant="caption" style={styles.restLabel}>
-                    Rest
-                  </AppText>
-                  <RestTimeInput
-                    initialSeconds={e.restSeconds}
-                    min={5}
-                    label={`${e.exercise.name} rest`}
-                    onChange={(v) => updateExercise(index, { restSeconds: v })}
-                  />
-                  <Pressable
-                    onPress={() => updateExercise(index, { restSeconds: null })}
-                    hitSlop={14}
-                    accessibilityRole="button"
-                    accessibilityLabel="Use default rest"
-                  >
-                    <AppText variant="small" style={styles.useDefaultText}>
-                      ✕ Use default
+                ) : null}
+                {e.showTargets ? (
+                  <View style={styles.targetsRow}>
+                    <TargetInput label="Sets" value={e.sets} onChange={(v) => updateExercise(index, { sets: v })} />
+                    <TargetInput label="Reps" value={e.reps} onChange={(v) => updateExercise(index, { reps: v })} />
+                    <TargetInput label="kg" value={e.weight} onChange={(v) => updateExercise(index, { weight: v })} />
+                  </View>
+                ) : null}
+                {e.restSeconds == null ? (
+                  <View style={styles.defaultRestRow}>
+                    <AppText variant="small" style={styles.defaultRestText}>
+                      Uses your default rest ({formatRest(defaultRest.seconds)})
                     </AppText>
-                  </Pressable>
-                </View>
-              )}
-            </>
-          ) : null}
-        </Card>
+                    <Pressable
+                      onPress={() => updateExercise(index, { restSeconds: defaultRest.seconds })}
+                      hitSlop={14}
+                      accessibilityRole="button"
+                    >
+                      <AppText variant="small" style={styles.addTargetsText}>
+                        + Rest time
+                      </AppText>
+                    </Pressable>
+                  </View>
+                ) : (
+                  <View style={styles.restRow}>
+                    <AppText variant="caption" style={styles.restLabel}>
+                      Rest
+                    </AppText>
+                    <RestTimeInput
+                      initialSeconds={e.restSeconds}
+                      min={5}
+                      label={`${e.exercise.name} rest`}
+                      onChange={(v) => updateExercise(index, { restSeconds: v })}
+                    />
+                    <Pressable
+                      onPress={() => updateExercise(index, { restSeconds: null })}
+                      hitSlop={14}
+                      accessibilityRole="button"
+                      accessibilityLabel="Use default rest"
+                    >
+                      <AppText variant="small" style={styles.useDefaultText}>
+                        ✕ Use default
+                      </AppText>
+                    </Pressable>
+                  </View>
+                )}
+              </>
+            ) : null}
+            {roles[index] == null && index < exercises.length - 1 && roles[index + 1] == null ? (
+              <TextLink
+                title="⛓ Superset with next"
+                onPress={() => updateExercise(index, { supersetWithNext: true })}
+                accessibilityLabel={`Superset ${e.exercise.name} with ${exercises[index + 1].exercise.name}`}
+                style={styles.supersetLink}
+              />
+            ) : null}
+          </Card>
+        </SupersetFrame>
       ))}
 
       <Button
@@ -370,6 +404,7 @@ function TemplateForm({ template }: { template: WorkoutTemplate | null }) {
               weight: '',
               showTargets: false,
               restSeconds: null,
+              supersetWithNext: false,
             },
           ])
         }
@@ -408,7 +443,7 @@ const styles = StyleSheet.create({
   content: { padding: spacing.lg, paddingBottom: spacing.xxl },
   label: { marginTop: spacing.lg, marginBottom: spacing.sm },
   emptyCard: { paddingVertical: 0 },
-  exerciseCard: { padding: spacing.md, gap: 0, marginBottom: spacing.sm },
+  exerciseCard: { padding: spacing.md, gap: 0 },
   exerciseHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   exerciseName: { flex: 1 },
   removeButton: { minHeight: 48, justifyContent: 'center', paddingLeft: spacing.sm },
@@ -419,6 +454,7 @@ const styles = StyleSheet.create({
   // icon glyph, not text
   moveTextDisabled: { fontSize: 18, color: colors.borderStrong },
   linkButton: { alignSelf: 'flex-start' },
+  supersetLink: { alignSelf: 'flex-start', paddingHorizontal: 0 },
   defaultRestRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',

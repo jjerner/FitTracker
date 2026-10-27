@@ -2,6 +2,7 @@ import {
   bestOf,
   bestVolume,
   dropGroups,
+  supersetRoles,
   findNewRecords,
   matchingSet,
   nextSetType,
@@ -253,6 +254,16 @@ describe('drop sets', () => {
     expect(dropGroups(['warmup', 'normal', 'drop', 'drop', 'normal'])).toEqual([[0], [1, 2, 3], [4]]);
     expect(dropGroups(['drop', 'normal'])).toEqual([[0], [1]]);
     expect(dropGroups(['warmup', 'drop'])).toEqual([[0, 1]]);
+  });
+
+  it('supersetRoles pairs a card with the one below, pairs only', () => {
+    expect(supersetRoles([])).toEqual([]);
+    expect(supersetRoles([true])).toEqual([null]);
+    expect(supersetRoles([true, false])).toEqual(['first', 'second']);
+    expect(supersetRoles([true, true, false])).toEqual(['first', 'second', null]);
+    expect(supersetRoles([true, true, true, false])).toEqual(['first', 'second', 'first', 'second']);
+    expect(supersetRoles([false, true])).toEqual([null, null]);
+    expect(supersetRoles([true, true, true])).toEqual(['first', 'second', null]);
   });
 
   it('matchingSet matches a drop step by its place under the matching set', () => {

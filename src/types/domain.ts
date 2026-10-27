@@ -86,6 +86,8 @@ export type WorkoutTemplateExercise = {
   targetWeightKg: number | null;
   // Rest timer for this exercise in this routine; null = the default from Profile.
   restSeconds: number | null;
+  // Paired as a superset with the exercise right below it.
+  supersetWithNext: boolean;
 };
 
 export type WorkoutTemplate = {
@@ -112,6 +114,7 @@ export type WorkoutLogExercise = {
   exercise: Exercise;
   position: number;
   sets: WorkoutSet[];
+  supersetWithNext: boolean;
 };
 
 export type WorkoutLog = {

@@ -49,6 +49,15 @@ export function dropGroups(types: SetType[]): number[][] {
   return groups;
 }
 
+// Superset role per card, top to bottom: a flag pairs a card with the one below, pairs only.
+export function supersetRoles(flags: boolean[]): ('first' | 'second' | null)[] {
+  const roles: ('first' | 'second' | null)[] = [];
+  flags.forEach((flag, i) => {
+    roles.push(roles[i - 1] === 'first' ? 'second' : flag && i < flags.length - 1 ? 'first' : null);
+  });
+  return roles;
+}
+
 // Estimated one-rep max (Epley formula). A single rep is the weight itself.
 export function estimate1RM(weightKg: number, reps: number): number {
   if (weightKg <= 0 || reps <= 0) return 0;
