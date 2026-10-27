@@ -120,6 +120,7 @@ export type WorkoutLog = {
   name: string;
   startedAt: string;
   completedAt: string | null;
+  notes: string | null;
   exercises: WorkoutLogExercise[];
 };
 

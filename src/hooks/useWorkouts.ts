@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useSession } from '../context/AuthProvider';
 import {
   getExerciseHistory,
+  getExerciseNotes,
   getExercises,
   getTemplate,
   getTemplates,
@@ -67,5 +68,16 @@ export function useExerciseHistory(exerciseId: string | undefined) {
     queryKey: ['exerciseHistory', userId, exerciseId],
     queryFn: () => getExerciseHistory(userId as string, exerciseId as string),
     enabled: !!userId && !!exerciseId,
+  });
+}
+
+export function useExerciseNotes() {
+  const { session } = useSession();
+  const userId = session?.user.id;
+
+  return useQuery({
+    queryKey: ['exerciseNotes', userId],
+    queryFn: () => getExerciseNotes(userId as string),
+    enabled: !!userId,
   });
 }

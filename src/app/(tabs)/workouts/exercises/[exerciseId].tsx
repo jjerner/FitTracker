@@ -14,7 +14,7 @@ import { AppText } from '../../../../components/AppText';
 import { Card } from '../../../../components/Card';
 import { Chips } from '../../../../components/Chips';
 import { EmptyState } from '../../../../components/EmptyState';
-import { useExerciseHistory, useExercises } from '../../../../hooks/useWorkouts';
+import { useExerciseHistory, useExerciseNotes, useExercises } from '../../../../hooks/useWorkouts';
 import { bestOf, bestVolume, repBests, setLabels, workingSets } from '../../../../lib/records';
 import { DATE_LOCALE } from '../../../../lib/dateUtils';
 import { formatSet } from '../../../../lib/workouts';
@@ -52,6 +52,8 @@ export default function ExerciseDetail() {
   const { width } = useWindowDimensions();
   const { data: exercises } = useExercises();
   const { data: sessions, isLoading } = useExerciseHistory(exerciseId);
+  const { data: notes } = useExerciseNotes();
+  const note = exerciseId ? notes?.[exerciseId] : undefined;
   const [metric, setMetric] = useState<'weight' | 'oneRM'>('weight');
 
   const exercise = exercises?.find((e) => e.id === exerciseId);
@@ -96,6 +98,7 @@ export default function ExerciseDetail() {
         ListHeaderComponent={
           <View style={styles.header}>
             <Card>
+              {note ? <AppText variant="small" style={styles.note}>Note: {note}</AppText> : null}
               {!isCardio && charted.length > 0 ? (
                 <View style={styles.recordsRow}>
                   <View style={styles.record}>
@@ -207,6 +210,7 @@ const styles = StyleSheet.create({
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.surface },
   content: { padding: spacing.lg, gap: spacing.md },
   header: { gap: spacing.md, marginBottom: spacing.xs },
+  note: { marginBottom: spacing.sm },
   recordsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md },
   record: { flexGrow: 1, flexBasis: '40%', backgroundColor: colors.surface, borderRadius: radius.md, padding: spacing.md },
   recordLabel: { color: colors.textSecondary, marginTop: spacing.xs },
