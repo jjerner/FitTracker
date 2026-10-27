@@ -11,6 +11,7 @@ import {
   setsVolume,
   shownSets,
   trackedStats,
+  withDrops,
   workingSets,
 } from '../records';
 import type { ExerciseSession, SetType } from '../../types/domain';
@@ -276,6 +277,16 @@ describe('drop sets', () => {
     expect(dropGroups(['warmup', 'normal', 'drop', 'drop', 'normal'])).toEqual([[0], [1, 2, 3], [4]]);
     expect(dropGroups(['drop', 'normal'])).toEqual([[0], [1]]);
     expect(dropGroups(['warmup', 'drop'])).toEqual([[0, 1]]);
+  });
+
+  it('withDrops takes a row and the drop steps directly below it', () => {
+    expect(withDrops(['normal', 'normal'], 0)).toEqual([0]);
+    const types: SetType[] = ['normal', 'drop', 'drop', 'normal'];
+    expect(withDrops(types, 0)).toEqual([0, 1, 2]);
+    expect(withDrops(types, 1)).toEqual([1, 2]);
+    expect(withDrops(types, 3)).toEqual([3]);
+    expect(withDrops(['warmup', 'drop'], 0)).toEqual([0, 1]);
+    expect(withDrops(['normal', 'drop', 'normal'], 2)).toEqual([2]);
   });
 
   it('supersetRoles pairs a card with the one below, pairs only', () => {

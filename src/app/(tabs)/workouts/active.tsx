@@ -64,6 +64,7 @@ import {
   setsVolume,
   shownSets,
   supersetRoles,
+  withDrops,
 } from '../../../lib/records';
 import { colors, radius, spacing, typography } from '../../../theme';
 import type {
@@ -468,7 +469,8 @@ function ExerciseCard({
 
   // Suggested values shown greyed out; used when the input is left empty.
   // Row types, done sets first then drafts; same order as the rows on screen.
-  const types = [...doneSets.map((s) => s.setType), ...drafts.map((d) => d.type)];
+  const doneTypes = doneSets.map((s) => s.setType);
+  const types = [...doneTypes, ...drafts.map((d) => d.type)];
 
   function suggestion(index: number): { a: number | null; b: number | null } {
     const prev = previous && matchingSet(previous.sets, types, index);
@@ -489,42 +491,65 @@ function ExerciseCard({
     setDrafts((prev) => prev.map((d) => (d.key === key ? { ...d, ...patch } : d)));
   }
 
+  // No answer within 8 seconds counts as no signal. If the save did go through, sending
+  // it again later is harmless (same id).
+  async function save(payload: Parameters<typeof addSet>[0]): Promise<boolean> {
+    try {
+      await Promise.race([
+        addSet(payload),
+        new Promise<never>((_, reject) => setTimeout(() => reject(new Error('timeout')), 8000)),
+      ]);
+      return true;
+    } catch {
+      await queueSet({ ...payload, logId });
+      return false;
+    }
+  }
+
+  // Saves the row and the ↓ rows below it, top first, as one drop set.
   async function handleDone(draft: DraftRow, index: number) {
-    const s = suggestion(index);
-    const a = toNumberOrNull(draft.a) ?? s.a;
-    const b = toNumberOrNull(draft.b) ?? s.b;
-    if (a == null && b == null) return;
+    const rows = withDrops(types, index).map((j) => {
+      const d = drafts[j - doneSets.length];
+      const s = suggestion(j);
+      return { d, a: toNumberOrNull(d.a) ?? s.a, b: toNumberOrNull(d.b) ?? s.b };
+    });
+    if (rows[0].a == null && rows[0].b == null) return;
 
     setSavingKey(draft.key);
     try {
-      const payload = {
-        id: newSetId(),
-        logExerciseId: logExercise.id,
-        setNumber: (lastDone?.setNumber ?? 0) + 1,
-        weightKg: isCardio ? null : a,
-        reps: isCardio ? null : b,
-        durationS: isCardio && a != null ? Math.round(a * 60) : null,
-        distanceM: isCardio && b != null ? b * 1000 : null,
-        setType: isCardio ? ('normal' as const) : draft.type,
-      };
-      // No answer within 8 seconds counts as no signal. If the save did go through, sending
-      // it again later is harmless (same id).
-      let saved = true;
-      try {
-        await Promise.race([
-          addSet(payload),
-          new Promise<never>((_, reject) => setTimeout(() => reject(new Error('timeout')), 8000)),
-        ]);
-      } catch {
-        saved = false;
-        await queueSet({ ...payload, logId });
+      const lastNumber = lastDone?.setNumber ?? 0;
+      // An empty ↓ row with no suggestion is not saved, just removed with the group.
+      const payloads = rows
+        .filter((r) => r.a != null || r.b != null)
+        .map(({ d, a, b }, n) => ({
+          id: newSetId(),
+          logExerciseId: logExercise.id,
+          setNumber: lastNumber + n + 1,
+          weightKg: isCardio ? null : a,
+          reps: isCardio ? null : b,
+          durationS: isCardio && a != null ? Math.round(a * 60) : null,
+          distanceM: isCardio && b != null ? b * 1000 : null,
+          setType: isCardio ? ('normal' as const) : d.type,
+        }));
+      // Once one row is queued, queue the rest too: one 8 s wait, and the order holds.
+      let anySaved = false;
+      let queued = false;
+      for (const payload of payloads) {
+        if (queued) await queueSet({ ...payload, logId });
+        else if (await save(payload)) anySaved = true;
+        else queued = true;
       }
-      const { id, setNumber, weightKg, reps, durationS, distanceM, setType } = payload;
-      setDrafts((prev) => prev.filter((d) => d.key !== draft.key));
-      setAddedSets((prev) => [...prev, { id, setNumber, weightKg, reps, durationS, distanceM, setType }]);
-      if (saved) await onChanged();
-      // No rest between drop steps or after the first exercise of a superset.
-      if (!isCardio && !pairedWithNext && types[index + 1] !== 'drop') onSetDone();
+      const keys = new Set(rows.map((r) => r.d.key));
+      setDrafts((prev) => prev.filter((d) => !keys.has(d.key)));
+      setAddedSets((prev) => [
+        ...prev,
+        ...payloads.map(({ id, setNumber, weightKg, reps, durationS, distanceM, setType }) => ({
+          id, setNumber, weightKg, reps, durationS, distanceM, setType,
+        })),
+      ]);
+      if (anySaved) await onChanged();
+      // No rest after the first exercise of a superset.
+      if (!isCardio && !pairedWithNext) onSetDone();
     } finally {
       setSavingKey(null);
     }
@@ -542,22 +567,32 @@ function ExerciseCard({
     }
   }
 
-  // Un-ticking a set deletes it but keeps its numbers in a row to redo.
-  async function handleUndo(set: WorkoutSet) {
-    const a = isCardio
-      ? set.durationS != null ? String(Math.round(set.durationS / 60)) : ''
-      : set.weightKg?.toString() ?? '';
-    const b = isCardio
-      ? set.distanceM != null ? String(set.distanceM / 1000) : ''
-      : set.reps?.toString() ?? '';
-    try {
-      await deleteSetEverywhere(set);
-    } catch {
-      Alert.alert('Could not undo', 'Check your connection and try again.');
-      return;
+  // Un-ticking a set (and its ↓ rows) deletes it but keeps its numbers in rows to redo.
+  async function handleUndo(index: number) {
+    const group = withDrops(doneTypes, index).map((j) => doneSets[j]);
+    // Bottom up: if a delete fails, what stays done is the top of the group.
+    const deleted: WorkoutSet[] = [];
+    for (const set of [...group].reverse()) {
+      try {
+        await deleteSetEverywhere(set);
+      } catch {
+        Alert.alert('Could not undo', 'Check your connection and try again.');
+        break;
+      }
+      deleted.unshift(set);
     }
-    setDrafts((prev) => [newRow(a, b, set.setType), ...prev]);
-    setHiddenIds((prev) => new Set(prev).add(set.id));
+    if (!deleted.length) return;
+    const rows = deleted.map((set) => {
+      const a = isCardio
+        ? set.durationS != null ? String(Math.round(set.durationS / 60)) : ''
+        : set.weightKg?.toString() ?? '';
+      const b = isCardio
+        ? set.distanceM != null ? String(set.distanceM / 1000) : ''
+        : set.reps?.toString() ?? '';
+      return newRow(a, b, set.setType);
+    });
+    setDrafts((prev) => [...rows, ...prev]);
+    setHiddenIds((prev) => new Set([...prev, ...deleted.map((set) => set.id)]));
     await onChanged();
   }
 
@@ -791,9 +826,23 @@ function ExerciseCard({
               ? set.distanceM != null ? set.distanceM / 1000 : '—'
               : (set.reps ?? '—')}
           </AppText>
-          <Pressable style={[styles.check, styles.checkDone]} onPress={() => handleUndo(set)}>
-            <Text style={styles.checkDoneText}>✓</Text>
-          </Pressable>
+          {set.setType === 'drop' ? (
+            <View style={styles.colCheck} />
+          ) : (
+            <Pressable
+              style={[styles.check, styles.checkDone]}
+              onPress={() => handleUndo(index)}
+              accessibilityRole="button"
+              accessibilityLabel={`Set ${labels[index]} done`}
+              accessibilityHint={
+                withDrops(doneTypes, index).length > 1
+                  ? `Tap to undo set ${labels[index]} and its drop steps`
+                  : 'Tap to undo'
+              }
+            >
+              <Text style={styles.checkDoneText}>✓</Text>
+            </Pressable>
+          )}
           <Pressable style={styles.colRemove} onPress={() => handleDeleteSet(set, labels[index])} hitSlop={6}>
             <AppText style={styles.removeSetText}>✕</AppText>
           </Pressable>
@@ -855,17 +904,26 @@ function ExerciseCard({
               placeholderTextColor={colors.muted}
               keyboardType="numeric"
             />
-            <Pressable
-              style={styles.check}
-              onPress={() => handleDone(draft, index)}
-              disabled={savingKey != null}
-            >
-              {savingKey === draft.key ? (
-                <ActivityIndicator size="small" color={colors.primary} />
-              ) : (
-                <Text style={styles.checkText}>✓</Text>
-              )}
-            </Pressable>
+            {/* Only the top row of a drop set has a ✓; a ↓ row gets one when the row above is done. */}
+            {type === 'drop' && !(i === 0 && doneSets.length > 0) ? (
+              <View style={styles.colCheck} />
+            ) : (
+              <Pressable
+                style={styles.check}
+                onPress={() => handleDone(draft, index)}
+                disabled={savingKey != null}
+                accessibilityRole="button"
+                accessibilityLabel={type === 'drop' ? 'Mark drop step done' : `Mark set ${label} done`}
+                accessibilityHint={withDrops(types, index).length > 1 ? 'Also saves its drop steps' : undefined}
+                accessibilityState={savingKey === draft.key ? { busy: true } : { disabled: savingKey != null }}
+              >
+                {savingKey === draft.key ? (
+                  <ActivityIndicator size="small" color={colors.primary} />
+                ) : (
+                  <Text style={styles.checkText}>✓</Text>
+                )}
+              </Pressable>
+            )}
             <Pressable
               style={styles.colRemove}
               onPress={() => setDrafts((prev) => prev.filter((d) => d.key !== draft.key))}
