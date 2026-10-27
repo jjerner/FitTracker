@@ -62,6 +62,7 @@ import {
   nextSetType,
   setLabels,
   setsVolume,
+  shownSets,
   supersetRoles,
 } from '../../../lib/records';
 import { colors, radius, spacing, typography } from '../../../theme';
@@ -440,7 +441,10 @@ function ExerciseCard({
   onSetDone: () => void;
 }) {
   const isCardio = logExercise.exercise.category === 'cardio';
-  const doneSets = logExercise.sets;
+  // Sets ticked / deleted here, shown at once instead of waiting for the reloaded log.
+  const [addedSets, setAddedSets] = useState<WorkoutSet[]>([]);
+  const [hiddenIds, setHiddenIds] = useState<Set<string>>(new Set());
+  const doneSets = shownSets(logExercise.sets, addedSets, hiddenIds);
   const lastDone = doneSets.at(-1);
   const { data: history } = useExerciseHistory(logExercise.exercise.id);
   const { session } = useSession();
@@ -515,7 +519,9 @@ function ExerciseCard({
         saved = false;
         await queueSet({ ...payload, logId });
       }
+      const { id, setNumber, weightKg, reps, durationS, distanceM, setType } = payload;
       setDrafts((prev) => prev.filter((d) => d.key !== draft.key));
+      setAddedSets((prev) => [...prev, { id, setNumber, weightKg, reps, durationS, distanceM, setType }]);
       if (saved) await onChanged();
       // No rest between drop steps or after the first exercise of a superset.
       if (!isCardio && !pairedWithNext && types[index + 1] !== 'drop') onSetDone();
@@ -551,6 +557,7 @@ function ExerciseCard({
       return;
     }
     setDrafts((prev) => [newRow(a, b, set.setType), ...prev]);
+    setHiddenIds((prev) => new Set(prev).add(set.id));
     await onChanged();
   }
 
@@ -567,6 +574,7 @@ function ExerciseCard({
             Alert.alert('Could not delete', 'Check your connection and try again.');
             return;
           }
+          setHiddenIds((prev) => new Set(prev).add(set.id));
           await onChanged();
         },
       },

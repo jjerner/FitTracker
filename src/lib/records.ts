@@ -12,6 +12,14 @@ export function setLabels(types: SetType[]): string[] {
   return types.map((t) => (t === 'warmup' ? 'W' : t === 'drop' ? '↓' : String(++n)));
 }
 
+// Sets to show: the log's sets, minus ones deleted here, plus ones ticked here that the log doesn't have yet.
+export function shownSets(logSets: WorkoutSet[], added: WorkoutSet[], hidden: Set<string>): WorkoutSet[] {
+  return [
+    ...logSets.filter((s) => !hidden.has(s.id)),
+    ...added.filter((s) => !hidden.has(s.id) && !logSets.some((l) => l.id === s.id)),
+  ];
+}
+
 // Last time's set for row `index`: same position among sets of the same type,
 // so working set 1 matches last time's working set 1 even if warm-ups came first.
 // A drop step matches the step in the same place under last time's matching set.

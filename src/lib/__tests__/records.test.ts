@@ -9,6 +9,7 @@ import {
   repBests,
   setLabels,
   setsVolume,
+  shownSets,
   trackedStats,
   workingSets,
 } from '../records';
@@ -144,6 +145,27 @@ describe('matchingSet', () => {
   });
 });
 
+describe('shownSets', () => {
+  const [a, b, c] = session('2026-10-10', [{ weightKg: 80, reps: 5 }, { weightKg: 85, reps: 5 }, { weightKg: 90, reps: 3 }]).sets;
+
+  it('appends added sets the log does not have yet', () => {
+    expect(shownSets([a, b], [c], new Set())).toEqual([a, b, c]);
+  });
+
+  it('shows a set once when it is both added and in the log', () => {
+    expect(shownSets([a, b], [b], new Set())).toEqual([a, b]);
+  });
+
+  it('leaves out hidden ids from the log, added, or both', () => {
+    expect(shownSets([a, b], [c], new Set([a.id]))).toEqual([b, c]);
+    expect(shownSets([a, b], [c], new Set([c.id]))).toEqual([a, b]);
+    expect(shownSets([a, b], [b], new Set([b.id]))).toEqual([a]);
+  });
+
+  it('returns the log sets unchanged when nothing is added or hidden', () => {
+    expect(shownSets([a, b], [], new Set())).toEqual([a, b]);
+  });
+});
 
 describe('volume', () => {
   it('setsVolume sums kg × reps of working sets', () => {
