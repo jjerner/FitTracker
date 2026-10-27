@@ -7,6 +7,7 @@ import { AppText } from '../../../components/AppText';
 import { Button } from '../../../components/Button';
 import { Card } from '../../../components/Card';
 import { EmptyState } from '../../../components/EmptyState';
+import { TextLink } from '../../../components/TextLink';
 import { useSession } from '../../../context/AuthProvider';
 import { useWorkoutHistory, useWorkoutTemplates } from '../../../hooks/useWorkouts';
 import { startWorkout } from '../../../lib/workouts';
@@ -67,15 +68,19 @@ export default function WorkoutsHome() {
           <EmptyState message="No routines yet. Make one with New Routine, or pick one from Browse Programs." />
         ) : (
           activeTemplates.map((template, index) => (
-            <Pressable
+            <View
               key={template.id}
               style={[styles.row, index < activeTemplates.length - 1 && styles.rowDivider]}
-              onPress={() => router.push(`/(tabs)/workouts/${template.id}`)}
             >
               <View style={styles.rowInfo}>
                 <AppText variant="label">{template.name}</AppText>
                 <AppText variant="small">{template.exercises.length} exercises</AppText>
               </View>
+              <TextLink
+                title="Edit"
+                accessibilityLabel={`Edit ${template.name}`}
+                onPress={() => router.push(`/(tabs)/workouts/${template.id}`)}
+              />
               {activeWorkout ? null : (
                 <Pressable
                   style={styles.startChip}
@@ -90,7 +95,7 @@ export default function WorkoutsHome() {
                   </AppText>
                 </Pressable>
               )}
-            </Pressable>
+            </View>
           ))
         )}
         {archivedTemplates.length > 0 ? (

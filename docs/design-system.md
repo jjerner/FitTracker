@@ -70,7 +70,7 @@ Use `<AppText variant="...">` (`src/components/AppText.tsx`), not `fontSize`. Th
 | `Card`       | A white rounded box grouping one topic on a grey screen. Pass content as children. Don't wrap every list row in a card: use list rows with separators for that. |
 | `EmptyState` | "Nothing here yet" text, with optional children for one action below it (usually a `Button`). Only for *empty*, never for loading or errors. |
 | `SettingsList` | Settings screens (Profile): `SettingsGroup` = white rounded group on the grey screen, `SettingsRow` = icon + label row (a chevron opens a screen, `destructive` only for delete), `Stepper` = − value +. `settingsStyles` gives the grey screen. |
-| `TextLink`   | A blue text link (`label` in `primary`) with a 48 dp tap area that hugs the text. Read by TalkBack as "…, link". Handles the pressed look and `disabled`. `tone="danger"` makes it red (`dangerDark`) for deletes and removes. Pass `onPress` (e.g. `router.navigate(href)`). `style` is for layout only. |
+| `TextLink`   | A blue text link (`label` in `primary`) with a 48 dp tap area that hugs the text. Read by TalkBack as "…, link". Handles the pressed look and `disabled`. `tone="danger"` makes it red (`dangerDark`) for deletes and removes. Pass `onPress` (e.g. `router.navigate(href)`). `style` is for layout only. Optional `accessibilityLabel` (defaults to `title`) for what TalkBack reads, e.g. "Edit <name>" in lists. |
 
 There is **no small button size yet**. If a screen needs one, add `size="sm"` through the system,
 not by hand in one screen.

@@ -11,14 +11,23 @@ type Props = {
   tone?: 'primary' | 'danger';
   // Layout only (margins).
   style?: StyleProp<ViewStyle>;
+  // What TalkBack reads; defaults to title (e.g. "Edit Push Day" in lists).
+  accessibilityLabel?: string;
 };
 
 // A blue text link with a 48 dp tap area that hugs the text.
-export function TextLink({ title, onPress, disabled, tone = 'primary', style }: Props) {
+export function TextLink({
+  title,
+  onPress,
+  disabled,
+  tone = 'primary',
+  style,
+  accessibilityLabel = title,
+}: Props) {
   return (
     <Pressable
       accessibilityRole="link"
-      accessibilityLabel={title}
+      accessibilityLabel={accessibilityLabel}
       accessibilityState={{ disabled: !!disabled }}
       disabled={disabled}
       onPress={onPress}
