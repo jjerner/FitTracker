@@ -85,6 +85,7 @@ export default function ActiveWorkout() {
   const [restEndsAt, setRestEndsAt] = useState<number | null>(null);
   // Workout note being typed; null = not touched yet, so the saved one shows.
   const [note, setNote] = useState<string | null>(null);
+  const noteChanged = note != null && note.trim() !== (log?.notes ?? '');
 
   function refresh() {
     return queryClient.invalidateQueries({ queryKey: ['workoutLog', logId] });
@@ -113,7 +114,7 @@ export default function ActiveWorkout() {
         return;
       }
       // So the summary shows a note typed without leaving the box first.
-      if (note != null) await saveWorkoutNote(log.id, note);
+      if (noteChanged) await saveWorkoutNote(log.id, note);
       await finishWorkout(log.id);
       await queryClient.invalidateQueries({ queryKey: ['workoutHistory', session?.user.id] });
       // So the "Previous" column shows this workout next time.
@@ -149,7 +150,7 @@ export default function ActiveWorkout() {
   }
 
   async function handleNoteBlur() {
-    if (!log || note == null || note.trim() === (log.notes ?? '')) return;
+    if (!log || !noteChanged) return;
     try {
       await saveWorkoutNote(log.id, note);
     } catch {
@@ -652,7 +653,7 @@ function ExerciseCard({
         />
       ) : notesLoading ? null : savedNote ? (
         <Pressable
-          style={styles.noteLine}
+          hitSlop={headerHitSlop}
           onPress={() => setNoteDraft(savedNote)}
           accessibilityRole="button"
           accessibilityHint="Edit note"
@@ -843,7 +844,6 @@ const styles = StyleSheet.create({
   swapText: { color: colors.primary },
   removeText: { color: colors.danger },
   addNote: { alignSelf: 'flex-start' },
-  noteLine: { minHeight: 48, justifyContent: 'center' },
   waitingText: { color: colors.warning, marginBottom: spacing.sm },
   recordText: { color: colors.warning, marginBottom: spacing.sm },
   targetText: { marginTop: spacing.xs },

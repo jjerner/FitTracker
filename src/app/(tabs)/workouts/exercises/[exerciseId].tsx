@@ -98,7 +98,7 @@ export default function ExerciseDetail() {
         ListHeaderComponent={
           <View style={styles.header}>
             <Card>
-              {note ? <AppText variant="small">Note: {note}</AppText> : null}
+              {note ? <AppText variant="small" style={styles.note}>Note: {note}</AppText> : null}
               {!isCardio && charted.length > 0 ? (
                 <View style={styles.recordsRow}>
                   <View style={styles.record}>
@@ -210,6 +210,7 @@ const styles = StyleSheet.create({
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.surface },
   content: { padding: spacing.lg, gap: spacing.md },
   header: { gap: spacing.md, marginBottom: spacing.xs },
+  note: { marginBottom: spacing.sm },
   recordsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md },
   record: { flexGrow: 1, flexBasis: '40%', backgroundColor: colors.surface, borderRadius: radius.md, padding: spacing.md },
   recordLabel: { color: colors.textSecondary, marginTop: spacing.xs },

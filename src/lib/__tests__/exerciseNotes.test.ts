@@ -24,7 +24,6 @@ jest.mock('../supabase', () => ({
     },
   },
 }));
-jest.mock('../pendingSets', () => ({ newSetId: jest.fn() }));
 
 beforeEach(() => {
   mockCalls.length = 0;
