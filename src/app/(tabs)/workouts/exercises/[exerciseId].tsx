@@ -15,7 +15,7 @@ import { Card } from '../../../../components/Card';
 import { Chips } from '../../../../components/Chips';
 import { EmptyState } from '../../../../components/EmptyState';
 import { useExerciseHistory, useExercises } from '../../../../hooks/useWorkouts';
-import { bestOf, setLabels, workingSets } from '../../../../lib/records';
+import { bestOf, bestVolume, repBests, setLabels, workingSets } from '../../../../lib/records';
 import { formatSet } from '../../../../lib/workouts';
 import type { ExerciseSession } from '../../../../types/domain';
 import { colors, radius, spacing } from '../../../../theme';
@@ -74,6 +74,7 @@ export default function ExerciseDetail() {
     date: s.startedAt,
   }));
   const records = bestOf(history.flatMap((s) => s.sets));
+  const repRows = isCardio ? [] : repBests(history);
   const best = values.length > 0 ? Math.max(...values.map((v) => v.value)) : null;
 
   if (isLoading) {
@@ -92,70 +93,94 @@ export default function ExerciseDetail() {
         keyExtractor={(item, index) => `${item.logId}-${index}`}
         contentContainerStyle={styles.content}
         ListHeaderComponent={
-          <Card style={styles.card}>
-            {!isCardio && charted.length > 0 ? (
-              <View style={styles.recordsRow}>
-                <View style={styles.record}>
-                  <AppText variant="label">🏆 {records.weightKg} kg</AppText>
-                  <AppText variant="caption" style={styles.recordLabel}>
-                    Heaviest weight
-                  </AppText>
+          <View style={styles.header}>
+            <Card>
+              {!isCardio && charted.length > 0 ? (
+                <View style={styles.recordsRow}>
+                  <View style={styles.record}>
+                    <AppText variant="label">🏆 {records.weightKg} kg</AppText>
+                    <AppText variant="caption" style={styles.recordLabel}>
+                      Heaviest weight
+                    </AppText>
+                  </View>
+                  <View style={styles.record}>
+                    <AppText variant="label">🏆 {Math.round(records.oneRM)} kg</AppText>
+                    <AppText variant="caption" style={styles.recordLabel}>
+                      Best est. 1RM
+                    </AppText>
+                  </View>
+                  <View style={styles.record}>
+                    <AppText variant="label">🏆 {Math.round(bestVolume(history))} kg</AppText>
+                    <AppText variant="caption" style={styles.recordLabel}>
+                      Best volume
+                    </AppText>
+                  </View>
                 </View>
-                <View style={styles.record}>
-                  <AppText variant="label">🏆 {Math.round(records.oneRM)} kg</AppText>
-                  <AppText variant="caption" style={styles.recordLabel}>
-                    Best est. 1RM
-                  </AppText>
+              ) : null}
+              {!isCardio ? (
+                <Chips
+                  labels={['Weight', 'Est. 1RM']}
+                  selected={metric === 'weight' ? 0 : 1}
+                  onSelect={(i) => setMetric(i === 0 ? 'weight' : 'oneRM')}
+                  style={styles.chips}
+                />
+              ) : null}
+              <AppText variant="label">{chartLabel}</AppText>
+              {best != null && (
+                <AppText variant="small">
+                  Best: {best} {unit} · {charted.length} workout{charted.length === 1 ? '' : 's'}
+                </AppText>
+              )}
+              {values.length < 2 ? (
+                <EmptyState
+                  message={
+                    values.length === 0
+                      ? 'No completed workouts with this exercise yet.'
+                      : 'Do this exercise in one more workout to see a trend.'
+                  }
+                />
+              ) : (
+                <LineChart
+                  data={values.map((v, i) => ({
+                    value: v.value,
+                    label:
+                      i % Math.max(1, Math.ceil(values.length / 5)) === 0
+                        ? new Date(v.date).toLocaleDateString(undefined, {
+                            month: 'numeric',
+                            day: 'numeric',
+                          })
+                        : '',
+                  }))}
+                  width={width - 110}
+                  height={160}
+                  // Not adjustToWidth: it puts the last point on the right edge and clips its date. 40 = default initialSpacing + endSpacing.
+                  spacing={(width - 150) / (values.length - 1)}
+                  noOfSections={4}
+                  color={colors.primary}
+                  dataPointsColor={colors.primary}
+                  thickness={2}
+                  xAxisLabelTextStyle={styles.axisLabel}
+                  yAxisTextStyle={styles.axisLabel}
+                />
+              )}
+            </Card>
+            {repRows.length > 0 ? (
+              <Card>
+                <AppText variant="label">Best for each rep count</AppText>
+                <View>
+                  {repRows.map((row, i) => (
+                    <View key={row.reps} accessible style={[styles.repRow, i > 0 && styles.repRowLine]}>
+                      <AppText style={styles.repCount}>
+                        {row.reps} rep{row.reps === 1 ? '' : 's'}
+                      </AppText>
+                      <AppText variant="label">{row.weightKg} kg</AppText>
+                      <AppText variant="small">{formatDate(row.startedAt)}</AppText>
+                    </View>
+                  ))}
                 </View>
-              </View>
+              </Card>
             ) : null}
-            {!isCardio ? (
-              <Chips
-                labels={['Weight', 'Est. 1RM']}
-                selected={metric === 'weight' ? 0 : 1}
-                onSelect={(i) => setMetric(i === 0 ? 'weight' : 'oneRM')}
-                style={styles.chips}
-              />
-            ) : null}
-            <AppText variant="label">{chartLabel}</AppText>
-            {best != null && (
-              <AppText variant="small">
-                Best: {best} {unit} · {charted.length} workout{charted.length === 1 ? '' : 's'}
-              </AppText>
-            )}
-            {values.length < 2 ? (
-              <EmptyState
-                message={
-                  values.length === 0
-                    ? 'No completed workouts with this exercise yet.'
-                    : 'Do this exercise in one more workout to see a trend.'
-                }
-              />
-            ) : (
-              <LineChart
-                data={values.map((v, i) => ({
-                  value: v.value,
-                  label:
-                    i % Math.max(1, Math.ceil(values.length / 5)) === 0
-                      ? new Date(v.date).toLocaleDateString(undefined, {
-                          month: 'numeric',
-                          day: 'numeric',
-                        })
-                      : '',
-                }))}
-                width={width - 110}
-                height={160}
-                // Not adjustToWidth: it puts the last point on the right edge and clips its date. 40 = default initialSpacing + endSpacing.
-                spacing={(width - 150) / (values.length - 1)}
-                noOfSections={4}
-                color={colors.primary}
-                dataPointsColor={colors.primary}
-                thickness={2}
-                xAxisLabelTextStyle={styles.axisLabel}
-                yAxisTextStyle={styles.axisLabel}
-              />
-            )}
-          </Card>
+          </View>
         }
         renderItem={({ item }) => (
           <Pressable onPress={() => router.push(`/(tabs)/workouts/log/${item.logId}`)}>
@@ -180,11 +205,14 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.surface },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.surface },
   content: { padding: spacing.lg, gap: spacing.md },
-  card: { marginBottom: spacing.xs },
-  recordsRow: { flexDirection: 'row', gap: spacing.md },
-  record: { flex: 1, backgroundColor: colors.surface, borderRadius: radius.md, padding: spacing.md },
+  header: { gap: spacing.md, marginBottom: spacing.xs },
+  recordsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md },
+  record: { flexGrow: 1, flexBasis: '40%', backgroundColor: colors.surface, borderRadius: radius.md, padding: spacing.md },
   recordLabel: { color: colors.textSecondary, marginTop: spacing.xs },
   chips: { marginBottom: 0 },
+  repRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingVertical: spacing.sm },
+  repRowLine: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border },
+  repCount: { flex: 1 },
   axisLabel: { fontSize: 10, color: colors.muted },
   session: { gap: spacing.xs },
   sessionDate: { marginBottom: spacing.xs },
