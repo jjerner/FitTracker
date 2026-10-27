@@ -48,7 +48,7 @@ import {
   usePendingSync,
 } from '../../../lib/pendingSets';
 import { toNumberOrNull } from '../../../lib/numbers';
-import { bestOf, findNewRecords, matchingSet, setLabels } from '../../../lib/records';
+import { bestOf, findNewRecords, matchingSet, setLabels, setsVolume } from '../../../lib/records';
 import { colors, radius, spacing, typography } from '../../../theme';
 import type {
   Exercise,
@@ -552,7 +552,9 @@ function ExerciseCard({
     ? `🏆 New personal record: ${nowBest.weightKg} kg`
     : records?.oneRM
       ? `🏆 New estimated 1RM: ${Math.round(nowBest.oneRM)} kg`
-      : null;
+      : records?.volume
+        ? `🏆 New volume record: ${Math.round(setsVolume(doneSets))} kg`
+        : null;
 
   const [labelA, labelB] = isCardio ? ['min', 'km'] : ['kg', 'reps'];
   const labels = setLabels(types);

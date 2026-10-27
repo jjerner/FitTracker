@@ -94,15 +94,47 @@ export function trackedStats(sessions: ExerciseSession[]): TrackedStats {
   return { current, pr, change30: changeSince(30), change90: changeSince(90) };
 }
 
-export type NewRecords ={ weight: boolean; oneRM: boolean };
+// Total kg × reps of the working sets in one workout.
+export function setsVolume(sets: WorkoutSet[]): number {
+  return workingSets(sets).reduce((sum, s) => sum + Number(s.weightKg ?? 0) * Number(s.reps ?? 0), 0);
+}
+
+// Highest one-workout volume.
+export function bestVolume(sessions: ExerciseSession[]): number {
+  return Math.max(0, ...sessions.map((s) => setsVolume(s.sets)));
+}
+
+export type RepBest = { reps: number; weightKg: number; startedAt: string };
+
+// Heaviest weight for each rep count 1-12. A set counts for its reps and every lower count;
+// on a tie the earliest workout wins. Rows are always 1..N with no gaps.
+export function repBests(sessions: ExerciseSession[]): RepBest[] {
+  const bests: RepBest[] = [];
+  for (const session of sessions) {
+    for (const set of workingSets(session.sets)) {
+      const weightKg = Number(set.weightKg ?? 0);
+      if (weightKg <= 0) continue;
+      for (let reps = 1; reps <= Math.min(Number(set.reps ?? 0), 12); reps++) {
+        const b = bests[reps - 1];
+        if (!b || weightKg > b.weightKg || (weightKg === b.weightKg && session.startedAt < b.startedAt)) {
+          bests[reps - 1] = { reps, weightKg, startedAt: session.startedAt };
+        }
+      }
+    }
+  }
+  return bests;
+}
+
+export type NewRecords ={ weight: boolean; oneRM: boolean; volume: boolean };
 
 // A record needs earlier history to beat; the very first time doing an exercise isn't one.
 export function findNewRecords(sets: WorkoutSet[], earlier: ExerciseSession[]): NewRecords {
-  if (!earlier.some((s) => workingSets(s.sets).length > 0)) return { weight: false, oneRM: false };
+  if (!earlier.some((s) => workingSets(s.sets).length > 0)) return { weight: false, oneRM: false, volume: false };
   const prior = bestOfSessions(earlier);
   const now = bestOf(sets);
   return {
     weight: now.weightKg > prior.weightKg,
     oneRM: Math.round(now.oneRM) > Math.round(prior.oneRM),
+    volume: Math.round(setsVolume(sets)) > Math.round(bestVolume(earlier)),
   };
 }
