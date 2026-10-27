@@ -131,7 +131,7 @@ export async function getMuscleSetRows(userId: string, sinceIso: string): Promis
   const { data, error } = await supabase
     .from('workout_log_exercises')
     .select(
-      'exercises(muscle_group, category), workout_logs!inner(started_at, completed_at, user_id), workout_log_sets(id)'
+      'exercises(muscle_group, category), workout_logs!inner(started_at, completed_at, user_id), workout_log_sets(set_type)'
     )
     .eq('workout_logs.user_id', userId)
     .not('workout_logs.completed_at', 'is', null)
@@ -142,7 +142,7 @@ export async function getMuscleSetRows(userId: string, sinceIso: string): Promis
     startedAt: row.workout_logs.started_at,
     muscleGroup: row.exercises?.muscle_group ?? null,
     category: row.exercises?.category ?? '',
-    setCount: (row.workout_log_sets ?? []).length,
+    setCount: (row.workout_log_sets ?? []).filter((s: any) => s.set_type !== 'drop').length,
   }));
 }
 

@@ -95,7 +95,7 @@ export type WorkoutTemplate = {
   exercises: WorkoutTemplateExercise[];
 };
 
-export type SetType = 'normal' | 'warmup';
+export type SetType = 'normal' | 'warmup' | 'drop';
 
 export type WorkoutSet = {
   id: string;

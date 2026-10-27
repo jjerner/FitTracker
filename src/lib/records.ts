@@ -1,23 +1,52 @@
 import { localDateDaysAgo, localDateOf } from './dateUtils';
 import type { ExerciseSession, SetType, WorkoutSet } from '../types/domain';
 
-// Warm-ups never count towards records, the chart or volume.
+// Warm-ups and drop steps never count towards records or the chart; only a drop set's first step does.
 export function workingSets(sets: WorkoutSet[]): WorkoutSet[] {
-  return sets.filter((s) => s.setType !== 'warmup');
+  return sets.filter((s) => s.setType === 'normal');
 }
 
-// Strong-style numbers: warm-ups show "W", only working sets are numbered (W, W, 1, 2).
+// Strong-style numbers: warm-ups show "W", drop steps "↓", only working sets are numbered (W, 1, ↓, ↓, 2).
 export function setLabels(types: SetType[]): string[] {
   let n = 0;
-  return types.map((t) => (t === 'warmup' ? 'W' : String(++n)));
+  return types.map((t) => (t === 'warmup' ? 'W' : t === 'drop' ? '↓' : String(++n)));
 }
 
 // Last time's set for row `index`: same position among sets of the same type,
 // so working set 1 matches last time's working set 1 even if warm-ups came first.
+// A drop step matches the step in the same place under last time's matching set.
 export function matchingSet(previous: WorkoutSet[], types: SetType[], index: number): WorkoutSet | undefined {
-  const warmup = types[index] === 'warmup';
-  const position = types.slice(0, index).filter((t) => (t === 'warmup') === warmup).length;
-  return previous.filter((s) => (s.setType === 'warmup') === warmup)[position];
+  const t = types[index];
+  if (t !== 'drop') {
+    const position = types.slice(0, index).filter((x) => x === t).length;
+    return previous.filter((s) => s.setType === t)[position];
+  }
+  let parent = index - 1;
+  while (parent >= 0 && types[parent] === 'drop') parent--;
+  if (parent < 0) return undefined;
+  const p = matchingSet(previous, types, parent);
+  if (!p) return undefined;
+  const start = previous.indexOf(p);
+  const steps = previous.slice(start + 1, start + 1 + index - parent);
+  return steps.length === index - parent && steps.every((s) => s.setType === 'drop') ? steps.at(-1) : undefined;
+}
+
+// Badge cycle 1 → W → ↓ → 1. ↓ only goes under a working set or another ↓.
+export function nextSetType(types: SetType[], index: number): SetType {
+  const t = types[index];
+  if (t === 'normal') return 'warmup';
+  if (t === 'warmup' && index > 0 && types[index - 1] !== 'warmup') return 'drop';
+  return 'normal';
+}
+
+// Row indexes per history line: a drop step joins the line above it.
+export function dropGroups(types: SetType[]): number[][] {
+  const groups: number[][] = [];
+  types.forEach((t, i) => {
+    if (t === 'drop' && groups.length) groups[groups.length - 1].push(i);
+    else groups.push([i]);
+  });
+  return groups;
 }
 
 // Estimated one-rep max (Epley formula). A single rep is the weight itself.
@@ -94,9 +123,9 @@ export function trackedStats(sessions: ExerciseSession[]): TrackedStats {
   return { current, pr, change30: changeSince(30), change90: changeSince(90) };
 }
 
-// Total kg × reps of the working sets in one workout.
+// Total kg × reps in one workout: every drop step counts, warm-ups don't.
 export function setsVolume(sets: WorkoutSet[]): number {
-  return workingSets(sets).reduce((sum, s) => sum + Number(s.weightKg ?? 0) * Number(s.reps ?? 0), 0);
+  return sets.filter((s) => s.setType !== 'warmup').reduce((sum, s) => sum + Number(s.weightKg ?? 0) * Number(s.reps ?? 0), 0);
 }
 
 // Highest one-workout volume.

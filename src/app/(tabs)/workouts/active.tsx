@@ -53,7 +53,7 @@ import {
   usePendingSync,
 } from '../../../lib/pendingSets';
 import { toNumberOrNull } from '../../../lib/numbers';
-import { bestOf, findNewRecords, matchingSet, setLabels, setsVolume } from '../../../lib/records';
+import { bestOf, findNewRecords, matchingSet, nextSetType, setLabels, setsVolume } from '../../../lib/records';
 import { colors, radius, spacing, typography } from '../../../theme';
 import type {
   Exercise,
@@ -183,7 +183,7 @@ export default function ActiveWorkout() {
           reps: p.reps,
           durationS: p.durationS,
           distanceM: p.distanceM,
-          setType: p.setType === 'warmup' ? ('warmup' as const) : ('normal' as const),
+          setType: p.setType ?? 'normal',
         })),
     ],
   }));
@@ -473,7 +473,8 @@ function ExerciseCard({
       }
       setDrafts((prev) => prev.filter((d) => d.key !== draft.key));
       if (saved) await onChanged();
-      if (!isCardio) onSetDone();
+      // No rest between drop steps; rest starts after the last one.
+      if (!isCardio && types[index + 1] !== 'drop') onSetDone();
     } finally {
       setSavingKey(null);
     }
@@ -698,10 +699,11 @@ function ExerciseCard({
       </View>
 
       {doneSets.map((set, index) => (
-        <View key={set.id} style={[styles.row, styles.rowDone]}>
+        <View key={set.id} style={[styles.row, styles.rowDone, set.setType === 'drop' && styles.rowDrop]}>
           <AppText
             variant="label"
-            style={[styles.colSet, set.setType === 'warmup' && styles.warmupText]}
+            style={[styles.colSet, set.setType !== 'normal' && styles.warmupText]}
+            accessibilityLabel={set.setType === 'drop' ? 'Drop step' : undefined}
           >
             {labels[index]}
           </AppText>
@@ -730,22 +732,37 @@ function ExerciseCard({
       {drafts.map((draft, i) => {
         const index = doneSets.length + i;
         const s = suggestion(index);
-        const warmup = draft.type === 'warmup';
+        const type = draft.type;
+        const next = nextSetType(types, index);
         const label = labels[index];
         return (
-          <View key={draft.key} style={styles.row}>
+          <View key={draft.key} style={[styles.row, type === 'drop' && styles.rowDrop]}>
             {isCardio ? (
               <AppText variant="label" style={styles.colSet}>{label}</AppText>
             ) : (
               <Pressable
                 style={styles.colSet}
-                onPress={() => updateDraft(draft.key, { type: warmup ? 'normal' : 'warmup' })}
-                hitSlop={6}
+                onPress={() => updateDraft(draft.key, { type: next })}
+                // ↓ rows sit tight against the row above, so their badges must not share tap area.
+                hitSlop={{
+                  top: type === 'drop' ? 0 : 6,
+                  bottom: types[index + 1] === 'drop' ? 0 : 6,
+                  left: 6,
+                  right: 6,
+                }}
                 accessibilityRole="button"
-                accessibilityLabel={`Set ${label}, ${warmup ? 'warm-up' : 'working set'}`}
-                accessibilityHint={warmup ? 'Tap to make it a working set' : 'Tap to mark as warm-up'}
+                accessibilityLabel={
+                  type === 'drop' ? 'Drop step' : `Set ${label}, ${type === 'warmup' ? 'warm-up' : 'working set'}`
+                }
+                accessibilityHint={
+                  next === 'warmup'
+                    ? 'Tap to mark as warm-up'
+                    : next === 'drop'
+                      ? 'Tap to make it a drop step'
+                      : 'Tap to make it a working set'
+                }
               >
-                <AppText variant="label" style={[styles.setBadge, warmup && styles.warmupText]}>
+                <AppText variant="label" style={[styles.setBadge, type !== 'normal' && styles.warmupText]}>
                   {label}
                 </AppText>
               </Pressable>
@@ -795,7 +812,8 @@ function ExerciseCard({
         accessibilityLabel={`Add set to ${logExercise.exercise.name}`}
         onPress={() => {
           const last = drafts.at(-1);
-          setDrafts((prev) => [...prev, newRow(last?.a, last?.b, last?.type)]);
+          // After a drop step the next row is usually a new set, so start it empty; tap its badge for another ↓.
+          setDrafts((prev) => [...prev, last?.type === 'drop' ? newRow() : newRow(last?.a, last?.b, last?.type)]);
         }}
       >
         <AppText variant="label" style={styles.addSetText}>+ Add set</AppText>
@@ -862,13 +880,15 @@ const styles = StyleSheet.create({
     borderRadius: radius.sm,
   },
   rowDone: { backgroundColor: colors.successBg },
+  // A drop step sits tight under the set it belongs to.
+  rowDrop: { paddingTop: 0 },
   colSet: { width: 28, textAlign: 'center' },
   colPrev: { flex: 1.4, textAlign: 'center' },
   colInput: { flex: 1, textAlign: 'center' },
   colCheck: { width: 36 },
   colRemove: { width: 28, height: 36, alignItems: 'center', justifyContent: 'center' },
   removeSetText: { color: colors.muted },
-  // Looks tappable: the set number toggles warm-up on unticked strength rows.
+  // Looks tappable: the set number cycles 1 → W → ↓ on unticked strength rows.
   setBadge: {
     textAlign: 'center',
     paddingVertical: spacing.sm,
