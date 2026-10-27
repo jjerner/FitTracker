@@ -1,6 +1,6 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { router, useFocusEffect } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -30,7 +30,13 @@ import {
 } from '../../hooks/useProgress';
 import { useExerciseHistory, useExercises } from '../../hooks/useWorkouts';
 import { addDays, localDateDaysAgo, mondayOf, todayLocalDate } from '../../lib/dateUtils';
-import { estimateMaintenance, weeklyMuscleSets, weightTrend } from '../../lib/progress';
+import {
+  smoothedMaintenance,
+  weeklyMaintenance,
+  weeklyMuscleSets,
+  weeksAgoLabel,
+  weightTrend,
+} from '../../lib/progress';
 import { trackedStats } from '../../lib/records';
 import { colors, radius, spacing, typography } from '../../theme';
 
@@ -66,7 +72,7 @@ export default function Progress() {
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <WeightCard chartWidth={chartWidth} />
       <NutritionAveragesCard />
-      <MaintenanceCard />
+      <MaintenanceCard chartWidth={chartWidth} />
       <WorkoutsCard />
       <MuscleSetsCard />
       <TrackedExercisesCard />
@@ -190,14 +196,26 @@ function WeightCard({ chartWidth }: { chartWidth: number }) {
   );
 }
 
-function MaintenanceCard() {
+function MaintenanceCard({ chartWidth }: { chartWidth: number }) {
   const weights = useBodyWeights();
   const days = useDailyNutrition();
   const { data: goals, isLoading: goalsLoading } = useNutritionGoals();
+  const [showHistory, setShowHistory] = useState(false);
 
-  const estimate = estimateMaintenance(weights.data ?? [], days.data ?? [], todayLocalDate());
+  const today = todayLocalDate();
+  // Runs estimateMaintenance 12 times, so a "Show history" tap shouldn't redo it.
+  const weekly = useMemo(
+    () => weeklyMaintenance(weights.data ?? [], days.data ?? [], today, 12),
+    [weights.data, days.data, today]
+  );
+  const smoothed = smoothedMaintenance(weekly, today);
+  const estimate = smoothed?.latest;
   const change = estimate ? Math.round(estimate.trendChangeKg * 10) / 10 : 0;
   const changeText = `${change > 0 ? '+' : change < 0 ? '−' : '±'}${Math.abs(change)} kg`;
+
+  const kcals = weekly.map((w) => w.estimate.kcal);
+  const minValue = Math.floor(Math.min(...kcals) / 100) * 100 - 100;
+  const maxValue = Math.ceil(Math.max(...kcals) / 100) * 100 + 100;
 
   return (
     <Card>
@@ -208,20 +226,21 @@ function MaintenanceCard() {
         <AppText variant="small" style={styles.empty}>
           Couldn&apos;t load your data. Try again later.
         </AppText>
-      ) : !estimate ? (
+      ) : !smoothed || !estimate ? (
         <EmptyState message="Needs 14 days of food logged and weigh-ins at least 14 days apart, within the last 4 weeks. Half-logged days don't count." />
       ) : (
         <>
           <View
             style={styles.countRow}
             accessible
-            accessibilityLabel={`About ${estimate.kcal} kilocalories per day`}
+            accessibilityLabel={`About ${smoothed.kcal} kilocalories per day`}
           >
             <AppText variant="title" selectable>
-              ≈ {estimate.kcal}
+              ≈ {smoothed.kcal}
             </AppText>
             <AppText variant="small">kcal / day</AppText>
           </View>
+          <AppText variant="small">Smoothed over the last 3 weeks.</AppText>
           <AppText variant="small">
             From {estimate.loggedDays} logged days and your weight trend ({changeText}) over{' '}
             {Math.round(estimate.daysBetween)} days.
@@ -232,11 +251,46 @@ function MaintenanceCard() {
             </AppText>
           ) : null}
           {goals ? <AppText variant="small" style={styles.goalLine}>Your goal: {goals.caloriesKcal} kcal</AppText> : null}
-          <TextLink
-            title="Set goals ›"
-            // Puts Profile under Goals so the stack has a back arrow.
-            onPress={() => router.push('/(tabs)/profile/goals', { withAnchor: true })}
-          />
+          <View style={styles.linkRow}>
+            <TextLink
+              title="Set goals ›"
+              // Puts Profile under Goals so the stack has a back arrow.
+              onPress={() => router.push('/(tabs)/profile/goals', { withAnchor: true })}
+            />
+            {/* A single point makes no chart, and the spacing divides by points − 1. */}
+            {weekly.length >= 2 ? (
+              <TextLink
+                title={showHistory ? 'Hide history' : 'Show history'}
+                onPress={() => setShowHistory(!showHistory)}
+              />
+            ) : null}
+          </View>
+          {showHistory && weekly.length >= 2 ? (
+            <View style={styles.historyBox}>
+              <View accessible accessibilityLabel={`Maintenance by week: ${kcals.join(', ')} kcal`}>
+                <LineChart
+                  data={kcals.map((value) => ({ value }))}
+                  width={chartWidth}
+                  height={160}
+                  // Same as the weight chart: 40 = default initialSpacing + endSpacing.
+                  spacing={(chartWidth - 40) / (weekly.length - 1)}
+                  yAxisOffset={minValue}
+                  maxValue={maxValue - minValue}
+                  noOfSections={4}
+                  color={colors.primary}
+                  dataPointsColor={colors.primary}
+                  thickness={3}
+                  yAxisTextStyle={styles.axisLabel}
+                />
+                {/* Under the chart, not as x-axis labels, so they can't run into the y-axis numbers. */}
+                <View style={styles.weekLabels}>
+                  <AppText variant="caption">{weeksAgoLabel(weekly[0].date, today)}</AppText>
+                  <AppText variant="caption">{weeksAgoLabel(weekly[weekly.length - 1].date, today)}</AppText>
+                </View>
+              </View>
+              <AppText variant="caption">One point per week. Weeks without enough data are left out.</AppText>
+            </View>
+          ) : null}
         </>
       )}
     </Card>
@@ -536,4 +590,7 @@ const styles = StyleSheet.create({
     ...typography.body,
   },
   goalLine: { color: colors.textSecondary },
+  linkRow: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: spacing.xl },
+  historyBox: { borderTopWidth: 1, borderTopColor: colors.surface, paddingTop: spacing.md, gap: spacing.sm },
+  weekLabels: { flexDirection: 'row', justifyContent: 'space-between' },
 });
